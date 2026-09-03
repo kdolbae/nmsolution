@@ -6,16 +6,23 @@ import { ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SectionHeading } from './section-heading'
 
-const FILTERS = ['전체', '공장 개보수', '누수 피해복구', '단열·곰팡이', '나노코팅', 'UV코팅'] as const
+const FILTERS = ['전체', '지붕 · 판넬', '외벽', '바닥', '단열 · 내부'] as const
 type Filter = (typeof FILTERS)[number]
 
-const PROJECTS: { title: string; cat: Exclude<Filter, '전체'>; loc: string; img: string; year: string }[] = [
-  { title: '식품공장 지붕 판넬 교체', cat: '공장 개보수', loc: '경기 화성', img: '/images/project-roof.png', year: '2025' },
-  { title: '아파트 거실 천장 누수 복구', cat: '누수 피해복구', loc: '서울 송파', img: '/images/recovery-after.png', year: '2025' },
-  { title: '침실 결로 · 곰팡이 원인 해결', cat: '단열·곰팡이', loc: '인천 연수', img: '/images/mold-after.png', year: '2025' },
-  { title: '거실 마루 UV코팅', cat: 'UV코팅', loc: '경기 성남', img: '/images/project-uv.png', year: '2024' },
-  { title: '욕실 타일 나노코팅', cat: '나노코팅', loc: '서울 마포', img: '/images/coating.png', year: '2024' },
-  { title: '제조공장 내부 단열 보강', cat: '공장 개보수', loc: '충남 천안', img: '/images/industrial.png', year: '2024' },
+const PROJECTS: {
+  title: string
+  cat: Exclude<Filter, '전체'>
+  loc: string
+  img: string
+  year: string
+  duration: string
+}[] = [
+  { title: '식품공장 지붕 판넬 전면 교체', cat: '지붕 · 판넬', loc: '경기 화성', img: '/images/project-roof.png', year: '2025', duration: '가동 중 · 12일' },
+  { title: '물류창고 외벽 판넬 보강 · 도장', cat: '외벽', loc: '경기 평택', img: '/images/factory-wall.png', year: '2025', duration: '9일' },
+  { title: '자동차 부품공장 에폭시 바닥 재시공', cat: '바닥', loc: '충남 아산', img: '/images/factory-floor.png', year: '2025', duration: '주말 · 3회' },
+  { title: '제조공장 내부 단열 보강', cat: '단열 · 내부', loc: '충남 천안', img: '/images/industrial.png', year: '2024', duration: '가동 중 · 15일' },
+  { title: '전자부품 공장 외관 리뉴얼', cat: '외벽', loc: '경기 안성', img: '/images/hero-factory.png', year: '2024', duration: '21일' },
+  { title: '포장공장 지붕 누수 구간 보수', cat: '지붕 · 판넬', loc: '경기 용인', img: '/images/factory-survey.png', year: '2024', duration: '긴급 · 2일' },
 ]
 
 export function Projects() {
@@ -26,7 +33,11 @@ export function Projects() {
     <section id="projects" className="bg-secondary py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
-          <SectionHeading kicker="Projects" title="PROJECTS" description="현장에서 확인된 결과입니다. 카드를 클릭하면 상세 시공사례로 이동합니다." />
+          <SectionHeading
+            kicker="Factory Projects"
+            title="현장이 증명합니다."
+            description="공장 개보수 시공사례입니다. 작업 범위와 소요 기간을 함께 확인하세요."
+          />
           <div className="-mx-5 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist" aria-label="시공사례 필터">
             <div className="flex w-max gap-1 border-b border-border">
               {FILTERS.map((f) => (
@@ -70,7 +81,7 @@ export function Projects() {
                   <div className="flex flex-col gap-1">
                     <h3 className="text-lg font-bold tracking-tight">{p.title}</h3>
                     <p className="font-mono text-xs text-muted-foreground">
-                      {p.loc} · {p.year}
+                      {p.loc} · {p.year} · <span className="text-electric">{p.duration}</span>
                     </p>
                   </div>
                   <ArrowUpRight className="mt-1 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-electric" />

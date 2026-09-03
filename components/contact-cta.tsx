@@ -12,13 +12,13 @@ export function ContactCta() {
               Contact
             </p>
             <h2 className="text-balance text-4xl font-black leading-[1.1] tracking-[-0.025em] sm:text-5xl lg:text-7xl">
-              현장의 문제를 알려주세요.
+              공장 상황을 알려주세요.
               <br />
-              엔엠솔루션이 해결 방법을 제안합니다.
+              오늘 안에 답변드립니다.
             </h2>
             <p className="flex items-center gap-3 text-base text-navy-foreground/75 lg:text-lg">
               <Camera className="size-5 text-electric" />
-              사진만 보내주셔도 상담을 시작할 수 있습니다.
+              문제 부위 사진 몇 장이면 충분합니다. 나머지는 현장에서 확인합니다.
             </p>
           </div>
           <div className="flex flex-col gap-3 lg:col-span-4">

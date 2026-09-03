@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: '엔엠솔루션 NM SOLUTION | Building & Space Solution',
+  title: '엔엠솔루션 NM SOLUTION | 공장 개보수 전문',
   description:
-    '공장 개보수부터 누수 피해복구, 단열·곰팡이, 나노·UV 코팅까지. 엔엠솔루션이 현장에 필요한 해결책을 제공합니다.',
+    '공장 개보수, 빠르게 그리고 정확하게. 지붕·판넬·외벽·바닥·단열까지 문의 당일 회신, 현장 진단 후 명확한 견적, 가동을 고려한 구간별 시공. 평택 고덕 기반 경기·충청권 공장 개보수 전문 엔엠솔루션.',
   generator: 'v0.app',
 }
 

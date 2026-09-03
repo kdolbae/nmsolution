@@ -10,13 +10,22 @@ export const COMPANY = {
   telMobile: 'tel:010-2369-3691',
 }
 
+/** 메인 내비게이션 — 공장 개보수 중심 */
 export const NAV_ITEMS = [
-  { label: '사업분야', href: '#services' },
+  { label: '개보수 범위', href: '#scope' },
+  { label: '진행 프로세스', href: '#process' },
   { label: '시공사례', href: '#projects' },
-  { label: '제품', href: '#products' },
-  { label: '교육', href: '#academy' },
   { label: '회사소개', href: '#why' },
   { label: '고객문의', href: '#contact' },
+]
+
+/** 헤더 배너에 노출되는 기타 사업분야 */
+export const OTHER_SERVICES = [
+  { label: '누수 피해복구', href: '#contact' },
+  { label: '단열 · 결로 · 곰팡이', href: '#contact' },
+  { label: '나노 · UV 코팅', href: '#contact' },
+  { label: '코팅제 판매', href: '#contact' },
+  { label: '시공 교육', href: '#contact' },
 ]
 
 export function Logo({ className }: { className?: string }) {

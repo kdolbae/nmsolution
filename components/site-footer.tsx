@@ -1,4 +1,4 @@
-import { COMPANY, Logo, NAV_ITEMS } from './brand'
+import { COMPANY, Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
 
 export function SiteFooter() {
   return (
@@ -8,9 +8,9 @@ export function SiteFooter() {
           <div className="flex flex-col gap-6 lg:col-span-5">
             <Logo />
             <p className="max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
-              Building &amp; Space Solution.
+              Factory Renovation Specialist.
               <br />
-              공장은 개선하고, 피해 현장은 복구하고, 단열 문제는 해결하고, 표면은 보호합니다.
+              공장 개보수, 빠르게 그리고 정확하게. 평택 고덕을 기반으로 경기·충청권 현장을 직접 방문합니다.
             </p>
           </div>
 
@@ -21,6 +21,16 @@ export function SiteFooter() {
                 <li key={n.href}>
                   <a href={n.href} className="text-sm font-medium hover:text-electric">
                     {n.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="text-kicker mb-4 mt-8 text-muted-foreground">Other Solutions</p>
+            <ul className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+              {OTHER_SERVICES.map((s) => (
+                <li key={s.label}>
+                  <a href={s.href} className="text-sm text-muted-foreground hover:text-electric">
+                    {s.label}
                   </a>
                 </li>
               ))}

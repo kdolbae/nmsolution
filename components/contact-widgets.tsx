@@ -3,18 +3,20 @@
 import { useState } from 'react'
 import { FileText, MessageCircle, MessagesSquare, Phone, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { COMPANY } from './brand'
 
-const CHANNELS = [
-  { icon: FileText, label: '견적 문의', sub: '사진 첨부로 빠른 견적', href: '#contact' },
-  { icon: MessageCircle, label: '카카오톡 상담', sub: '채널 친구 추가 후 상담', href: '#contact' },
-  { icon: MessagesSquare, label: '1:1 채팅', sub: '실시간 상담원 연결', href: '#contact' },
-  { icon: Phone, label: '전화 상담', sub: `${COMPANY.phoneMain} · 평일 09:00 – 18:00`, href: COMPANY.telMain },
-]
+function channels(phone: string) {
+  return [
+    { icon: FileText, label: '견적 문의', sub: '사진 첨부로 빠른 견적', href: '/#contact' },
+    { icon: MessageCircle, label: '카카오톡 상담', sub: '채널 친구 추가 후 상담', href: '/#contact' },
+    { icon: MessagesSquare, label: '1:1 채팅', sub: '실시간 상담원 연결', href: '/#contact' },
+    { icon: Phone, label: '전화 상담', sub: `${phone} · 평일 09:00 – 18:00`, href: `tel:${phone}` },
+  ]
+}
 
 /* Floating button — desktop & tablet */
-export function FloatingContact() {
+export function FloatingContact({ phone }: { phone: string }) {
   const [open, setOpen] = useState(false)
+  const CHANNELS = channels(phone)
 
   return (
     <div className="fixed bottom-6 right-5 z-40 hidden flex-col items-end gap-3 md:flex lg:bottom-8 lg:right-8">
@@ -74,11 +76,11 @@ export function FloatingContact() {
 }
 
 /* Compact bottom bar — mobile only */
-export function MobileContactBar() {
+export function MobileContactBar({ phone }: { phone: string }) {
   const items = [
-    { icon: Phone, label: '전화', href: COMPANY.telMain },
-    { icon: MessageCircle, label: '카톡', href: '#contact' },
-    { icon: MessagesSquare, label: '채팅', href: '#contact' },
+    { icon: Phone, label: '전화', href: `tel:${phone}` },
+    { icon: MessageCircle, label: '카톡', href: '/#contact' },
+    { icon: MessagesSquare, label: '채팅', href: '/#contact' },
   ]
   return (
     <nav
@@ -98,7 +100,7 @@ export function MobileContactBar() {
           </a>
         ))}
         <a
-          href="#contact"
+          href="/#contact"
           className="flex h-16 flex-col items-center justify-center gap-1 bg-navy text-[11px] font-semibold text-navy-foreground"
         >
           <FileText className="size-5" strokeWidth={1.75} />

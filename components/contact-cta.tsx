@@ -1,7 +1,14 @@
 import { ArrowRight, MessageCircle, Camera, Phone } from 'lucide-react'
-import { COMPANY } from './brand'
+import { MultilineText } from './multiline-text'
+import type { HomeContent, SettingsContent } from '@/lib/content/defaults'
 
-export function ContactCta() {
+export function ContactCta({
+  content,
+  settings,
+}: {
+  content: HomeContent['contact']
+  settings: SettingsContent
+}) {
   return (
     <section id="contact" className="bg-navy py-24 text-navy-foreground lg:py-36">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -12,18 +19,16 @@ export function ContactCta() {
               Contact
             </p>
             <h2 className="text-balance text-4xl font-black leading-[1.1] tracking-[-0.025em] sm:text-5xl lg:text-7xl">
-              공장 상황을 알려주세요.
-              <br />
-              오늘 안에 답변드립니다.
+              <MultilineText text={content.title} />
             </h2>
             <p className="flex items-center gap-3 text-base text-navy-foreground/75 lg:text-lg">
-              <Camera className="size-5 text-electric" />
-              문제 부위 사진 몇 장이면 충분합니다. 나머지는 현장에서 확인합니다.
+              <Camera className="size-5 shrink-0 text-electric" />
+              {content.description}
             </p>
           </div>
           <div className="flex flex-col gap-3 lg:col-span-4">
             <a
-              href={COMPANY.telMain}
+              href={`tel:${settings.phoneMain}`}
               className="group flex flex-col gap-1 border border-electric/60 bg-navy-foreground/5 px-6 py-5 transition-colors hover:bg-navy-foreground/10"
             >
               <span className="text-kicker flex items-center gap-2 text-navy-foreground/60">
@@ -31,9 +36,9 @@ export function ContactCta() {
                 대표전화
               </span>
               <span className="font-mono text-3xl font-bold tracking-tight text-navy-foreground lg:text-4xl">
-                {COMPANY.phoneMain}
+                {settings.phoneMain}
               </span>
-              <span className="font-mono text-xs text-navy-foreground/60">{COMPANY.phoneMobile}</span>
+              <span className="font-mono text-xs text-navy-foreground/60">{settings.phoneMobile}</span>
             </a>
             <a
               href="#contact"
@@ -49,7 +54,7 @@ export function ContactCta() {
               카카오톡 상담
               <MessageCircle className="size-5" />
             </a>
-            <p className="pt-2 font-mono text-xs text-navy-foreground/50">평일 09:00 – 18:00 · 긴급 누수 상담 가능</p>
+            <p className="pt-2 font-mono text-xs text-navy-foreground/50">{content.hours}</p>
           </div>
         </div>
       </div>

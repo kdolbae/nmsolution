@@ -1,11 +1,18 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Menu, X, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { COMPANY, Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
 
-export function SiteHeader() {
+type Props = {
+  /** true면 스크롤 전에도 흰 배경 (내부 페이지용) */
+  solidByDefault?: boolean
+  showProjects?: boolean
+}
+
+export function SiteHeader({ solidByDefault = false, showProjects = true }: Props) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -23,7 +30,8 @@ export function SiteHeader() {
     }
   }, [open])
 
-  const solid = scrolled || open
+  const solid = solidByDefault || scrolled || open
+  const nav = NAV_ITEMS.filter((n) => !(n.hideWhen === 'projectsHidden' && !showProjects))
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
@@ -39,20 +47,25 @@ export function SiteHeader() {
       >
         <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-8">
           <div className="flex items-center gap-6">
-            <span className="text-kicker text-charcoal-foreground/50">Other Solutions</span>
+            <Link href="/services" className="text-kicker text-charcoal-foreground/50 transition-colors hover:text-electric">
+              Other Solutions
+            </Link>
             <nav className="flex items-center gap-5" aria-label="기타 사업분야 메뉴">
               {OTHER_SERVICES.map((s) => (
-                <a
+                <Link
                   key={s.label}
                   href={s.href}
                   className="text-xs font-medium text-charcoal-foreground/75 transition-colors hover:text-electric"
                 >
                   {s.label}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>
-          <a href={COMPANY.telMain} className="font-mono text-xs font-semibold tracking-wide text-charcoal-foreground/80 hover:text-electric">
+          <a
+            href={COMPANY.telMain}
+            className="font-mono text-xs font-semibold tracking-wide text-charcoal-foreground/80 hover:text-electric"
+          >
             {COMPANY.phoneMain}
           </a>
         </div>
@@ -82,20 +95,20 @@ export function SiteHeader() {
           </div>
 
           <nav className="hidden items-center gap-9 lg:flex" aria-label="주요 메뉴">
-            {NAV_ITEMS.map((item) => (
-              <a
+            {nav.map((item) => (
+              <Link
                 key={item.href}
                 href={item.href}
                 className="text-sm font-medium tracking-tight opacity-80 transition-opacity hover:opacity-100"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
           <div className="flex items-center gap-3">
-            <a
-              href="#contact"
+            <Link
+              href="/#contact"
               className={cn(
                 'hidden h-10 items-center px-5 text-sm font-semibold transition-colors lg:inline-flex',
                 solid
@@ -104,7 +117,7 @@ export function SiteHeader() {
               )}
             >
               빠른 견적
-            </a>
+            </Link>
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
@@ -127,8 +140,8 @@ export function SiteHeader() {
           )}
         >
           <nav className="flex flex-col px-5 pb-8 pt-2" aria-label="모바일 메뉴">
-            {NAV_ITEMS.map((item, i) => (
-              <a
+            {nav.map((item, i) => (
+              <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
@@ -136,32 +149,32 @@ export function SiteHeader() {
               >
                 {item.label}
                 <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-              </a>
+              </Link>
             ))}
 
             <p className="text-kicker mt-8 text-muted-foreground">Other Solutions</p>
             <ul className="mt-3 grid grid-cols-2 gap-2">
               {OTHER_SERVICES.map((s) => (
                 <li key={s.label}>
-                  <a
+                  <Link
                     href={s.href}
                     onClick={() => setOpen(false)}
                     className="flex items-center justify-between bg-secondary px-3 py-3 text-sm font-medium"
                   >
                     {s.label}
                     <ChevronRight className="size-4 text-muted-foreground" />
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
 
-            <a
-              href="#contact"
+            <Link
+              href="/#contact"
               onClick={() => setOpen(false)}
               className="mt-6 inline-flex h-12 items-center justify-center bg-navy text-sm font-semibold text-navy-foreground"
             >
               빠른 견적
-            </a>
+            </Link>
           </nav>
         </div>
       </div>

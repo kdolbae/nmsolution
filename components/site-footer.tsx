@@ -1,6 +1,10 @@
-import { COMPANY, Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
+import Link from 'next/link'
+import { Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
+import type { SettingsContent } from '@/lib/content/defaults'
 
-export function SiteFooter() {
+export function SiteFooter({ settings }: { settings: SettingsContent }) {
+  const nav = NAV_ITEMS.filter((n) => !(n.hideWhen === 'projectsHidden' && !settings.showProjects))
+
   return (
     <footer className="border-t border-border bg-background pb-28 pt-16 lg:pb-16">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -17,11 +21,11 @@ export function SiteFooter() {
           <nav className="lg:col-span-3" aria-label="푸터 메뉴">
             <p className="text-kicker mb-5 text-muted-foreground">Menu</p>
             <ul className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-              {NAV_ITEMS.map((n) => (
+              {nav.map((n) => (
                 <li key={n.href}>
-                  <a href={n.href} className="text-sm font-medium hover:text-electric">
+                  <Link href={n.href} className="text-sm font-medium hover:text-electric">
                     {n.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -29,9 +33,9 @@ export function SiteFooter() {
             <ul className="grid grid-cols-2 gap-2 lg:grid-cols-1">
               {OTHER_SERVICES.map((s) => (
                 <li key={s.label}>
-                  <a href={s.href} className="text-sm text-muted-foreground hover:text-electric">
+                  <Link href={s.href} className="text-sm text-muted-foreground hover:text-electric">
                     {s.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -41,21 +45,21 @@ export function SiteFooter() {
             <p className="text-kicker mb-5 text-muted-foreground">Company</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-sm">
               <dt className="text-muted-foreground">상호</dt>
-              <dd>{COMPANY.name}</dd>
+              <dd>{settings.companyName}</dd>
               <dt className="text-muted-foreground">대표</dt>
-              <dd>{COMPANY.ceo}</dd>
+              <dd>{settings.ceo}</dd>
               <dt className="text-muted-foreground">주소</dt>
-              <dd>{COMPANY.address}</dd>
+              <dd>{settings.address}</dd>
               <dt className="text-muted-foreground">대표전화</dt>
               <dd>
-                <a href={COMPANY.telMain} className="font-mono hover:text-electric">
-                  {COMPANY.phoneMain}
+                <a href={`tel:${settings.phoneMain}`} className="font-mono hover:text-electric">
+                  {settings.phoneMain}
                 </a>
               </dd>
               <dt className="text-muted-foreground">휴대전화</dt>
               <dd>
-                <a href={COMPANY.telMobile} className="font-mono hover:text-electric">
-                  {COMPANY.phoneMobile}
+                <a href={`tel:${settings.phoneMobile}`} className="font-mono hover:text-electric">
+                  {settings.phoneMobile}
                 </a>
               </dd>
             </dl>
@@ -65,12 +69,9 @@ export function SiteFooter() {
         <div className="mt-14 flex flex-col gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono">© 2026 NM SOLUTION. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#top" className="hover:text-foreground">
-              이용약관
-            </a>
-            <a href="#top" className="hover:text-foreground">
-              개인정보처리방침
-            </a>
+            <Link href="/admin" className="hover:text-foreground">
+              관리자
+            </Link>
           </div>
         </div>
       </div>

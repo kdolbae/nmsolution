@@ -7,22 +7,28 @@ import { Why } from '@/components/why'
 import { ContactCta } from '@/components/contact-cta'
 import { SiteFooter } from '@/components/site-footer'
 import { FloatingContact, MobileContactBar } from '@/components/contact-widgets'
+import { getContent, getPublishedProjects } from '@/lib/content/get'
 
-export default function Page() {
+export const dynamic = 'force-dynamic'
+
+export default async function Page() {
+  const [home, settings] = await Promise.all([getContent('home'), getContent('settings')])
+  const projects = settings.showProjects ? await getPublishedProjects() : []
+
   return (
     <>
-      <SiteHeader />
+      <SiteHeader showProjects={settings.showProjects} />
       <main>
-        <Hero />
-        <FactoryScope />
-        <FactoryProcess />
-        <Projects />
-        <Why />
-        <ContactCta />
+        <Hero content={home.hero} />
+        <FactoryScope content={home.scope} />
+        <FactoryProcess content={home.process} />
+        {settings.showProjects && <Projects projects={projects} />}
+        <Why content={home.why} />
+        <ContactCta content={home.contact} settings={settings} />
       </main>
-      <SiteFooter />
-      <FloatingContact />
-      <MobileContactBar />
+      <SiteFooter settings={settings} />
+      <FloatingContact phone={settings.phoneMain} />
+      <MobileContactBar phone={settings.phoneMain} />
     </>
   )
 }

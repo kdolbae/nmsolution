@@ -1,4 +1,4 @@
-import { Logo, NAV_ITEMS } from './brand'
+import { COMPANY, Logo, NAV_ITEMS } from './brand'
 
 export function SiteFooter() {
   return (
@@ -31,17 +31,23 @@ export function SiteFooter() {
             <p className="text-kicker mb-5 text-muted-foreground">Company</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-sm">
               <dt className="text-muted-foreground">상호</dt>
-              <dd>엔엠솔루션 (NM SOLUTION)</dd>
+              <dd>{COMPANY.name}</dd>
               <dt className="text-muted-foreground">대표</dt>
-              <dd>홍길동</dd>
-              <dt className="text-muted-foreground">사업자등록번호</dt>
-              <dd className="font-mono">000-00-00000</dd>
+              <dd>{COMPANY.ceo}</dd>
               <dt className="text-muted-foreground">주소</dt>
-              <dd>경기도 ○○시 ○○로 00, 0층</dd>
+              <dd>{COMPANY.address}</dd>
               <dt className="text-muted-foreground">대표전화</dt>
-              <dd className="font-mono">000-0000-0000</dd>
-              <dt className="text-muted-foreground">이메일</dt>
-              <dd className="font-mono">contact@nmsolution.kr</dd>
+              <dd>
+                <a href={COMPANY.telMain} className="font-mono hover:text-electric">
+                  {COMPANY.phoneMain}
+                </a>
+              </dd>
+              <dt className="text-muted-foreground">휴대전화</dt>
+              <dd>
+                <a href={COMPANY.telMobile} className="font-mono hover:text-electric">
+                  {COMPANY.phoneMobile}
+                </a>
+              </dd>
             </dl>
           </div>
         </div>

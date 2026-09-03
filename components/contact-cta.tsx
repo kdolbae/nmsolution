@@ -1,4 +1,5 @@
-import { ArrowRight, MessageCircle, Camera } from 'lucide-react'
+import { ArrowRight, MessageCircle, Camera, Phone } from 'lucide-react'
+import { COMPANY } from './brand'
 
 export function ContactCta() {
   return (
@@ -21,6 +22,19 @@ export function ContactCta() {
             </p>
           </div>
           <div className="flex flex-col gap-3 lg:col-span-4">
+            <a
+              href={COMPANY.telMain}
+              className="group flex flex-col gap-1 border border-electric/60 bg-navy-foreground/5 px-6 py-5 transition-colors hover:bg-navy-foreground/10"
+            >
+              <span className="text-kicker flex items-center gap-2 text-navy-foreground/60">
+                <Phone className="size-3.5 text-electric" />
+                대표전화
+              </span>
+              <span className="font-mono text-3xl font-bold tracking-tight text-navy-foreground lg:text-4xl">
+                {COMPANY.phoneMain}
+              </span>
+              <span className="font-mono text-xs text-navy-foreground/60">{COMPANY.phoneMobile}</span>
+            </a>
             <a
               href="#contact"
               className="group inline-flex h-14 items-center justify-between bg-electric px-6 text-base font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"

@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { FileText, MessageCircle, MessagesSquare, Phone, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { COMPANY } from './brand'
 
 const CHANNELS = [
   { icon: FileText, label: '견적 문의', sub: '사진 첨부로 빠른 견적', href: '#contact' },
   { icon: MessageCircle, label: '카카오톡 상담', sub: '채널 친구 추가 후 상담', href: '#contact' },
   { icon: MessagesSquare, label: '1:1 채팅', sub: '실시간 상담원 연결', href: '#contact' },
-  { icon: Phone, label: '전화 상담', sub: '평일 09:00 – 18:00', href: '#contact' },
+  { icon: Phone, label: '전화 상담', sub: `${COMPANY.phoneMain} · 평일 09:00 – 18:00`, href: COMPANY.telMain },
 ]
 
 /* Floating button — desktop & tablet */
@@ -75,9 +76,9 @@ export function FloatingContact() {
 /* Compact bottom bar — mobile only */
 export function MobileContactBar() {
   const items = [
-    { icon: Phone, label: '전화' },
-    { icon: MessageCircle, label: '카톡' },
-    { icon: MessagesSquare, label: '채팅' },
+    { icon: Phone, label: '전화', href: COMPANY.telMain },
+    { icon: MessageCircle, label: '카톡', href: '#contact' },
+    { icon: MessagesSquare, label: '채팅', href: '#contact' },
   ]
   return (
     <nav
@@ -89,7 +90,7 @@ export function MobileContactBar() {
         {items.map((it) => (
           <a
             key={it.label}
-            href="#contact"
+            href={it.href}
             className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
           >
             <it.icon className="size-5" strokeWidth={1.75} />

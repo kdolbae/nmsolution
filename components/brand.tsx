@@ -1,5 +1,15 @@
 import { cn } from '@/lib/utils'
 
+export const COMPANY = {
+  name: '엔엠솔루션 (NM SOLUTION)',
+  ceo: '김성배',
+  address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',
+  phoneMain: '1800-5901',
+  phoneMobile: '010-2369-3691',
+  telMain: 'tel:1800-5901',
+  telMobile: 'tel:010-2369-3691',
+}
+
 export const NAV_ITEMS = [
   { label: '사업분야', href: '#services' },
   { label: '시공사례', href: '#projects' },

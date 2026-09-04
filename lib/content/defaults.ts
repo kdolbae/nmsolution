@@ -78,6 +78,7 @@ export type SettingsContent = {
   phoneMain: string
   phoneMobile: string
   hours: string
+  kakaoUrl: string
 }
 
 export const DEFAULT_HOME: HomeContent = {
@@ -256,6 +257,7 @@ export const DEFAULT_SETTINGS: SettingsContent = {
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   hours: '평일 09:00 – 18:00',
+  kakaoUrl: 'https://pf.kakao.com/_xoxbjJX/chat',
 }
 
 export const CONTENT_DEFAULTS = {

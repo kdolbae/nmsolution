@@ -35,6 +35,13 @@ export function SettingsEditor({ initial }: { initial: SettingsContent }) {
           <Field label="휴대전화" mono value={c.phoneMobile} onChange={(v) => setC({ ...c, phoneMobile: v })} />
         </div>
         <Field label="운영 시간" value={c.hours} onChange={(v) => setC({ ...c, hours: v })} />
+        <Field
+          label="카카오톡 채널 채팅 URL"
+          hint="예: https://pf.kakao.com/_xoxbjJX/chat — 상담 버튼이 이 주소를 팝업 창으로 엽니다."
+          mono
+          value={c.kakaoUrl}
+          onChange={(v) => setC({ ...c, kakaoUrl: v })}
+        />
       </Section>
 
       <Section title="회사 정보" description="푸터와 회사소개 페이지에 표시됩니다.">

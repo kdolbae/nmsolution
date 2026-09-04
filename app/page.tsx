@@ -27,8 +27,8 @@ export default async function Page() {
         <ContactCta content={home.contact} settings={settings} />
       </main>
       <SiteFooter settings={settings} />
-      <FloatingContact phone={settings.phoneMain} />
-      <MobileContactBar phone={settings.phoneMain} />
+      <FloatingContact phone={settings.phoneMain} kakaoUrl={settings.kakaoUrl} />
+      <MobileContactBar phone={settings.phoneMain} kakaoUrl={settings.kakaoUrl} />
     </>
   )
 }

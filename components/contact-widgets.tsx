@@ -3,18 +3,27 @@
 import { useState } from 'react'
 import { FileText, MessageCircle, MessagesSquare, Phone, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { openKakaoChat } from '@/lib/kakao'
 
-function channels(phone: string) {
+type Channel = {
+  icon: typeof FileText
+  label: string
+  sub: string
+  href?: string
+  kakao?: boolean
+}
+
+function channels(phone: string): Channel[] {
   return [
     { icon: FileText, label: '견적 문의', sub: '사진 첨부로 빠른 견적', href: '/#contact' },
-    { icon: MessageCircle, label: '카카오톡 상담', sub: '채널 친구 추가 후 상담', href: '/#contact' },
-    { icon: MessagesSquare, label: '1:1 채팅', sub: '실시간 상담원 연결', href: '/#contact' },
+    { icon: MessageCircle, label: '카카오톡 상담', sub: '채널로 바로 문의', kakao: true },
+    { icon: MessagesSquare, label: '1:1 채팅 상담', sub: '실시간 채팅 (팝업)', kakao: true },
     { icon: Phone, label: '전화 상담', sub: `${phone} · 평일 09:00 – 18:00`, href: `tel:${phone}` },
   ]
 }
 
 /* Floating button — desktop & tablet */
-export function FloatingContact({ phone }: { phone: string }) {
+export function FloatingContact({ phone, kakaoUrl }: { phone: string; kakaoUrl: string }) {
   const [open, setOpen] = useState(false)
   const CHANNELS = channels(phone)
 
@@ -35,13 +44,9 @@ export function FloatingContact({ phone }: { phone: string }) {
           </div>
         </div>
         <ul className="divide-y divide-border">
-          {CHANNELS.map((c) => (
-            <li key={c.label}>
-              <a
-                href={c.href}
-                onClick={() => setOpen(false)}
-                className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-secondary"
-              >
+          {CHANNELS.map((c) => {
+            const inner = (
+              <>
                 <span className="flex size-9 items-center justify-center bg-secondary text-navy transition-colors group-hover:bg-electric group-hover:text-electric-foreground">
                   <c.icon className="size-4" strokeWidth={1.75} />
                 </span>
@@ -49,9 +54,31 @@ export function FloatingContact({ phone }: { phone: string }) {
                   <span className="text-sm font-semibold">{c.label}</span>
                   <span className="text-xs text-muted-foreground">{c.sub}</span>
                 </span>
-              </a>
-            </li>
-          ))}
+              </>
+            )
+            const className =
+              'group flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-secondary'
+            return (
+              <li key={c.label}>
+                {c.kakao ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false)
+                      openKakaoChat(kakaoUrl)
+                    }}
+                    className={className}
+                  >
+                    {inner}
+                  </button>
+                ) : (
+                  <a href={c.href} onClick={() => setOpen(false)} className={className}>
+                    {inner}
+                  </a>
+                )}
+              </li>
+            )
+          })}
         </ul>
       </div>
 
@@ -76,12 +103,7 @@ export function FloatingContact({ phone }: { phone: string }) {
 }
 
 /* Compact bottom bar — mobile only */
-export function MobileContactBar({ phone }: { phone: string }) {
-  const items = [
-    { icon: Phone, label: '전화', href: `tel:${phone}` },
-    { icon: MessageCircle, label: '카톡', href: '/#contact' },
-    { icon: MessagesSquare, label: '채팅', href: '/#contact' },
-  ]
+export function MobileContactBar({ phone, kakaoUrl }: { phone: string; kakaoUrl: string }) {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden"
@@ -89,16 +111,29 @@ export function MobileContactBar({ phone }: { phone: string }) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-4">
-        {items.map((it) => (
-          <a
-            key={it.label}
-            href={it.href}
-            className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
-          >
-            <it.icon className="size-5" strokeWidth={1.75} />
-            {it.label}
-          </a>
-        ))}
+        <a
+          href={`tel:${phone}`}
+          className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
+        >
+          <Phone className="size-5" strokeWidth={1.75} />
+          전화
+        </a>
+        <button
+          type="button"
+          onClick={() => openKakaoChat(kakaoUrl)}
+          className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
+        >
+          <MessageCircle className="size-5" strokeWidth={1.75} />
+          카톡
+        </button>
+        <button
+          type="button"
+          onClick={() => openKakaoChat(kakaoUrl)}
+          className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
+        >
+          <MessagesSquare className="size-5" strokeWidth={1.75} />
+          채팅
+        </button>
         <a
           href="/#contact"
           className="flex h-16 flex-col items-center justify-center gap-1 bg-navy text-[11px] font-semibold text-navy-foreground"
@@ -108,5 +143,18 @@ export function MobileContactBar({ phone }: { phone: string }) {
         </a>
       </div>
     </nav>
+  )
+}
+
+/* Kakao chat button used inside the contact section (server components) */
+export function KakaoChatButton({ kakaoUrl, className }: { kakaoUrl: string; className?: string }) {
+  return (
+    <button type="button" onClick={() => openKakaoChat(kakaoUrl)} className={className}>
+      <span className="flex items-center gap-2">
+        카카오톡 1:1 상담
+        <span className="text-navy-foreground/60">(팝업)</span>
+      </span>
+      <MessageCircle className="size-5" />
+    </button>
   )
 }

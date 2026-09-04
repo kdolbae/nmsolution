@@ -1,5 +1,6 @@
-import { ArrowRight, MessageCircle, Camera, Phone } from 'lucide-react'
+import { ArrowRight, Camera, Phone } from 'lucide-react'
 import { MultilineText } from './multiline-text'
+import { KakaoChatButton } from './contact-widgets'
 import type { HomeContent, SettingsContent } from '@/lib/content/defaults'
 
 export function ContactCta({
@@ -47,13 +48,10 @@ export function ContactCta({
               견적 문의
               <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
             </a>
-            <a
-              href="#contact"
-              className="inline-flex h-14 items-center justify-between border border-navy-foreground/30 px-6 text-base font-semibold transition-colors hover:border-navy-foreground hover:bg-navy-foreground/10"
-            >
-              카카오톡 상담
-              <MessageCircle className="size-5" />
-            </a>
+            <KakaoChatButton
+              kakaoUrl={settings.kakaoUrl}
+              className="inline-flex h-14 w-full items-center justify-between border border-navy-foreground/30 px-6 text-base font-semibold transition-colors hover:border-navy-foreground hover:bg-navy-foreground/10"
+            />
             <p className="pt-2 font-mono text-xs text-navy-foreground/50">{content.hours}</p>
           </div>
         </div>

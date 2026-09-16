@@ -45,7 +45,7 @@ export function localBusinessJsonLd({
     url,
     image: `${url}/images/hero-factory.png`,
     description:
-      '평택 고덕 기반 공장 개보수 전문. 철골·지붕·벽체, 바닥·단열·도장, 공압·배관 설비, 생산 장비 수리, 방음·흡음, 크린룸까지 공장에서 생기는 수리를 범위를 나누지 않고 진행합니다.',
+      '평택 고덕 기반 공장 개보수 전문. 철골·지붕·벽체, 배관 수리, 탱크 용접 보수, 스텐 고압배관 제작, 생산 장비 수리, 방음·흡음, 크린룸까지 공장에서 생기는 수리를 범위를 나누지 않고 진행합니다.',
     telephone: [toE164(settings.phoneMobile), toE164(settings.phoneMain)],
     email: undefined,
     founder: { '@type': 'Person', name: settings.ceo },

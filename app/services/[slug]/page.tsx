@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Check, Phone } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
 import { getContent } from '@/lib/content/get'
 
@@ -94,8 +94,18 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 사진 몇 장과 위치만 보내주시면 담당자가 당일 회신드립니다.
               </p>
               <a
+                href={`tel:${settings.phoneMobile}`}
+                className="flex items-center justify-between border border-electric bg-electric/10 px-5 py-4 transition-colors hover:bg-electric/20"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <Smartphone className="size-4 text-electric" />
+                  담당자 직통
+                </span>
+                <span className="font-mono text-xl font-bold">{settings.phoneMobile}</span>
+              </a>
+              <a
                 href={`tel:${settings.phoneMain}`}
-                className="flex items-center justify-between border border-electric/60 px-5 py-4 transition-colors hover:bg-navy-foreground/10"
+                className="flex items-center justify-between border border-navy-foreground/25 px-5 py-4 transition-colors hover:bg-navy-foreground/10"
               >
                 <span className="flex items-center gap-2 text-sm">
                   <Phone className="size-4 text-electric" />

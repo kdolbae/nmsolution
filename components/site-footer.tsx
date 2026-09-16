@@ -50,16 +50,19 @@ export function SiteFooter({ settings }: { settings: SettingsContent }) {
               <dd>{settings.ceo}</dd>
               <dt className="text-muted-foreground">주소</dt>
               <dd>{settings.address}</dd>
+              <dt className="text-muted-foreground">담당자 직통</dt>
+              <dd>
+                <a
+                  href={`tel:${settings.phoneMobile}`}
+                  className="font-mono font-semibold text-electric hover:text-foreground"
+                >
+                  {settings.phoneMobile}
+                </a>
+              </dd>
               <dt className="text-muted-foreground">대표전화</dt>
               <dd>
                 <a href={`tel:${settings.phoneMain}`} className="font-mono hover:text-electric">
                   {settings.phoneMain}
-                </a>
-              </dd>
-              <dt className="text-muted-foreground">휴대전화</dt>
-              <dd>
-                <a href={`tel:${settings.phoneMobile}`} className="font-mono hover:text-electric">
-                  {settings.phoneMobile}
                 </a>
               </dd>
             </dl>

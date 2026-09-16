@@ -62,12 +62,23 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
               ))}
             </nav>
           </div>
-          <a
-            href={COMPANY.telMain}
-            className="font-mono text-xs font-semibold tracking-wide text-charcoal-foreground/80 hover:text-electric"
-          >
-            {COMPANY.phoneMain}
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href={COMPANY.telMain}
+              className="flex items-center gap-2 font-mono text-xs font-semibold tracking-wide text-charcoal-foreground/80 hover:text-electric"
+            >
+              <span className="text-charcoal-foreground/45">대표</span>
+              {COMPANY.phoneMain}
+            </a>
+            <span className="h-3 w-px bg-charcoal-foreground/20" aria-hidden />
+            <a
+              href={COMPANY.telMobile}
+              className="flex items-center gap-2 font-mono text-xs font-semibold tracking-wide text-electric hover:text-charcoal-foreground"
+            >
+              <span className="text-charcoal-foreground/45">직통</span>
+              {COMPANY.phoneMobile}
+            </a>
+          </div>
         </div>
       </div>
 

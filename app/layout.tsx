@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Noto_Sans_KR } from 'next/font/google'
+import { siteUrl } from '@/lib/site'
 import './globals.css'
 
 const notoSansKr = Noto_Sans_KR({
@@ -16,11 +17,63 @@ const geistMono = Geist_Mono({
   display: 'swap',
 })
 
+const SITE_NAME = '엔엠솔루션 NM SOLUTION'
+const TITLE = '공장 수리 전문 엔엠솔루션 | 철골·지붕·설비·배관·장비·크린룸'
+const DESCRIPTION =
+  '공장의 모든 수리를 한 팀이. 철골·지붕·벽체, 바닥·단열·도장, 공압·배관 설비, 생산 장비 수리, 방음·흡음, 크린룸까지. 평택 고덕 기반 경기·충청권 공장 출동. 문의 당일 회신, 담당자 직통 010-2369-3691.'
+
 export const metadata: Metadata = {
-  title: '엔엠솔루션 NM SOLUTION | 공장 개보수 전문',
-  description:
-    '공장 개보수, 빠르게 그리고 정확하게. 지붕·판넬·외벽·바닥·단열까지 문의 당일 회신, 현장 진단 후 명확한 견적, 가동을 고려한 구간별 시공. 평택 고덕 기반 경기·충청권 공장 개보수 전문 엔엠솔루션.',
-  generator: 'v0.app',
+  metadataBase: new URL(siteUrl()),
+  title: {
+    default: TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    '공장 수리',
+    '공장 개보수',
+    '평택 공장 수리',
+    '철골 보강',
+    '공장 지붕 보수',
+    '판넬 교체',
+    '공장 벽체',
+    '에폭시 바닥',
+    '공장 단열',
+    '방음 시공',
+    '흡음 시공',
+    '크린룸 시공',
+    '공압설비',
+    '배관설비',
+    '배관 수리',
+    '생산 장비 수리',
+    '공장 누수',
+    '경기 공장 개보수',
+  ],
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    siteName: SITE_NAME,
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+    images: [
+      {
+        url: '/images/hero-factory.png',
+        width: 1024,
+        height: 1024,
+        alt: '저녁 하늘 아래 정돈된 현대식 공장 외관',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ['/images/hero-factory.png'],
+  },
+  robots: { index: true, follow: true },
 }
 
 export const viewport: Viewport = {

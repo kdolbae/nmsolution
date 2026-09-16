@@ -1,4 +1,4 @@
-import { ArrowRight, Camera, Phone } from 'lucide-react'
+import { ArrowRight, Camera, Phone, Smartphone } from 'lucide-react'
 import { MultilineText } from './multiline-text'
 import { KakaoChatButton } from './contact-widgets'
 import type { HomeContent, SettingsContent } from '@/lib/content/defaults'
@@ -30,7 +30,7 @@ export function ContactCta({
           <div className="flex flex-col gap-3 lg:col-span-4">
             <a
               href={`tel:${settings.phoneMain}`}
-              className="group flex flex-col gap-1 border border-electric/60 bg-navy-foreground/5 px-6 py-5 transition-colors hover:bg-navy-foreground/10"
+              className="group flex flex-col gap-1 border border-navy-foreground/25 bg-navy-foreground/5 px-6 py-5 transition-colors hover:border-navy-foreground/50 hover:bg-navy-foreground/10"
             >
               <span className="text-kicker flex items-center gap-2 text-navy-foreground/60">
                 <Phone className="size-3.5 text-electric" />
@@ -39,7 +39,19 @@ export function ContactCta({
               <span className="font-mono text-3xl font-bold tracking-tight text-navy-foreground lg:text-4xl">
                 {settings.phoneMain}
               </span>
-              <span className="font-mono text-xs text-navy-foreground/60">{settings.phoneMobile}</span>
+            </a>
+            <a
+              href={`tel:${settings.phoneMobile}`}
+              className="group flex flex-col gap-1 border border-electric bg-electric/10 px-6 py-5 transition-colors hover:bg-electric/20"
+            >
+              <span className="text-kicker flex items-center gap-2 text-electric">
+                <Smartphone className="size-3.5" />
+                담당자 직통
+              </span>
+              <span className="font-mono text-3xl font-bold tracking-tight text-navy-foreground lg:text-4xl">
+                {settings.phoneMobile}
+              </span>
+              <span className="text-sm text-navy-foreground/70">현장에 있어도 바로 받습니다.</span>
             </a>
             <a
               href="#contact"

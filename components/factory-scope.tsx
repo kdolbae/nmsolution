@@ -49,13 +49,23 @@ export function FactoryScope({ content }: { content: HomeContent['scope'] }) {
         </ul>
 
         {content.extras.length > 0 && (
-          <ul className="mt-6 flex flex-wrap gap-2" aria-label="추가 작업 항목">
-            {content.extras.map((k) => (
-              <li key={k} className="border border-border px-3 py-1.5 text-sm text-foreground/80">
-                {k}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-12 border-t border-border pt-10">
+            <p className="text-kicker flex items-center gap-3 text-muted-foreground">
+              <span className="h-px w-8 bg-electric" aria-hidden />
+              All Work Items
+            </p>
+            <p className="mt-5 max-w-2xl text-pretty text-base leading-relaxed lg:text-lg">
+              부위별로 업체를 따로 찾지 않아도 됩니다. 공장 안에서 필요한 작업은 아래 항목까지 모두 직접
+              진행합니다.
+            </p>
+            <ul className="mt-6 flex flex-wrap gap-2" aria-label="전체 작업 항목">
+              {content.extras.map((k) => (
+                <li key={k} className="border border-border px-3 py-1.5 text-sm text-foreground/80">
+                  {k}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </section>

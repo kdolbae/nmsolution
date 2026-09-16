@@ -61,7 +61,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
               <h2 className="text-kicker text-muted-foreground">What We Do</h2>
               <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2">
                 {item.points.map((p) => (
-                  <li key={p} className="flex items-start gap-3 bg-background p-4">
+                  <li
+                    key={p}
+                    className="flex items-start gap-3 bg-background p-4 sm:last:odd:col-span-2"
+                  >
                     <Check className="mt-0.5 size-4 shrink-0 text-electric" />
                     <span className="text-sm font-medium">{p}</span>
                   </li>

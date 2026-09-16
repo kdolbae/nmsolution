@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "NM SOLUTION Design System",
+  "version": "2.0.0",
+  "locale": "ko-KR",
+  "theme": "light",
+  "intent": [
+    "fast",
+    "precise",
+    "professional",
+    "industrial",
+    "field-focused"
+  ],
+  "colors": {
+    "background": "oklch(1 0 0)",
+    "foreground": "oklch(0.2 0.012 260)",
+    "card": "oklch(1 0 0)",
+    "cardForeground": "oklch(0.2 0.012 260)",
+    "navy": "oklch(0.22 0.06 262)",
+    "navyForeground": "oklch(0.98 0 0)",
+    "charcoal": "oklch(0.24 0.008 260)",
+    "charcoalForeground": "oklch(0.98 0 0)",
+    "electric": "oklch(0.58 0.22 262)",
+    "electricForeground": "oklch(1 0 0)",
+    "secondary": "oklch(0.965 0.003 260)",
+    "secondaryForeground": "oklch(0.2 0.012 260)",
+    "muted": "oklch(0.965 0.003 260)",
+    "mutedForeground": "oklch(0.5 0.012 260)",
+    "border": "oklch(0.9 0.005 260)",
+    "input": "oklch(0.9 0.005 260)",
+    "ring": "oklch(0.58 0.22 262)",
+    "destructive": "oklch(0.577 0.245 27.325)"
+  },
+  "colorUsageRatio": {
+    "whiteAndLightGray": "65-80%",
+    "navyAndCharcoal": "15-30%",
+    "electric": "3-8%"
+  },
+  "typography": {
+    "families": {
+      "sans": "Noto Sans KR",
+      "mono": "Geist Mono"
+    },
+    "allowedWeights": {
+      "sans": [400, 500, 700, 900],
+      "mono": [400, 500, 600, 700]
+    },
+    "globalLetterSpacing": "-0.01em",
+    "wordBreak": "keep-all",
+    "roles": {
+      "homeHero": "text-5xl sm:text-6xl lg:text-7xl xl:text-[6.5rem] font-black leading-[1.02] tracking-[-0.035em] text-balance",
+      "pageH1": "text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-[-0.03em] text-balance",
+      "sectionH2": "text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.15] tracking-[-0.025em] text-balance",
+      "cardTitle": "text-xl font-bold tracking-tight text-balance",
+      "body": "text-base leading-relaxed text-pretty",
+      "supporting": "text-sm leading-relaxed text-muted-foreground",
+      "kicker": "font-mono text-[11px] font-medium uppercase tracking-[0.2em]"
+    }
+  },
+  "shape": {
+    "baseRadius": "0.25rem",
+    "marketingCard": "rounded-none or rounded-sm",
+    "adminControls": "rounded-none",
+    "pillUsage": "only for real filter or status",
+    "defaultCardShadow": "none",
+    "floatingPanelShadow": "0 24px 60px -20px rgba(0,0,0,0.35)"
+  },
+  "layout": {
+    "publicContainer": "mx-auto w-full max-w-7xl px-5 lg:px-8",
+    "publicContainerMaxWidth": "80rem",
+    "adminContainer": "mx-auto w-full max-w-5xl flex-1 px-5 py-8 lg:px-10 lg:py-12",
+    "sectionSpacing": {
+      "innerPage": "py-16 lg:py-24",
+      "homeMajor": "py-24 lg:py-32",
+      "contact": "py-24 lg:py-36",
+      "footer": "pt-16 pb-28 lg:pb-16"
+    },
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "testViewports": [
+      "390x844",
+      "768x1024",
+      "1280x800",
+      "1920x1080"
+    ]
+  },
+  "components": {
+    "logo": {
+      "mark": "28x28 square navy",
+      "markText": "NM, Geist Mono, 11px, bold",
+      "wordmark": "NM Solution, Geist Mono, 14px, semibold, uppercase, tracking 0.18em",
+      "gap": "10px"
+    },
+    "signatureKicker": {
+      "line": "32x1px electric",
+      "gap": "12px",
+      "text": "Geist Mono 11px uppercase tracking 0.2em"
+    },
+    "header": {
+      "position": "fixed top, z-50",
+      "mobileHeight": "64px",
+      "desktopHeight": "80px",
+      "desktopUtilityBarHeight": "40px",
+      "solidAfterScroll": "24px",
+      "transition": "300ms"
+    },
+    "buttons": {
+      "heroHeight": "56px",
+      "standardHeight": "48px",
+      "minimumTouchTarget": "44x44px",
+      "iconSizes": ["16px", "20px", "24px"]
+    },
+    "cards": {
+      "defaultPadding": "24px",
+      "largePadding": "32px desktop 48px",
+      "divider": "1px border token",
+      "imageHover": "scale(1.05) 700ms ease-out"
+    },
+    "floatingContact": {
+      "desktopMinWidth": "768px",
+      "panelWidth": "288px",
+      "toggleHeight": "56px",
+      "desktopPosition": "bottom 32px right 32px",
+      "tabletPosition": "bottom 24px right 20px"
+    },
+    "mobileContactBar": {
+      "desktopHiddenAt": "768px",
+      "columns": 4,
+      "itemHeight": "64px",
+      "order": ["phone", "kakao", "chat", "estimate"]
+    },
+    "footer": {
+      "desktopColumns": "5/3/4",
+      "mobileBottomPadding": "112px",
+      "desktopBottomPadding": "64px"
+    },
+    "admin": {
+      "sidebarWidth": "240px",
+      "contentMaxWidth": "1024px",
+      "pageBackground": "secondary",
+      "panelBackground": "background",
+      "panelBorder": "1px border token"
+    }
+  },
+  "imagery": {
+    "subjects": [
+      "modern factory exterior",
+      "factory roof",
+      "industrial wall panels",
+      "factory flooring",
+      "on-site inspection",
+      "construction process"
+    ],
+    "tone": "cool neutral industrial photography",
+    "ratios": {
+      "serviceCard": "4:3",
+      "factoryScopeCard": "4:5",
+      "featuredServiceMobile": "16:9",
+      "process": "4:3"
+    },
+    "forbidden": [
+      "abstract blob",
+      "glowing orb",
+      "decorative gradient circle",
+      "empty placeholder",
+      "warm vintage filter",
+      "excessive HDR"
+    ]
+  },
+  "motion": {
+    "colorAndOpacity": "150-300ms",
+    "header": "300ms",
+    "menu": "300ms",
+    "image": "700ms ease-out",
+    "arrowTranslationMax": "4px",
+    "imageScaleMax": 1.05,
+    "forbidden": [
+      "infinite floating",
+      "decorative parallax",
+      "continuous glow",
+      "repeated section entrance animations"
+    ]
+  },
+  "accessibility": {
+    "minimumContrast": "WCAG AA",
+    "minimumTouchTarget": "44x44px",
+    "focusColor": "electric",
+    "semanticLandmarks": ["header", "nav", "main", "section", "footer"],
+    "requirements": [
+      "one h1 per page",
+      "logical heading order",
+      "alt text for informative images",
+      "aria-label for icon-only buttons",
+      "aria-expanded and aria-controls for toggles",
+      "visible keyboard focus",
+      "state is not communicated by color alone"
+    ]
+  },
+  "forbidden": [
+    "purple or violet gradients",
+    "warm cream serif terracotta visual system",
+    "glassmorphism",
+    "decorative glow orb blob",
+    "large rounded marketing cards",
+    "default card shadows",
+    "left accent stripe cards",
+    "decorative statistics",
+    "decorative sequence numbers",
+    "serif or script fonts",
+    "more than two font families",
+    "emoji icons",
+    "inline arbitrary hex or rgb colors"
+  ]
+}

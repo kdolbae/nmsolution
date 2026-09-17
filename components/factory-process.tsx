@@ -19,15 +19,15 @@ export function FactoryProcess({ content }: { content: HomeContent['process'] })
 
           <div className="relative mt-2 aspect-[4/3] overflow-hidden bg-charcoal">
             <Image
-              src="/images/factory-survey.png"
-              alt="공장 지붕 구조를 점검하는 현장 담당자"
+              src="/images/works/tank-weld-bead.jpg"
+              alt="스테인리스 탱크 보수 부위의 용접 비드를 마감한 상태"
               fill
               sizes="(min-width: 1024px) 40vw, 100vw"
               className="object-cover"
             />
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-navy/80 px-4 py-3 backdrop-blur">
-              <span className="text-xs font-medium text-navy-foreground/80">현장 진단 중</span>
-              <span className="font-mono text-[11px] text-electric">LIVE REPORT</span>
+              <span className="text-xs font-medium text-navy-foreground/80">탱크 용접 보수 · 마감 확인</span>
+              <span className="font-mono text-[11px] text-electric">OUR WORK</span>
             </div>
           </div>
 

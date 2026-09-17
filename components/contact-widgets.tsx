@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, MessageCircle, MessagesSquare, Phone, Plus, X } from 'lucide-react'
+import { FileText, MessageCircle, MessagesSquare, Phone, Plus, Smartphone, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { openKakaoChat } from '@/lib/kakao'
 
@@ -11,21 +11,32 @@ type Channel = {
   sub: string
   href?: string
   kakao?: boolean
+  /** 번호를 Mono로 크게 보여주는 직통 항목 */
+  highlight?: boolean
 }
 
-function channels(phone: string): Channel[] {
+function channels(phoneMain: string, phoneMobile: string): Channel[] {
   return [
+    { icon: Smartphone, label: '담당자 직통', sub: phoneMobile, href: `tel:${phoneMobile}`, highlight: true },
+    { icon: Phone, label: '대표전화', sub: `${phoneMain} · 평일 09:00 – 18:00`, href: `tel:${phoneMain}` },
     { icon: FileText, label: '견적 문의', sub: '사진 첨부로 빠른 견적', href: '/#contact' },
     { icon: MessageCircle, label: '카카오톡 상담', sub: '채널로 바로 문의', kakao: true },
     { icon: MessagesSquare, label: '1:1 채팅 상담', sub: '실시간 채팅 (팝업)', kakao: true },
-    { icon: Phone, label: '전화 상담', sub: `${phone} · 평일 09:00 – 18:00`, href: `tel:${phone}` },
   ]
 }
 
 /* Floating button — desktop & tablet */
-export function FloatingContact({ phone, kakaoUrl }: { phone: string; kakaoUrl: string }) {
+export function FloatingContact({
+  phoneMain,
+  phoneMobile,
+  kakaoUrl,
+}: {
+  phoneMain: string
+  phoneMobile: string
+  kakaoUrl: string
+}) {
   const [open, setOpen] = useState(false)
-  const CHANNELS = channels(phone)
+  const CHANNELS = channels(phoneMain, phoneMobile)
 
   return (
     <div className="fixed bottom-6 right-5 z-40 hidden flex-col items-end gap-3 md:flex lg:bottom-8 lg:right-8">
@@ -52,7 +63,15 @@ export function FloatingContact({ phone, kakaoUrl }: { phone: string; kakaoUrl: 
                 </span>
                 <span className="flex flex-col">
                   <span className="text-sm font-semibold">{c.label}</span>
-                  <span className="text-xs text-muted-foreground">{c.sub}</span>
+                  <span
+                    className={cn(
+                      c.highlight
+                        ? 'font-mono text-base font-bold tracking-tight text-navy'
+                        : 'text-xs text-muted-foreground',
+                    )}
+                  >
+                    {c.sub}
+                  </span>
                 </span>
               </>
             )
@@ -103,7 +122,13 @@ export function FloatingContact({ phone, kakaoUrl }: { phone: string; kakaoUrl: 
 }
 
 /* Compact bottom bar — mobile only */
-export function MobileContactBar({ phone, kakaoUrl }: { phone: string; kakaoUrl: string }) {
+export function MobileContactBar({
+  phoneMobile,
+  kakaoUrl,
+}: {
+  phoneMobile: string
+  kakaoUrl: string
+}) {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden"
@@ -112,11 +137,11 @@ export function MobileContactBar({ phone, kakaoUrl }: { phone: string; kakaoUrl:
     >
       <div className="grid grid-cols-4">
         <a
-          href={`tel:${phone}`}
-          className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
+          href={`tel:${phoneMobile}`}
+          className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-electric"
         >
-          <Phone className="size-5" strokeWidth={1.75} />
-          전화
+          <Smartphone className="size-5" strokeWidth={1.75} />
+          직통전화
         </a>
         <button
           type="button"

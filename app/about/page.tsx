@@ -1,7 +1,7 @@
 import { PageHero, PageShell } from '@/components/page-shell'
 import { Paragraphs } from '@/components/multiline-text'
 import { getContent } from '@/lib/content/get'
-import { MapPin, Phone, User } from 'lucide-react'
+import { MapPin, Phone, Smartphone, User } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +42,19 @@ export default async function AboutPage() {
                   <dt className="sr-only">주소</dt>
                   <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <dd className="text-muted-foreground">{settings.address}</dd>
+                </div>
+                <div className="flex items-start gap-3">
+                  <dt className="sr-only">담당자 직통</dt>
+                  <Smartphone className="mt-0.5 size-4 shrink-0 text-electric" />
+                  <dd className="flex items-center gap-2">
+                    <a
+                      href={`tel:${settings.phoneMobile}`}
+                      className="font-mono font-semibold hover:text-electric"
+                    >
+                      {settings.phoneMobile}
+                    </a>
+                    <span className="text-xs text-muted-foreground">직통</span>
+                  </dd>
                 </div>
                 <div className="flex items-start gap-3">
                   <dt className="sr-only">대표전화</dt>

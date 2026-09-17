@@ -10,8 +10,12 @@ export function PageShell({ settings, children }: { settings: SettingsContent; c
       <SiteHeader solidByDefault showProjects={settings.showProjects} />
       <main className="pt-16 lg:pt-[7.5rem]">{children}</main>
       <SiteFooter settings={settings} />
-      <FloatingContact phone={settings.phoneMain} kakaoUrl={settings.kakaoUrl} />
-      <MobileContactBar phone={settings.phoneMain} kakaoUrl={settings.kakaoUrl} />
+      <FloatingContact
+        phoneMain={settings.phoneMain}
+        phoneMobile={settings.phoneMobile}
+        kakaoUrl={settings.kakaoUrl}
+      />
+      <MobileContactBar phoneMobile={settings.phoneMobile} kakaoUrl={settings.kakaoUrl} />
     </>
   )
 }

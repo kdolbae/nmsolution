@@ -1,18 +1,28 @@
 /**
  * 사이트 공개 URL과 검색엔진용 구조화 데이터.
  *
- * 도메인은 NEXT_PUBLIC_SITE_URL로 지정한다. 값이 없으면 Vercel이 주는
- * 배포 URL을 쓰고, 로컬에서는 localhost로 떨어진다. (lib/auth.ts와 같은 방식)
+ * canonical, OG 태그, sitemap, 구조화 데이터가 모두 이 주소를 기준으로 만들어진다.
+ * 검색엔진이 한 사이트를 여러 주소로 인식하지 않도록 운영 도메인을 기본값으로 둔다.
  */
 
 import type { ServicesContent, SettingsContent } from '@/lib/content/defaults'
 
+/** 운영 도메인. 환경변수가 없어도 이 주소가 정식 주소로 쓰인다. */
+export const PRODUCTION_URL = 'https://nm-solution.co.kr'
+
 export function siteUrl(): string {
+  // 다른 도메인으로 띄울 때만 환경변수로 덮어쓴다
   const explicit = process.env.NEXT_PUBLIC_SITE_URL
   if (explicit) return explicit.replace(/\/$/, '')
 
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL
-  if (vercel) return `https://${vercel}`
+  // 운영 배포는 항상 정식 도메인을 쓴다 (Vercel이 주는 임의 URL을 쓰지 않는다)
+  if (process.env.VERCEL_ENV === 'production') return PRODUCTION_URL
+
+  // 프리뷰 배포는 자기 배포 주소를 써야 링크가 실제로 열린다
+  const preview = process.env.VERCEL_URL
+  if (preview) return `https://${preview}`
+
+  if (process.env.NODE_ENV === 'production') return PRODUCTION_URL
 
   return 'http://localhost:3000'
 }

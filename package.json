@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed:projects": "tsx scripts/seed-projects.ts"
+    "seed:projects": "tsx scripts/seed-projects.ts",
+    "db:setup": "psql \"$DATABASE_URL\" -f sql/001_quote_requests.sql -f sql/002_seed_projects.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.6",
     "typescript": "5.7.3"
   }
 }

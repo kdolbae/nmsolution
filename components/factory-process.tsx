@@ -32,7 +32,7 @@ export function FactoryProcess({ content }: { content: HomeContent['process'] })
           </div>
 
           <a
-            href="#contact"
+            href="#quote"
             className="group inline-flex h-12 w-fit items-center gap-3 bg-electric px-6 text-sm font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"
           >
             지금 문의하기

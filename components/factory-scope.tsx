@@ -15,7 +15,7 @@ export function FactoryScope({ content }: { content: HomeContent['scope'] }) {
             description={content.description}
           />
           <a
-            href="#contact"
+            href="#quote"
             className="group inline-flex h-12 w-fit items-center gap-3 border border-foreground/20 px-6 text-sm font-semibold transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
           >
             현장 진단 요청

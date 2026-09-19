@@ -79,3 +79,24 @@ export const projects = pgTable('projects', {
 
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
+
+/** 공개 페이지에서 접수된 견적 문의 */
+export const quoteRequests = pgTable('quote_requests', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull(),
+  company: text('company').notNull().default(''),
+  location: text('location').notNull().default(''),
+  /** 선택한 공종 (쉼표 구분) */
+  categories: text('categories').notNull().default(''),
+  message: text('message').notNull().default(''),
+  /** 접수 → 연락함 → 완료 */
+  status: text('status').notNull().default('new'),
+  /** 관리자 메모 */
+  memo: text('memo').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type QuoteRequest = typeof quoteRequests.$inferSelect
+export type NewQuoteRequest = typeof quoteRequests.$inferInsert

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, MessageCircle, MessagesSquare, Phone, Plus, Smartphone, X } from 'lucide-react'
+import { track } from '@vercel/analytics'
 import { cn } from '@/lib/utils'
 import { openKakaoChat } from '@/lib/kakao'
 
@@ -13,15 +14,17 @@ type Channel = {
   kakao?: boolean
   /** 번호를 Mono로 크게 보여주는 직통 항목 */
   highlight?: boolean
+  /** 전환 집계용 이름 */
+  event: string
 }
 
 function channels(phoneMain: string, phoneMobile: string): Channel[] {
   return [
-    { icon: Smartphone, label: '담당자 직통', sub: phoneMobile, href: `tel:${phoneMobile}`, highlight: true },
-    { icon: Phone, label: '대표전화', sub: `${phoneMain} · 평일 09:00 – 18:00`, href: `tel:${phoneMain}` },
-    { icon: FileText, label: '견적 문의', sub: '사진 첨부로 빠른 견적', href: '/#contact' },
-    { icon: MessageCircle, label: '카카오톡 상담', sub: '채널로 바로 문의', kakao: true },
-    { icon: MessagesSquare, label: '1:1 채팅 상담', sub: '실시간 채팅 (팝업)', kakao: true },
+    { icon: Smartphone, label: '담당자 직통', sub: phoneMobile, href: `tel:${phoneMobile}`, highlight: true, event: 'call_mobile' },
+    { icon: Phone, label: '대표전화', sub: `${phoneMain} · 평일 09:00 – 18:00`, href: `tel:${phoneMain}`, event: 'call_main' },
+    { icon: FileText, label: '견적 문의', sub: '남기면 당일 회신', href: '/#quote', event: 'quote_open' },
+    { icon: MessageCircle, label: '카카오톡 상담', sub: '채널로 바로 문의', kakao: true, event: 'kakao' },
+    { icon: MessagesSquare, label: '1:1 채팅 상담', sub: '실시간 채팅 (팝업)', kakao: true, event: 'kakao_chat' },
   ]
 }
 
@@ -83,6 +86,7 @@ export function FloatingContact({
                   <button
                     type="button"
                     onClick={() => {
+                      track('contact_click', { channel: c.event, from: 'floating' })
                       setOpen(false)
                       openKakaoChat(kakaoUrl)
                     }}
@@ -91,7 +95,14 @@ export function FloatingContact({
                     {inner}
                   </button>
                 ) : (
-                  <a href={c.href} onClick={() => setOpen(false)} className={className}>
+                  <a
+                    href={c.href}
+                    onClick={() => {
+                      track('contact_click', { channel: c.event, from: 'floating' })
+                      setOpen(false)
+                    }}
+                    className={className}
+                  >
                     {inner}
                   </a>
                 )}
@@ -138,6 +149,7 @@ export function MobileContactBar({
       <div className="grid grid-cols-4">
         <a
           href={`tel:${phoneMobile}`}
+          onClick={() => track('contact_click', { channel: 'call_mobile', from: 'mobile_bar' })}
           className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-electric"
         >
           <Smartphone className="size-5" strokeWidth={1.75} />
@@ -145,7 +157,10 @@ export function MobileContactBar({
         </a>
         <button
           type="button"
-          onClick={() => openKakaoChat(kakaoUrl)}
+          onClick={() => {
+            track('contact_click', { channel: 'kakao', from: 'mobile_bar' })
+            openKakaoChat(kakaoUrl)
+          }}
           className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
         >
           <MessageCircle className="size-5" strokeWidth={1.75} />
@@ -153,14 +168,18 @@ export function MobileContactBar({
         </button>
         <button
           type="button"
-          onClick={() => openKakaoChat(kakaoUrl)}
+          onClick={() => {
+            track('contact_click', { channel: 'kakao_chat', from: 'mobile_bar' })
+            openKakaoChat(kakaoUrl)
+          }}
           className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80"
         >
           <MessagesSquare className="size-5" strokeWidth={1.75} />
           채팅
         </button>
         <a
-          href="/#contact"
+          href="/#quote"
+          onClick={() => track('contact_click', { channel: 'quote_open', from: 'mobile_bar' })}
           className="flex h-16 flex-col items-center justify-center gap-1 bg-navy text-[11px] font-semibold text-navy-foreground"
         >
           <FileText className="size-5" strokeWidth={1.75} />
@@ -174,7 +193,14 @@ export function MobileContactBar({
 /* Kakao chat button used inside the contact section (server components) */
 export function KakaoChatButton({ kakaoUrl, className }: { kakaoUrl: string; className?: string }) {
   return (
-    <button type="button" onClick={() => openKakaoChat(kakaoUrl)} className={className}>
+    <button
+      type="button"
+      onClick={() => {
+        track('contact_click', { channel: 'kakao', from: 'contact_section' })
+        openKakaoChat(kakaoUrl)
+      }}
+      className={className}
+    >
       <span className="flex items-center gap-2">
         카카오톡 1:1 상담
         <span className="text-navy-foreground/60">(팝업)</span>

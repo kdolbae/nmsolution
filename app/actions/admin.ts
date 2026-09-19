@@ -2,8 +2,9 @@
 
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { projects, siteContent } from '@/lib/db/schema'
+import { projects, quoteRequests, siteContent } from '@/lib/db/schema'
 import { CONTENT_DEFAULTS, PROJECT_CATEGORIES, type ContentKey } from '@/lib/content/defaults'
+import { QUOTE_STATUSES } from '@/lib/quote'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
@@ -98,5 +99,34 @@ export async function toggleProjectPublished(id: number, published: boolean) {
   await requireAdmin()
   await db.update(projects).set({ published, updatedAt: new Date() }).where(eq(projects.id, id))
   revalidateAll()
+  return { ok: true as const }
+}
+
+// ---------- 견적 문의 ----------
+
+export async function updateQuoteStatus(id: number, status: string) {
+  await requireAdmin()
+  if (!(QUOTE_STATUSES as readonly { value: string }[]).some((s) => s.value === status)) {
+    throw new Error('Invalid status')
+  }
+  await db.update(quoteRequests).set({ status, updatedAt: new Date() }).where(eq(quoteRequests.id, id))
+  revalidatePath('/admin/quotes')
+  return { ok: true as const }
+}
+
+export async function updateQuoteMemo(id: number, memo: string) {
+  await requireAdmin()
+  await db
+    .update(quoteRequests)
+    .set({ memo: (memo ?? '').slice(0, 4000), updatedAt: new Date() })
+    .where(eq(quoteRequests.id, id))
+  revalidatePath('/admin/quotes')
+  return { ok: true as const }
+}
+
+export async function deleteQuote(id: number) {
+  await requireAdmin()
+  await db.delete(quoteRequests).where(eq(quoteRequests.id, id))
+  revalidatePath('/admin/quotes')
   return { ok: true as const }
 }

@@ -3,9 +3,11 @@ import { ArrowRight, Download, Eye, EyeOff } from 'lucide-react'
 import { PageHeader } from '@/components/admin/form'
 import { getAllProjects, getContent } from '@/lib/content/get'
 import { db } from '@/lib/db'
-import { siteContent } from '@/lib/db/schema'
+import { quoteRequests, siteContent } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
 const CARDS = [
+  { href: '/admin/quotes', title: '견적 문의', d: '홈페이지 폼으로 접수된 문의 확인 · 상태 관리' },
   { href: '/admin/home', title: '메인 페이지', d: '히어로 문구, 개보수 범위, 진행 프로세스, 회사 소개, 문의 문구' },
   { href: '/admin/services', title: '사업소개', d: '6개 사업분야의 소개 문구, 주요 작업, 대상 고객' },
   { href: '/admin/about', title: '회사소개', d: '대표 인사말, 대표 사진' },
@@ -14,10 +16,15 @@ const CARDS = [
 ]
 
 export default async function AdminDashboard() {
-  const [settings, projects, rows] = await Promise.all([
+  const [settings, projects, rows, newQuotes] = await Promise.all([
     getContent('settings'),
     getAllProjects(),
     db.select({ key: siteContent.key, updatedAt: siteContent.updatedAt }).from(siteContent),
+    db
+      .select({ id: quoteRequests.id })
+      .from(quoteRequests)
+      .where(eq(quoteRequests.status, 'new'))
+      .catch(() => []),
   ])
   const lastUpdated = rows.reduce<Date | null>((acc, r) => (!acc || r.updatedAt > acc ? r.updatedAt : acc), null)
 
@@ -26,6 +33,11 @@ export default async function AdminDashboard() {
       <PageHeader title="대시보드" description="사이트의 모든 문구와 사례를 여기서 편집합니다. 저장하면 즉시 반영됩니다." />
 
       <div className="mb-6 grid grid-cols-1 gap-px bg-border sm:grid-cols-3">
+        <Stat
+          label="새 견적 문의"
+          value={`${newQuotes.length}건`}
+          sub={newQuotes.length > 0 ? '확인이 필요합니다' : '확인하지 않은 문의 없음'}
+        />
         <Stat label="시공사례" value={`${projects.length}건`} sub={`${projects.filter((p) => p.published).length}건 공개`} />
         <Stat
           label="시공사례 메뉴"

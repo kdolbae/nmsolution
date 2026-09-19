@@ -114,7 +114,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 <span className="font-mono text-xl font-bold">{settings.phoneMain}</span>
               </a>
               <Link
-                href="/#contact"
+                href="/#quote"
                 className="group inline-flex h-12 items-center justify-between bg-electric px-5 text-sm font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"
               >
                 견적 문의

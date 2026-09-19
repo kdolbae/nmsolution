@@ -33,7 +33,7 @@ export function Hero({ content }: { content: HomeContent['hero'] }) {
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <a
-            href="#contact"
+            href="#quote"
             className="group inline-flex h-14 items-center justify-center gap-3 bg-electric px-7 text-base font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"
           >
             {content.primaryCta}

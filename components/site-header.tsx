@@ -119,7 +119,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
 
           <div className="flex items-center gap-3">
             <Link
-              href="/#contact"
+              href="/#quote"
               className={cn(
                 'hidden h-10 items-center px-5 text-sm font-semibold transition-colors lg:inline-flex',
                 solid
@@ -180,7 +180,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
             </ul>
 
             <Link
-              href="/#contact"
+              href="/#quote"
               onClick={() => setOpen(false)}
               className="mt-6 inline-flex h-12 items-center justify-center bg-navy text-sm font-semibold text-navy-foreground"
             >

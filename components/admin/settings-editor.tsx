@@ -36,8 +36,8 @@ export function SettingsEditor({ initial }: { initial: SettingsContent }) {
         </div>
         <Field label="운영 시간" value={c.hours} onChange={(v) => setC({ ...c, hours: v })} />
         <Field
-          label="카카오톡 채널 채팅 URL"
-          hint="예: https://pf.kakao.com/_xoxbjJX/chat — 상담 버튼이 이 주소를 팝업 창으로 엽니다."
+          label="카카오톡 채널 주소"
+          hint="예: https://pf.kakao.com/_내채널ID — 이 주소로 '카톡채널'(채널 홈)과 '비즈니스 채팅'(/chat) 링크를 자동으로 만듭니다. 비워 두면 카카오 버튼이 표시되지 않습니다."
           mono
           value={c.kakaoUrl}
           onChange={(v) => setC({ ...c, kakaoUrl: v })}

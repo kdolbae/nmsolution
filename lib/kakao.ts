@@ -22,3 +22,19 @@ export function openKakaoChat(url: string) {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 }
+
+/**
+ * 카카오톡 채널 주소에서 두 종류의 링크를 만든다.
+ *
+ * - home: 채널 홈. 채널 추가와 소식 확인용.
+ * - chat: 1:1 채팅(비즈니스 채팅). 바로 문의용.
+ *
+ * 관리자에 채널 홈(.../_ABCDE)이나 채팅 주소(.../_ABCDE/chat) 중
+ * 어느 쪽을 넣어도 두 링크가 모두 정상으로 나온다.
+ */
+export function kakaoLinks(url: string): { home: string; chat: string } {
+  const clean = (url ?? '').trim().replace(/\/+$/, '')
+  if (!clean) return { home: '', chat: '' }
+  const home = clean.replace(/\/chat$/, '')
+  return { home, chat: `${home}/chat` }
+}

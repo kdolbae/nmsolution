@@ -1,6 +1,7 @@
-import { ArrowDown, Camera, Phone, Smartphone } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, Camera, Phone, Smartphone } from 'lucide-react'
 import { MultilineText } from './multiline-text'
 import { KakaoChatButton } from './contact-widgets'
+import { kakaoLinks } from '@/lib/kakao'
 import { QuoteForm } from './quote-form'
 import type { HomeContent, SettingsContent } from '@/lib/content/defaults'
 
@@ -11,6 +12,8 @@ export function ContactCta({
   content: HomeContent['contact']
   settings: SettingsContent
 }) {
+  const kakao = kakaoLinks(settings.kakaoUrl)
+
   return (
     <section id="contact" className="bg-navy py-24 text-navy-foreground lg:py-36">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -65,6 +68,17 @@ export function ContactCta({
               kakaoUrl={settings.kakaoUrl}
               className="inline-flex h-14 w-full items-center justify-between border border-navy-foreground/30 px-6 text-base font-semibold transition-colors hover:border-navy-foreground hover:bg-navy-foreground/10"
             />
+            {kakao.home && (
+              <a
+                href={kakao.home}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 w-full items-center justify-between border border-navy-foreground/20 px-6 text-sm font-medium text-navy-foreground/80 transition-colors hover:border-navy-foreground/50 hover:text-navy-foreground"
+              >
+                카카오톡 채널 추가
+                <ArrowUpRight className="size-4" />
+              </a>
+            )}
             <p className="pt-2 font-mono text-xs text-navy-foreground/50">{content.hours}</p>
           </div>
         </div>

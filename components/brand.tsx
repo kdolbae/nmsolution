@@ -14,6 +14,7 @@ export const COMPANY = {
 /** 메인 내비게이션 — 공장 개보수 중심 */
 export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidden' }[] = [
   { label: '개보수 범위', href: '/#scope' },
+  { label: '작업 사진', href: '/#works' },
   { label: '진행 프로세스', href: '/#process' },
   { label: '시공사례', href: '/#projects', hideWhen: 'projectsHidden' },
   { label: '사업소개', href: '/services' },

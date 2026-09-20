@@ -75,6 +75,29 @@ export function HomeEditor({ initial }: { initial: HomeContent }) {
         <StringListField label="추가 작업 태그" values={c.scope.extras} onChange={(extras) => set('scope', { extras })} />
       </Section>
 
+      <Section title="작업 사진" description="실제 현장 사진입니다. 공종별로 묶여 표시되며 사진마다 설명은 붙지 않습니다.">
+        <Field label="작은 영문 라벨" value={c.gallery.kicker} onChange={(v) => set('gallery', { kicker: v })} />
+        <Field label="제목" multiline rows={2} value={c.gallery.title} onChange={(v) => set('gallery', { title: v })} />
+        <Field label="설명" multiline rows={2} value={c.gallery.description} onChange={(v) => set('gallery', { description: v })} />
+        <ListEditor
+          items={c.gallery.groups}
+          onChange={(groups) => set('gallery', { groups })}
+          title={(g) => g.label || '새 공종'}
+          create={() => ({ label: '', images: [] as string[] })}
+          addLabel="공종 추가"
+          render={(g, u) => (
+            <>
+              <Field label="공종 이름" value={g.label} onChange={(v) => u({ label: v })} />
+              <StringListField
+                label="사진 경로"
+                values={g.images}
+                onChange={(images) => u({ images })}
+              />
+            </>
+          )}
+        />
+      </Section>
+
       <Section title="진행 프로세스" description="STEP 1 – 5">
         <Field label="작은 영문 라벨" value={c.process.kicker} onChange={(v) => set('process', { kicker: v })} />
         <Field label="제목" multiline rows={3} value={c.process.title} onChange={(v) => set('process', { title: v })} />

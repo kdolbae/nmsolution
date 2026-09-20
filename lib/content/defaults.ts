@@ -29,6 +29,13 @@ export type HomeContent = {
     description: string
     steps: { n: string; time: string; title: string; description: string }[]
   }
+  /** 실제 현장 사진. 설명 없이 어떤 작업을 하는지만 보여준다. */
+  gallery: {
+    kicker: string
+    title: string
+    description: string
+    groups: { label: string; images: string[] }[]
+  }
   why: {
     kicker: string
     title: string
@@ -110,14 +117,14 @@ export const DEFAULT_HOME: HomeContent = {
         title: '철골 · 지붕 · 벽체',
         description:
           '철골 트러스 제작과 양중, 캐노피·증축 골조, 노후 판넬·누수 지붕 보수, 외벽 마감과 실링. 건물의 골격부터 외피까지 직접 시공합니다.',
-        image: '/images/works/steel-canopy-corridor.jpg',
+        image: '/images/project-roof.png',
       },
       {
         n: '02',
         title: '배관 · 탱크 · 용접',
         description:
           '공압·배관 설비 신설과 노후 배관 수리, 스텐 고압배관 제작, 탱크 용접 보수. 압력 손실과 누수는 증상만 막지 않고 원인부터 찾습니다.',
-        image: '/images/works/pipe-repair-sleeve.jpg',
+        image: '/images/industrial.png',
       },
       {
         n: '03',
@@ -170,6 +177,61 @@ export const DEFAULT_HOME: HomeContent = {
       { n: 'STEP 5', time: '완료 후', title: '점검 · 사후관리', description: '완료 후 함께 점검하고, 시공 부위별 관리 포인트를 정리해 전달합니다.' },
     ],
   },
+  gallery: {
+    kicker: 'Our Work',
+    title: '저희가 하는 일입니다.',
+    description: '평택 고덕을 기반으로 실제 진행한 현장입니다. 공종별로 모았습니다.',
+    groups: [
+      {
+        label: '철골 · 지붕',
+        images: [
+          '/images/gallery/g-steel-frame-1.jpg',
+          '/images/gallery/g-steel-truss.jpg',
+          '/images/gallery/g-steel-canopy.jpg',
+        ],
+      },
+      {
+        label: '벽체 · 판넬',
+        images: [
+          '/images/gallery/g-panel-window.jpg',
+          '/images/gallery/g-panel-hall.jpg',
+          '/images/gallery/g-canopy-done.jpg',
+        ],
+      },
+      {
+        label: '배관 · 공압',
+        images: [
+          '/images/gallery/g-pipe-sleeve.jpg',
+          '/images/gallery/g-pipe-line.jpg',
+          '/images/gallery/g-hp-gas.jpg',
+        ],
+      },
+      {
+        label: '탱크 · 용접',
+        images: [
+          '/images/gallery/g-tank-weld.jpg',
+          '/images/gallery/g-tank-done.jpg',
+          '/images/gallery/g-tank-parts.jpg',
+        ],
+      },
+      {
+        label: '스텐 제작',
+        images: [
+          '/images/gallery/g-manifold.jpg',
+          '/images/gallery/g-worktable.jpg',
+          '/images/gallery/g-rack.jpg',
+        ],
+      },
+      {
+        label: '소방 · 부대설비',
+        images: [
+          '/images/gallery/g-hydrant.jpg',
+          '/images/gallery/g-stair.jpg',
+          '/images/gallery/g-truss-lift.jpg',
+        ],
+      },
+    ],
+  },
   why: {
     kicker: 'Why NM Solution',
     title: '공장 개보수 업체,\n이렇게 일할 수도 있습니다.',
@@ -202,7 +264,7 @@ export const DEFAULT_SERVICES: ServicesContent = {
       summary: '철골·지붕·벽체부터 배관·탱크 용접, 스텐 제작, 크린룸까지 한 팀이.',
       description:
         '공장에서 생기는 수리는 범위를 나누지 않습니다. 철골 트러스 제작과 캐노피 증축, 지붕·외벽 판넬 교체, 바닥 재시공 같은 건축 공사부터 공압·배관 설비, 스텐 고압배관, 탱크 용접 보수, 생산 장비 수리, 방음·흡음, 크린룸 구축까지 함께 진행합니다. 생산 일정에 맞춰 구간을 나눠 시공하고, 현장 진단 후 항목별로 명확한 견적을 제시합니다.',
-      image: '/images/works/steel-canopy-sky.jpg',
+      image: '/images/hero-factory.png',
       points: [
         '철골 트러스 제작 · 양중 · 캐노피 증축',
         '지붕 · 외벽 판넬 교체 및 누수 보수',

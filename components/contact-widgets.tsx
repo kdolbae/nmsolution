@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, MessageCircle, MessagesSquare, Phone, Plus, Smartphone, X } from 'lucide-react'
+import { FileText, MessageCircle, Phone, Plus, Smartphone, X } from 'lucide-react'
 import { track } from '@vercel/analytics'
 import { cn } from '@/lib/utils'
-import { kakaoLinks, openKakaoChat } from '@/lib/kakao'
+import { kakaoChatUrl, openKakaoChat } from '@/lib/kakao'
 
 type Channel = {
   icon: typeof FileText
@@ -20,15 +20,13 @@ type Channel = {
 }
 
 function channels(phoneMain: string, phoneMobile: string, kakaoUrl: string): Channel[] {
-  const kakao = kakaoLinks(kakaoUrl)
+  const chat = kakaoChatUrl(kakaoUrl)
   return [
     { icon: Smartphone, label: '바로 전화', sub: phoneMobile, href: `tel:${phoneMobile}`, highlight: true, event: 'call_mobile' },
     { icon: Phone, label: '대표전화', sub: `${phoneMain} · 평일 09:00 – 18:00`, href: `tel:${phoneMain}`, event: 'call_main' },
-    ...(kakao.chat
-      ? [{ icon: MessagesSquare, label: '비즈니스 채팅', sub: '카카오톡으로 1:1 문의', popup: kakao.chat, event: 'kakao_chat' } as Channel]
-      : []),
-    ...(kakao.home
-      ? [{ icon: MessageCircle, label: '카카오톡 채널', sub: '채널 추가하고 소식 받기', href: kakao.home, event: 'kakao_channel' } as Channel]
+    // 카카오톡 채널(비즈채널) 하나로 1:1 상담까지 받는다
+    ...(chat
+      ? [{ icon: MessageCircle, label: '카카오톡 상담', sub: '채널로 1:1 문의', popup: chat, event: 'kakao_chat' } as Channel]
       : []),
     { icon: FileText, label: '견적 문의', sub: '남기면 당일 회신', href: '/#quote', event: 'quote_open' },
   ]
@@ -143,13 +141,15 @@ export function FloatingContact({
 
 /* Compact bottom bar — mobile only */
 export function MobileContactBar({
+  phoneMain,
   phoneMobile,
   kakaoUrl,
 }: {
+  phoneMain: string
   phoneMobile: string
   kakaoUrl: string
 }) {
-  const kakao = kakaoLinks(kakaoUrl)
+  const chat = kakaoChatUrl(kakaoUrl)
   const CELL = 'flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80'
 
   return (
@@ -167,26 +167,24 @@ export function MobileContactBar({
           <Smartphone className="size-5" strokeWidth={1.75} />
           바로전화
         </a>
+        <a
+          href={`tel:${phoneMain}`}
+          onClick={() => track('contact_click', { channel: 'call_main', from: 'mobile_bar' })}
+          className={CELL}
+        >
+          <Phone className="size-5" strokeWidth={1.75} />
+          대표전화
+        </a>
         {/* 모바일에서는 팝업 대신 링크로 열어야 카카오톡 앱이 바로 뜬다 */}
         <a
-          href={kakao.chat || '/#quote'}
-          target={kakao.chat ? '_blank' : undefined}
-          rel={kakao.chat ? 'noopener noreferrer' : undefined}
+          href={chat || '/#quote'}
+          target={chat ? '_blank' : undefined}
+          rel={chat ? 'noopener noreferrer' : undefined}
           onClick={() => track('contact_click', { channel: 'kakao_chat', from: 'mobile_bar' })}
           className={CELL}
         >
-          <MessagesSquare className="size-5" strokeWidth={1.75} />
-          채팅상담
-        </a>
-        <a
-          href={kakao.home || '/#quote'}
-          target={kakao.home ? '_blank' : undefined}
-          rel={kakao.home ? 'noopener noreferrer' : undefined}
-          onClick={() => track('contact_click', { channel: 'kakao_channel', from: 'mobile_bar' })}
-          className={CELL}
-        >
           <MessageCircle className="size-5" strokeWidth={1.75} />
-          카톡채널
+          카톡상담
         </a>
         <a
           href="/#quote"
@@ -203,23 +201,23 @@ export function MobileContactBar({
 
 /* Kakao chat button used inside the contact section (server components) */
 export function KakaoChatButton({ kakaoUrl, className }: { kakaoUrl: string; className?: string }) {
-  const kakao = kakaoLinks(kakaoUrl)
-  if (!kakao.chat) return null
+  const chat = kakaoChatUrl(kakaoUrl)
+  if (!chat) return null
 
   return (
     <button
       type="button"
       onClick={() => {
         track('contact_click', { channel: 'kakao_chat', from: 'contact_section' })
-        openKakaoChat(kakao.chat)
+        openKakaoChat(chat)
       }}
       className={className}
     >
       <span className="flex items-center gap-2">
-        카카오톡 비즈니스 채팅
+        카카오톡으로 상담하기
         <span className="text-navy-foreground/60">(새 창)</span>
       </span>
-      <MessagesSquare className="size-5" />
+      <MessageCircle className="size-5" />
     </button>
   )
 }

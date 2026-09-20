@@ -85,6 +85,7 @@ export type SettingsContent = {
   phoneMain: string
   phoneMobile: string
   hours: string
+  /** 카카오톡 채널(비즈채널) 주소. 채널 홈을 넣으면 1:1 상담 주소로 자동 변환된다. */
   kakaoUrl: string
 }
 
@@ -353,7 +354,7 @@ export const DEFAULT_SETTINGS: SettingsContent = {
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   hours: '평일 09:00 – 18:00',
-  kakaoUrl: 'https://pf.kakao.com/_xoxbjJX/chat',
+  kakaoUrl: 'https://pf.kakao.com/_xoxbjJX',
 }
 
 export const CONTENT_DEFAULTS = {

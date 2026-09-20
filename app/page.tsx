@@ -44,7 +44,11 @@ export default async function Page() {
         phoneMobile={settings.phoneMobile}
         kakaoUrl={settings.kakaoUrl}
       />
-      <MobileContactBar phoneMobile={settings.phoneMobile} kakaoUrl={settings.kakaoUrl} />
+      <MobileContactBar
+        phoneMain={settings.phoneMain}
+        phoneMobile={settings.phoneMobile}
+        kakaoUrl={settings.kakaoUrl}
+      />
     </>
   )
 }

@@ -15,7 +15,11 @@ export function PageShell({ settings, children }: { settings: SettingsContent; c
         phoneMobile={settings.phoneMobile}
         kakaoUrl={settings.kakaoUrl}
       />
-      <MobileContactBar phoneMobile={settings.phoneMobile} kakaoUrl={settings.kakaoUrl} />
+      <MobileContactBar
+        phoneMain={settings.phoneMain}
+        phoneMobile={settings.phoneMobile}
+        kakaoUrl={settings.kakaoUrl}
+      />
     </>
   )
 }

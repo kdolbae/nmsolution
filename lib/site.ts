@@ -7,8 +7,15 @@
 
 import type { ServicesContent, SettingsContent } from '@/lib/content/defaults'
 
-/** 운영 도메인. 환경변수가 없어도 이 주소가 정식 주소로 쓰인다. */
-export const PRODUCTION_URL = 'https://nm-solution.co.kr'
+/**
+ * 운영 도메인. 환경변수가 없어도 이 주소가 정식 주소로 쓰인다.
+ *
+ * Vercel에서 `nm-solution.co.kr` 은 `www.nm-solution.co.kr` 로 308 영구이동하도록
+ * 설정돼 있다. 즉 실제로 열리는 주소는 www 쪽이다. canonical·sitemap·robots가
+ * 리다이렉트되는 주소를 가리키면 검색엔진이 사이트가 이전한 것으로 읽으므로,
+ * 여기서도 www를 정식 주소로 쓴다. Vercel에서 기본 도메인을 바꾸면 여기도 같이 바꾼다.
+ */
+export const PRODUCTION_URL = 'https://www.nm-solution.co.kr'
 
 export function siteUrl(): string {
   // 다른 도메인으로 띄울 때만 환경변수로 덮어쓴다

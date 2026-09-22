@@ -19,8 +19,9 @@ const geistMono = Geist_Mono({
 
 const SITE_NAME = '엔엠솔루션 NM SOLUTION'
 const TITLE = '공장 수리 전문 엔엠솔루션 | 철골·지붕·설비·배관·장비·크린룸'
+// 네이버는 검색 결과에 쓰는 설명을 80자 이내로 권고한다. 넘기면 잘려서 문장이 끊긴다.
 const DESCRIPTION =
-  '공장의 모든 수리를 한 팀이. 철골·지붕·벽체, 배관 수리, 탱크 용접 보수, 스텐 고압배관, 생산 장비 수리, 방음·흡음, 크린룸까지. 평택 고덕 기반 경기·충청권 공장 출동. 문의 당일 회신, 담당자 직통 010-2369-3691.'
+  '평택 고덕 기반 공장 개보수 전문. 철골·지붕·배관·탱크 용접·크린룸까지 한 팀이. 당일 회신 010-2369-3691'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),

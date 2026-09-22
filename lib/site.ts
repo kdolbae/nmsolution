@@ -41,7 +41,7 @@ export function siteUrl(): string {
  * `<meta name="naver-site-verification" content="여기">` 를 준다. 그 content 값만 넣는다.
  * 비어 있으면 태그를 아예 내보내지 않는다.
  */
-const NAVER_SITE_VERIFICATION = ''
+const NAVER_SITE_VERIFICATION = 'fa33b54b454ae7e0ebb1116a45a771f20cc3b343'
 
 /** 구글 서치콘솔 소유확인 코드. 네이버와 같은 방식이다. */
 const GOOGLE_SITE_VERIFICATION = ''

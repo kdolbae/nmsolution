@@ -60,7 +60,8 @@ export function Hero({ content }: { content: HomeContent['hero'] }) {
 
       {/* 개보수 범위 티커 */}
       <div className="absolute inset-x-0 bottom-0 hidden border-t border-navy-foreground/15 bg-navy/60 backdrop-blur lg:block">
-        <div className="mx-auto flex max-w-7xl items-center gap-0 divide-x divide-navy-foreground/15 px-8">
+        {/* 오른쪽 여백은 고정 상담 버튼이 마지막 항목을 가리지 않도록 비워 둔다 */}
+        <div className="mx-auto flex max-w-7xl items-center gap-0 divide-x divide-navy-foreground/15 pl-8 pr-44">
           {content.ticker.map((t, i) => (
             <a
               key={t}

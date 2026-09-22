@@ -27,6 +27,34 @@ export function siteUrl(): string {
   return 'http://localhost:3000'
 }
 
+/**
+ * 네이버 서치어드바이저 소유확인 코드.
+ *
+ * searchadvisor.naver.com → 웹마스터 도구 → 사이트 등록 → `HTML 태그` 방식을 고르면
+ * `<meta name="naver-site-verification" content="여기">` 를 준다. 그 content 값만 넣는다.
+ * 비어 있으면 태그를 아예 내보내지 않는다.
+ */
+const NAVER_SITE_VERIFICATION = ''
+
+/** 구글 서치콘솔 소유확인 코드. 네이버와 같은 방식이다. */
+const GOOGLE_SITE_VERIFICATION = ''
+
+/**
+ * 검색엔진 소유확인 태그. 값이 없는 엔진은 태그를 내보내지 않는다.
+ * 코드를 코드베이스에 두기 곤란하면 환경변수로 넣어도 된다.
+ */
+export function siteVerification(): Record<string, string> {
+  const entries: Record<string, string> = {}
+
+  const naver = process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION ?? NAVER_SITE_VERIFICATION
+  if (naver) entries['naver-site-verification'] = naver
+
+  const google = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? GOOGLE_SITE_VERIFICATION
+  if (google) entries['google-site-verification'] = google
+
+  return entries
+}
+
 /** 전화번호를 tel: 및 schema.org용 E.164 형태로 정규화 (예: 010-2369-3691 → +821023693691) */
 export function toE164(phone: string): string {
   const digits = phone.replace(/[^0-9]/g, '')

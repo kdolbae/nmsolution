@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Noto_Sans_KR } from 'next/font/google'
-import { siteUrl } from '@/lib/site'
+import { siteUrl, siteVerification } from '@/lib/site'
 import './globals.css'
 
 const notoSansKr = Noto_Sans_KR({
@@ -79,6 +79,7 @@ export const metadata: Metadata = {
     images: ['/images/hero-factory.png'],
   },
   robots: { index: true, follow: true },
+  verification: { other: siteVerification() },
 }
 
 export const viewport: Viewport = {

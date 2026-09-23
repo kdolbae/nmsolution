@@ -38,8 +38,16 @@ Vercel → 프로젝트 → Settings → Environment Variables 에 넣습니다.
 광고 소재의 연결 URL에 아래처럼 붙입니다. `utm_term` 이 키워드입니다.
 
 ```
-https://www.nm-solution.co.kr/services/recovery?utm_source=naver&utm_medium=cpc&utm_campaign=누수복구&utm_term=공장+지붕+누수
+https://www.nm-solution.co.kr/services/recovery?utm_source=naver&utm_medium=cpc&utm_campaign=누수복구&utm_content=NM-01
 ```
+
+네이버 검색광고는 연결 URL이 **소재 단위**라 키워드를 주소에 직접 못 박습니다. 대신
+검색광고 → 도구 → **자동 추적(Auto Tracking)** 을 켜면 클릭마다 `n_keyword`(키워드) ·
+`n_query`(실제 검색어) · `n_ad_group` 이 주소에 붙고, 이 값들을 키워드 자리에 그대로
+받습니다. **네이버 광고는 자동 추적을 반드시 켜세요** — 안 켜면 그룹까지만 알고
+어느 키워드였는지는 모릅니다.
+
+`utm` 없이 `n_media` 만 붙어 들어와도 네이버 유료 클릭으로 기록됩니다.
 
 | 값 | 넣는 것 |
 | --- | --- |

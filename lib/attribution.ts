@@ -71,17 +71,17 @@ export function readFromLocation(): Attribution {
   const referrer = document.referrer && !document.referrer.startsWith(window.location.origin) ? document.referrer : ''
   const utmSource = trim(params.get('utm_source'), 60)
 
+  const naverAd = params.has('n_media')
+
   return {
-    utmSource: utmSource || sourceFromReferrer(referrer),
-    utmMedium: trim(params.get('utm_medium'), 60),
+    utmSource: utmSource || (naverAd ? 'naver' : '') || sourceFromReferrer(referrer),
+    utmMedium: trim(params.get('utm_medium'), 60) || (naverAd ? 'cpc' : ''),
     utmCampaign: trim(params.get('utm_campaign'), 120),
-    utmTerm: trim(params.get('utm_term'), 120),
-    utmContent: trim(params.get('utm_content'), 120),
-    clickId:
-      trim(params.get('gclid'), 200) ||
-      trim(params.get('fbclid'), 200) ||
-      trim(params.get('n_ad_group'), 200) ||
-      '',
+    // 네이버 검색광고는 연결 URL 이 소재 단위라 키워드를 utm_term 으로 못 박는다.
+    // 대신 자동 추적을 켜면 `n_keyword` 로 실제 키워드가, `n_query` 로 검색어가 붙는다.
+    utmTerm: trim(params.get('utm_term'), 120) || trim(params.get('n_keyword'), 120) || trim(params.get('n_query'), 120),
+    utmContent: trim(params.get('utm_content'), 120) || trim(params.get('n_ad_group'), 120),
+    clickId: trim(params.get('gclid'), 200) || trim(params.get('fbclid'), 200) || trim(params.get('n_ad'), 200) || '',
     landingPath: (window.location.pathname + window.location.search).slice(0, 300),
     referrer: referrer.slice(0, 300),
     firstSeenAt: new Date().toISOString(),
@@ -122,7 +122,9 @@ export function captureAttribution(): Attribution {
 
   const existing = loadAttribution()
   const incoming = readFromLocation()
-  const hasUtm = new URLSearchParams(window.location.search).has('utm_source')
+  const params = new URLSearchParams(window.location.search)
+  // 네이버 광고 클릭은 utm 없이 n_media 만 붙어 올 수 있다. 그것도 유료 클릭으로 본다.
+  const hasUtm = params.has('utm_source') || params.has('n_media')
 
   if (!hasUtm && existing.firstSeenAt) return existing
 

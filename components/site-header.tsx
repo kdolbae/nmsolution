@@ -96,7 +96,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
             <Logo />
             <span
               className={cn(
-                'hidden items-center gap-2 border-l pl-4 text-xs font-semibold tracking-tight md:flex',
+                'hidden items-center gap-2 border-l pl-4 text-xs font-semibold tracking-tight md:flex lg:hidden xl:flex',
                 solid ? 'border-border text-muted-foreground' : 'border-navy-foreground/20 text-navy-foreground/70',
               )}
             >
@@ -105,7 +105,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
             </span>
           </div>
 
-          <nav className="hidden items-center gap-9 lg:flex" aria-label="주요 메뉴">
+          <nav className="hidden items-center gap-7 lg:flex xl:gap-9" aria-label="주요 메뉴">
             {nav.map((item) => (
               <Link
                 key={item.href}

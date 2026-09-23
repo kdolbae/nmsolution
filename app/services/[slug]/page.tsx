@@ -174,6 +174,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 </li>
               ))}
             </ul>
+            <p className="text-xs text-muted-foreground">이미지는 작업 범위를 설명하기 위한 예시입니다.</p>
           </div>
         </section>
       )}

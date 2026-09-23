@@ -1,6 +1,7 @@
 import { SiteHeader } from '@/components/site-header'
 import { Hero } from '@/components/hero'
 import { FactoryScope } from '@/components/factory-scope'
+import { SemiconductorFeature } from '@/components/semiconductor-feature'
 import { FactoryProcess } from '@/components/factory-process'
 import { WorkGallery } from '@/components/work-gallery'
 import { Projects } from '@/components/projects'
@@ -20,6 +21,7 @@ export default async function Page() {
     getContent('services'),
   ])
   const projects = settings.showProjects ? await getPublishedProjects() : []
+  const semiconductor = services.items.find((s) => s.slug === 'semiconductor')
 
   return (
     <>
@@ -32,6 +34,7 @@ export default async function Page() {
       <main>
         <Hero content={home.hero} />
         <FactoryScope content={home.scope} />
+        {semiconductor && <SemiconductorFeature item={semiconductor} />}
         <WorkGallery content={home.gallery} />
         <FactoryProcess content={home.process} />
         {settings.showProjects && <Projects projects={projects} />}

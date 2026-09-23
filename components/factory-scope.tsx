@@ -59,8 +59,8 @@ export function FactoryScope({ content, factory }: { content: HomeContent['scope
               All Work Items
             </p>
             <p className="mt-5 max-w-2xl text-pretty text-base leading-relaxed lg:text-lg">
-              부위별로 업체를 따로 찾지 않아도 됩니다. 공장 안에서 필요한 작업은 아래 항목까지 모두 직접
-              진행합니다.
+              문제가 생길 때마다 업체를 따로 찾지 않으셔도 됩니다. 공장에서 필요한 작업이라면 아래 항목까지 모두
+              진행해 드립니다.
             </p>
             <ul className="mt-6 flex flex-wrap gap-2" aria-label="전체 작업 항목">
               {content.extras.map((k) => (

@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
+import { MultilineText } from '@/components/multiline-text'
 import { getContent } from '@/lib/content/get'
 
 export const dynamic = 'force-dynamic'
@@ -146,9 +147,14 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       {item.areas && item.areas.length > 0 && (
         <section className="border-t border-border bg-secondary py-16 lg:py-24">
           <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 lg:px-8">
-            <div className="flex flex-col gap-3">
+            <div className="flex max-w-3xl flex-col gap-3">
               <h2 className="text-kicker text-muted-foreground">Areas</h2>
-              <p className="text-2xl font-bold tracking-tight lg:text-3xl">세부 분야</p>
+              <p className="text-2xl font-bold tracking-tight lg:text-3xl">
+                <MultilineText text={item.areasTitle || '세부 분야'} />
+              </p>
+              {item.areasDescription && (
+                <p className="text-pretty text-base leading-relaxed text-muted-foreground">{item.areasDescription}</p>
+              )}
             </div>
             <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
               {item.areas.map((a, i) => (

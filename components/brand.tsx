@@ -14,7 +14,6 @@ export const COMPANY = {
 /** 메인 내비게이션 — 공장 개보수 중심 */
 export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidden' }[] = [
   { label: '개보수 범위', href: '/#scope' },
-  { label: '반도체 설비', href: '/#semiconductor' },
   { label: '작업 사진', href: '/#works' },
   { label: '진행 프로세스', href: '/#process' },
   { label: '시공사례', href: '/#projects', hideWhen: 'projectsHidden' },
@@ -25,7 +24,6 @@ export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidde
 
 /** 헤더 배너에 노출되는 기타 사업분야 (사업소개 상세 페이지로 이동) */
 export const OTHER_SERVICES = [
-  { label: '반도체 공장 설비', href: '/services/semiconductor' },
   { label: '누수 피해복구', href: '/services/recovery' },
   { label: '단열 · 결로 · 곰팡이', href: '/services/insulation' },
   { label: '나노 · UV 코팅', href: '/services/coating' },

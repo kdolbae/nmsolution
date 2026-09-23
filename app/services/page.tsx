@@ -9,8 +9,9 @@ import { cn } from '@/lib/utils'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '사업소개 | 엔엠솔루션 NM SOLUTION',
+  title: '사업소개',
   description: '공장 개보수를 중심으로 누수 피해복구, 단열·곰팡이, 나노·UV 코팅, 코팅제 판매, 시공 교육까지.',
+  alternates: { canonical: '/services' },
 }
 
 export default async function ServicesPage() {

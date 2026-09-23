@@ -10,8 +10,18 @@ import { submitQuote } from '@/app/actions/quote'
 const FIELD =
   'h-12 w-full rounded-none border border-border bg-background px-4 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-electric focus-visible:ring-2 focus-visible:ring-electric/30'
 
-export function QuoteForm({ phoneMobile }: { phoneMobile: string }) {
-  const [categories, setCategories] = useState<string[]>([])
+export function QuoteForm({
+  phoneMobile,
+  initialCategories = [],
+  from = 'home',
+}: {
+  phoneMobile: string
+  /** 서비스 페이지에서 열면 해당 공종을 미리 골라 둔다 */
+  initialCategories?: string[]
+  /** 전환 집계용. 어느 페이지의 폼인지 */
+  from?: string
+}) {
+  const [categories, setCategories] = useState<string[]>(initialCategories)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
@@ -40,7 +50,7 @@ export function QuoteForm({ phoneMobile }: { phoneMobile: string }) {
     setPending(false)
     if (res.ok) {
       setDone(true)
-      track('quote_submitted', { categories: categories.join(',') || '미선택' })
+      track('quote_submitted', { categories: categories.join(',') || '미선택', from })
     } else {
       setError(res.error)
     }

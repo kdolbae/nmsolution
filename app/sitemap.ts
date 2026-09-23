@@ -17,7 +17,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${url}/services/${s.slug}`,
       lastModified: now,
       changeFrequency: 'monthly' as const,
-      priority: s.slug === 'factory' ? 0.9 : 0.7,
+      // 공장 개보수(본업)와 누수 피해복구(광고 랜딩)를 우선한다
+      priority: s.slug === 'factory' || s.slug === 'recovery' ? 0.9 : 0.7,
     })),
   ]
 }

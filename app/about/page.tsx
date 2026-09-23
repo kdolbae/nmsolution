@@ -6,8 +6,9 @@ import { MapPin, Phone, Smartphone, User } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: '회사소개 | 엔엠솔루션 NM SOLUTION',
+  title: '회사소개',
   description: '엔엠솔루션 대표 인사말과 회사 정보.',
+  alternates: { canonical: '/about' },
 }
 
 export default async function AboutPage() {

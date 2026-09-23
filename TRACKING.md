@@ -26,9 +26,13 @@ Vercel → 프로젝트 → Settings → Environment Variables 에 넣습니다.
 | `NEXT_PUBLIC_NAVER_WCS_ID` | 네이버 검색광고 → 도구 → 프리미엄 로그분석 (`wcs_add["wa"]` 값) | 네이버 광고 전환 집계 불가 |
 | `NEXT_PUBLIC_NAVER_CONV_TYPE_QUOTE` | 프리미엄 로그분석의 전환 유형 코드 | 기본값 `2` 로 나감 |
 | `NEXT_PUBLIC_NAVER_CONV_TYPE_CONTACT` | 위와 같음 | 기본값 `3` 으로 나감 |
+| `ADS_BOARD_TOKEN` | GitHub → Settings → Developer settings → 토큰. `kdolbae/nanomaster-ads` 에 **Actions: read and write** | 관리자 광고 탭의 [지금 업데이트] 단추만 안 됨 (아침 자동 수집은 그대로) |
+| `ADS_DASHBOARD_URL` | 상황판 주소를 옮겼을 때만 | 기본값 `https://kdolbae.github.io/nanomaster-ads-site/nmsolution/` |
 
 > 네이버 전환 유형 코드는 광고주 계정마다 다를 수 있습니다. 첫 전환이 잡힌 뒤 네이버 보고서의
 > 전환 유형 이름이 기대와 다르면 이 두 변수를 고칩니다.
+
+`ADS_BOARD_TOKEN` 은 **`NEXT_PUBLIC_` 이 아닙니다** — 브라우저로 나가면 안 되고 서버에서만 씁니다.
 
 메타 픽셀은 **엔엠솔루션 전용으로 새로 만들어야 합니다.** 기존 픽셀은 나노마스터 사이트 것이라
 같이 쓰면 두 회사 방문자가 섞입니다.
@@ -66,3 +70,20 @@ https://www.nm-solution.co.kr/services/recovery?utm_source=naver&utm_medium=cpc&
 - 전화 클릭 · 카카오톡 상담 · 견적 접수가 매체에 전환으로 전달됩니다 (`lib/tracking.ts`).
   견적 폼을 **여는** 것은 아직 문의가 아니므로 전환으로 보내지 않습니다.
 - 관리자 → 견적 문의 목록에 `유입` 줄이 표시됩니다. 추적을 깔기 전에 들어온 문의는 비어 있습니다.
+
+---
+
+## 관리자 광고 탭 (`/admin/ads`)
+
+로그인 후 왼쪽 메뉴의 **광고**입니다. 세 덩어리로 되어 있습니다.
+
+1. **문의를 가져온 키워드** — 최근 30일 견적 문의를 유입 출처로 묶은 표입니다. 이 사이트의
+   `quote_requests` 를 그대로 읽으므로 위 1번(열 추가)이 끝나 있어야 채워집니다. 열이 아직
+   없으면 표만 비고 화면은 정상으로 뜹니다.
+2. **광고 상황판** — 광고비·노출·클릭·순위. 이 사이트가 만드는 것이 아니라
+   `kdolbae/nanomaster-ads` 워크플로가 네이버 API 에서 받아 구운 정적 페이지를 끼운 것입니다.
+   매일 06:35 에 전날치가 들어옵니다. **[지금 업데이트]** 는 그 워크플로를 바로 부릅니다
+   (1~2분 소요, `ADS_BOARD_TOKEN` 필요).
+3. **접속 정보** — 상황판·네이버 검색광고·도구 주소. **아이디·비밀번호와 API 키는 여기 적지 않습니다.**
+
+나노마스터와 엔엠솔루션은 광고계정이 아예 달라 상황판 주소도 갈립니다(도구에서 `--brand nmsolution`).

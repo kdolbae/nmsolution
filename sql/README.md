@@ -7,8 +7,8 @@
 
 | 상황 | 실행할 파일 |
 | --- | --- |
-| **A. 이 사이트 전용 DB를 쓴다** | `001` → `002` |
-| **B. 다른 서비스와 DB를 함께 쓴다** | `003` → `002` → `004` |
+| **A. 이 사이트 전용 DB를 쓴다** | `001` → `002` → `005` |
+| **B. 다른 서비스와 DB를 함께 쓴다** | `003` → `002` → `004` → `005` |
 
 ---
 
@@ -18,6 +18,7 @@
 | --- | --- | --- |
 | `001_quote_requests.sql` | 견적 문의 접수 테이블 생성 | 견적 폼이 접수되지 않음 |
 | `002_seed_projects.sql` | 시공사례 18건 등록 | 시공사례가 비어 있음 |
+| `005_quote_attribution.sql` | 견적 문의에 광고 유입 출처 열 추가 | **어느 광고에서 온 문의인지 알 수 없음 (나중에 소급 불가)** |
 
 ```bash
 export DATABASE_URL="여기에 연결 문자열"
@@ -42,7 +43,8 @@ pnpm db:setup
 
 ### 2) 시공사례 등록
 
-SQL 편집기에서 아래를 먼저 실행한 뒤 `002_seed_projects.sql` 을 실행합니다.
+SQL 편집기에서 아래를 먼저 실행한 뒤 `002_seed_projects.sql` 과
+`005_quote_attribution.sql` 을 실행합니다.
 
 ```sql
 SET search_path TO nmsolution;
@@ -120,12 +122,16 @@ PostgreSQL 16 에서 실제로 실행해 확인했습니다.
 **A안**
 
 - `001` 실행 후 `quote_requests` 테이블과 인덱스 2개 생성, 재실행 시 오류 없음
+- `005` 실행 후 유입 출처 열 9개와 인덱스 1개 추가, 재실행 시 오류 없음
+  (기존 문의 행은 빈 문자열로 채워지고 `first_seen_at` 은 NULL 로 남음)
 - `002` 실행 후 `INSERT 0 18`, 재실행 시 `INSERT 0 0`
 - 앱 연결 후 시공사례 18건이 6개 공종 필터와 함께 표시, 견적 폼 제출 저장 확인
 
 **B안** — `public` 에 같은 이름의 `projects` 테이블이 있는 DB에서 검증
 
 - `003` 실행 후 테이블 7개가 모두 `nmsolution` 에만 생성됨
+- `SET search_path TO nmsolution;` 뒤 `005` 실행 시 유입 출처 열이 `nmsolution.quote_requests`
+  에만 추가되고, `public` 에 같은 이름의 테이블이 있어도 그쪽은 변하지 않음
 - 시공사례 18건이 `nmsolution.projects` 에만 등록되고 `public.projects` 는 그대로
 - `search_path` 를 넣은 연결 문자열만으로 **앱 코드 수정 없이** 동작
 - 앱에서 견적 폼을 제출한 뒤에도 `public` 테이블 수는 그대로(2개), 다른 서비스

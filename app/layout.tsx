@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Noto_Sans_KR } from 'next/font/google'
+import { TrackingScripts } from '@/components/tracking-scripts'
 import { siteUrl, siteVerification } from '@/lib/site'
 import './globals.css'
 
@@ -97,6 +98,7 @@ export default function RootLayout({
     <html lang="ko" className={`bg-background ${notoSansKr.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
+        <TrackingScripts />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

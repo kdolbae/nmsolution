@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FileText, MessageCircle, Phone, Plus, Smartphone, X } from 'lucide-react'
 import { track } from '@vercel/analytics'
+import { reportConversion } from '@/lib/tracking'
 import { cn } from '@/lib/utils'
 import { kakaoChatUrl, openKakaoChat } from '@/lib/kakao'
 
@@ -17,6 +18,18 @@ type Channel = {
   highlight?: boolean
   /** 전환 집계용 이름 */
   event: string
+}
+
+/**
+ * 연락 수단 클릭 1건을 집계한다.
+ *
+ * Vercel Analytics 는 사람이 보는 용도, `reportConversion` 은 광고 매체가 배우는 용도다.
+ * 견적 폼을 거치지 않고 바로 전화하는 손님이 많으므로 이 클릭이 곧 전환이다.
+ * 견적 폼 열기(quote_open)는 아직 문의가 아니므로 매체에는 보내지 않는다.
+ */
+function contactClick(channel: string, from: string) {
+  track('contact_click', { channel, from })
+  if (channel !== 'quote_open') reportConversion('contact', { channel, from })
 }
 
 function channels(phoneMain: string, phoneMobile: string, kakaoUrl: string): Channel[] {
@@ -90,7 +103,7 @@ export function FloatingContact({
                   <button
                     type="button"
                     onClick={() => {
-                      track('contact_click', { channel: c.event, from: 'floating' })
+                      contactClick(c.event, 'floating')
                       setOpen(false)
                       openKakaoChat(c.popup!)
                     }}
@@ -105,7 +118,7 @@ export function FloatingContact({
                       ? { target: '_blank', rel: 'noopener noreferrer' }
                       : {})}
                     onClick={() => {
-                      track('contact_click', { channel: c.event, from: 'floating' })
+                      contactClick(c.event, 'floating')
                       setOpen(false)
                     }}
                     className={className}
@@ -161,7 +174,7 @@ export function MobileContactBar({
       <div className="grid grid-cols-4">
         <a
           href={`tel:${phoneMobile}`}
-          onClick={() => track('contact_click', { channel: 'call_mobile', from: 'mobile_bar' })}
+          onClick={() => contactClick('call_mobile', 'mobile_bar')}
           className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-electric"
         >
           <Smartphone className="size-5" strokeWidth={1.75} />
@@ -169,7 +182,7 @@ export function MobileContactBar({
         </a>
         <a
           href={`tel:${phoneMain}`}
-          onClick={() => track('contact_click', { channel: 'call_main', from: 'mobile_bar' })}
+          onClick={() => contactClick('call_main', 'mobile_bar')}
           className={CELL}
         >
           <Phone className="size-5" strokeWidth={1.75} />
@@ -180,7 +193,7 @@ export function MobileContactBar({
           href={chat || '/#quote'}
           target={chat ? '_blank' : undefined}
           rel={chat ? 'noopener noreferrer' : undefined}
-          onClick={() => track('contact_click', { channel: 'kakao_chat', from: 'mobile_bar' })}
+          onClick={() => contactClick('kakao_chat', 'mobile_bar')}
           className={CELL}
         >
           <MessageCircle className="size-5" strokeWidth={1.75} />
@@ -188,7 +201,7 @@ export function MobileContactBar({
         </a>
         <a
           href="/#quote"
-          onClick={() => track('contact_click', { channel: 'quote_open', from: 'mobile_bar' })}
+          onClick={() => contactClick('quote_open', 'mobile_bar')}
           className="flex h-16 flex-col items-center justify-center gap-1 bg-navy text-[11px] font-semibold text-navy-foreground"
         >
           <FileText className="size-5" strokeWidth={1.75} />
@@ -208,7 +221,7 @@ export function KakaoChatButton({ kakaoUrl, className }: { kakaoUrl: string; cla
     <button
       type="button"
       onClick={() => {
-        track('contact_click', { channel: 'kakao_chat', from: 'contact_section' })
+        contactClick('kakao_chat', 'contact_section')
         openKakaoChat(chat)
       }}
       className={className}

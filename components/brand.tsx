@@ -24,6 +24,7 @@ export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidde
 
 /** 헤더 배너에 노출되는 기타 사업분야 (사업소개 상세 페이지로 이동) */
 export const OTHER_SERVICES = [
+  { label: '반도체 공장 설비', href: '/services/semiconductor' },
   { label: '누수 피해복구', href: '/services/recovery' },
   { label: '단열 · 결로 · 곰팡이', href: '/services/insulation' },
   { label: '나노 · UV 코팅', href: '/services/coating' },

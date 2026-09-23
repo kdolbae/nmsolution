@@ -58,6 +58,14 @@ export type ServiceItem = {
   image: string
   points: string[]
   targets: string[]
+  /** 상세 페이지에 사진 카드로 보여줄 세부 분야. 비어 있으면 섹션이 나오지 않는다. */
+  areas?: ServiceArea[]
+}
+
+export type ServiceArea = {
+  title: string
+  description: string
+  image: string
 }
 
 export type ServicesContent = {
@@ -151,7 +159,9 @@ export const DEFAULT_HOME: HomeContent = {
       '내부 단열',
       '방음 · 흡음',
       '크린룸',
+      '반도체 공장 설비',
       '공압설비',
+      '냉각수 배관',
       '배관설비',
       '배관 수리',
       '스텐 고압배관',
@@ -256,7 +266,7 @@ export const DEFAULT_SERVICES: ServicesContent = {
   kicker: 'Business Areas',
   title: '공장 개보수를 중심으로,\n공간의 문제를 함께 해결합니다.',
   description:
-    '엔엠솔루션의 핵심은 공장 개보수입니다. 여기에 현장에서 축적한 기술을 바탕으로 누수 복구, 단열·곰팡이, 코팅 솔루션과 제품·교육 사업을 함께 운영합니다.',
+    '엔엠솔루션의 핵심은 공장 개보수입니다. 반도체 공장의 크린룸·공압·냉각수·배관설비까지 맡고, 현장에서 축적한 기술을 바탕으로 누수 복구, 단열·곰팡이, 코팅 솔루션과 제품·교육 사업을 함께 운영합니다.',
   items: [
     {
       slug: 'factory',
@@ -276,6 +286,57 @@ export const DEFAULT_SERVICES: ServicesContent = {
         '가동 중 · 주말 · 야간 시공 협의',
       ],
       targets: ['제조 · 물류 · 식품공장', '창고 · 공장 부속 사무동', '노후 판넬 건축물'],
+    },
+    {
+      slug: 'semiconductor',
+      name: '반도체 공장 설비',
+      en: 'Semiconductor Fab Facilities',
+      summary: '반도체 공장 개보수, 크린룸, 방음, 공압, 냉각수, 배관설비까지.',
+      description:
+        '반도체와 관련 협력사 공장은 청정도, 진동, 온도, 가스와 유틸리티 공급이 한 가지만 흔들려도 라인이 멈춥니다. 엔엠솔루션은 공장 개보수와 크린룸 구축·보수, 방음·흡음, 공압(CDA) 배관, 공정 냉각수(PCW) 배관, 각종 유틸리티 배관을 한 팀이 맡습니다. 가동 중인 라인은 구간을 나눠 셧다운 일정에 맞추고, 현장 반입 절차와 안전 기준을 먼저 확인한 뒤 들어갑니다.',
+      image: '/images/industrial.png',
+      points: [
+        '반도체 · 협력사 공장 개보수',
+        '크린룸 판넬 · 파티션 구축 및 보수',
+        '방음 · 흡음 · 설비 소음 저감',
+        '공압(CDA) 배관 신설 · 증설',
+        '공정 냉각수(PCW) 배관 · 누수 보수',
+        '스텐 · 유틸리티 배관 제작 · 설치',
+        '셧다운 · 주말 · 야간 시공 협의',
+      ],
+      targets: ['반도체 · 디스플레이 공장', '장비 · 소재 · 부품 협력사', '전자 · 정밀 제조 공장'],
+      areas: [
+        {
+          title: '공장 개보수',
+          description: '생산동·유틸리티동의 철골, 지붕, 벽체, 바닥 보수와 레이아웃 변경. 라인 일정에 맞춰 구간별로 진행합니다.',
+          image: '/images/factory-survey.png',
+        },
+        {
+          title: '크린룸',
+          description: '크린룸 판넬과 파티션, 출입부, 천장 구축과 보수. 요구 청정도와 기류를 먼저 확인하고 시공합니다.',
+          image: '/images/insulation.png',
+        },
+        {
+          title: '방음 · 흡음',
+          description: '컴프레서·칠러·배기 설비 주변 소음을 줄이는 방음벽, 흡음 판넬, 설비 방음 커버를 시공합니다.',
+          image: '/images/gallery/g-panel-hall.jpg',
+        },
+        {
+          title: '공압 설비',
+          description: 'CDA(압축공기) 메인 배관과 분기 배관 신설·증설, 드롭 배관과 레귤레이터, 압력 손실·누기 보수.',
+          image: '/images/gallery/g-hp-gas.jpg',
+        },
+        {
+          title: '냉각수 배관',
+          description: '공정 냉각수(PCW)·냉각탑 순환 배관 신설과 교체, 보온, 누수 보수. 가동 중 라인은 셧다운 일정에 맞춥니다.',
+          image: '/images/gallery/g-pipe-line.jpg',
+        },
+        {
+          title: '배관설비',
+          description: '스텐 고압배관, 유틸리티·배수 배관 제작과 설치, 서포트·랙 제작까지 현장 치수에 맞춰 직접 만듭니다.',
+          image: '/images/gallery/g-pipe-sleeve.jpg',
+        },
+      ],
     },
     {
       slug: 'recovery',

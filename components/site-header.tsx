@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Menu, X, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { COMPANY, Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
@@ -10,12 +10,54 @@ type Props = {
   /** true면 스크롤 전에도 흰 배경 (내부 페이지용) */
   solidByDefault?: boolean
   showProjects?: boolean
+  /** true면 스크롤과 상관없이 잠깐 보였다가 숨고, 마우스를 화면 위쪽에 올리거나 스크롤을 올리면 나온다 */
+  autoHide?: boolean
 }
 
-export function SiteHeader({ solidByDefault = false, showProjects = true }: Props) {
+export function SiteHeader({ solidByDefault = false, showProjects = true, autoHide = false }: Props) {
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const [peek, setPeek] = useState(true)
   const [open, setOpen] = useState(false)
+  const peekTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // autoHide: 처음 잠깐 보여 주고 숨긴다. 화면 위쪽에 마우스를 올리거나 스크롤을 올리면 다시 보여 준다
+  useEffect(() => {
+    if (!autoHide) return
+    const hideLater = (ms: number) => {
+      clearTimeout(peekTimer.current)
+      peekTimer.current = setTimeout(() => setPeek(false), ms)
+    }
+    const show = () => {
+      clearTimeout(peekTimer.current)
+      setPeek(true)
+    }
+    let lastY = window.scrollY
+    const onMove = (e: MouseEvent) => {
+      if (e.clientY < 100) show()
+      else if (e.clientY > 180) hideLater(300)
+    }
+    const onScroll = () => {
+      const y = window.scrollY
+      if (Math.abs(y - lastY) < 6) return
+      if (y < lastY) {
+        show()
+        hideLater(2000)
+      } else {
+        clearTimeout(peekTimer.current)
+        setPeek(false)
+      }
+      lastY = y
+    }
+    hideLater(1500)
+    window.addEventListener('mousemove', onMove, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      clearTimeout(peekTimer.current)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [autoHide])
 
   // 내릴 때는 위로 밀어 숨기고, 조금이라도 올리면 다시 내려온다
   useEffect(() => {
@@ -46,7 +88,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
     <header
       className={cn(
         'fixed inset-x-0 top-0 z-50 transition-transform duration-300 ease-out',
-        hidden && !open && '-translate-y-full',
+        (autoHide ? !peek : hidden) && !open && '-translate-y-full',
       )}
     >
       {/* 기타 사업분야 배너 */}

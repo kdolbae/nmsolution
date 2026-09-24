@@ -14,7 +14,7 @@ export default async function AboutPage() {
   const [about, settings] = await Promise.all([getContent('about'), getContent('settings')])
 
   return (
-    <PageShell settings={settings}>
+    <PageShell settings={settings} immersive>
       {/* 대표 사진을 넓게 깔고, 인사말 쪽으로 페이드되게 겹친다 */}
       <section className="relative isolate overflow-hidden bg-charcoal text-charcoal-foreground">
         {about.ceoImage && (

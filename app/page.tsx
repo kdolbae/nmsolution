@@ -20,6 +20,7 @@ export default async function Page() {
     getContent('services'),
   ])
   const projects = settings.showProjects ? await getPublishedProjects() : []
+  const factory = services.items.find((s) => s.slug === 'factory')
 
   return (
     <>
@@ -31,7 +32,7 @@ export default async function Page() {
       <SiteHeader showProjects={settings.showProjects} />
       <main>
         <Hero content={home.hero} />
-        <FactoryScope content={home.scope} />
+        <FactoryScope content={home.scope} factory={factory} />
         <WorkGallery content={home.gallery} />
         <FactoryProcess content={home.process} />
         {settings.showProjects && <Projects projects={projects} />}

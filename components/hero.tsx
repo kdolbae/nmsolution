@@ -68,8 +68,8 @@ export function Hero({ content }: { content: HomeContent['hero'] }) {
               href="#scope"
               className="flex flex-1 items-center gap-3 py-4 pl-5 transition-colors first:pl-0 hover:text-electric"
             >
-              <span className="font-mono text-[11px] text-electric">0{i + 1}</span>
-              <span className="text-sm font-medium text-navy-foreground/80">{t}</span>
+              <span className="whitespace-nowrap font-mono text-[11px] text-electric">0{i + 1}</span>
+              <span className="whitespace-nowrap text-sm font-medium text-navy-foreground/80">{t}</span>
             </a>
           ))}
         </div>

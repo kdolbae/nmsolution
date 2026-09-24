@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
+import { MultilineText } from '@/components/multiline-text'
 import { getContent } from '@/lib/content/get'
 
 export const dynamic = 'force-dynamic'
@@ -142,6 +143,48 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           </aside>
         </div>
       </section>
+
+      {/* 세부 분야 (areas가 있는 사업만) */}
+      {item.areas && item.areas.length > 0 && (
+        <section className="border-t border-border bg-secondary py-16 lg:py-24">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 lg:px-8">
+            <div className="flex max-w-3xl flex-col gap-3">
+              <h2 className="text-kicker text-muted-foreground">Areas</h2>
+              <p className="text-2xl font-bold tracking-tight lg:text-3xl">
+                <MultilineText text={item.areasTitle || '세부 분야'} />
+              </p>
+              {item.areasDescription && (
+                <p className="text-pretty text-base leading-relaxed text-muted-foreground">{item.areasDescription}</p>
+              )}
+            </div>
+            <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+              {item.areas.map((a, i) => (
+                <li key={a.title} className="flex flex-col bg-background">
+                  {a.image && (
+                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                      <Image
+                        src={a.image}
+                        alt={a.title}
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                      />
+                      <span className="absolute left-4 top-4 bg-background/90 px-2 py-1 font-mono text-[11px] font-semibold">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-1 flex-col gap-2 p-6">
+                    <h3 className="text-lg font-bold tracking-tight">{a.title}</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{a.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">이미지는 작업 범위를 설명하기 위한 예시입니다.</p>
+          </div>
+        </section>
+      )}
     </PageShell>
   )
 }

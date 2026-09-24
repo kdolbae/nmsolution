@@ -2,9 +2,10 @@ import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { SectionHeading } from './section-heading'
 import { MultilineText } from './multiline-text'
-import type { HomeContent } from '@/lib/content/defaults'
+import { SemiconductorFeature } from './semiconductor-feature'
+import type { HomeContent, ServiceItem } from '@/lib/content/defaults'
 
-export function FactoryScope({ content }: { content: HomeContent['scope'] }) {
+export function FactoryScope({ content, factory }: { content: HomeContent['scope']; factory?: ServiceItem }) {
   return (
     <section id="scope" className="bg-background py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -48,6 +49,9 @@ export function FactoryScope({ content }: { content: HomeContent['scope'] }) {
           ))}
         </ul>
 
+        {/* 반도체 공장 설비: 공장 개보수의 세부 분야로 같은 섹션 안에 보여준다 */}
+        {factory && <SemiconductorFeature item={factory} />}
+
         {content.extras.length > 0 && (
           <div className="mt-12 border-t border-border pt-10">
             <p className="text-kicker flex items-center gap-3 text-muted-foreground">
@@ -55,8 +59,8 @@ export function FactoryScope({ content }: { content: HomeContent['scope'] }) {
               All Work Items
             </p>
             <p className="mt-5 max-w-2xl text-pretty text-base leading-relaxed lg:text-lg">
-              부위별로 업체를 따로 찾지 않아도 됩니다. 공장 안에서 필요한 작업은 아래 항목까지 모두 직접
-              진행합니다.
+              문제가 생길 때마다 업체를 따로 찾지 않으셔도 됩니다. 공장에서 필요한 작업이라면 아래 항목까지 모두
+              진행해 드립니다.
             </p>
             <ul className="mt-6 flex flex-wrap gap-2" aria-label="전체 작업 항목">
               {content.extras.map((k) => (

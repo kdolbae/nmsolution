@@ -14,10 +14,19 @@ type Props = {
 
 export function SiteHeader({ solidByDefault = false, showProjects = true }: Props) {
   const [scrolled, setScrolled] = useState(false)
+  const [hidden, setHidden] = useState(false)
   const [open, setOpen] = useState(false)
 
+  // 내릴 때는 위로 밀어 숨기고, 조금이라도 올리면 다시 내려온다
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24)
+    let lastY = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      setScrolled(y > 24)
+      if (Math.abs(y - lastY) < 6) return
+      setHidden(y > lastY && y > 160)
+      lastY = y
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -34,7 +43,12 @@ export function SiteHeader({ solidByDefault = false, showProjects = true }: Prop
   const nav = NAV_ITEMS.filter((n) => !(n.hideWhen === 'projectsHidden' && !showProjects))
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
+    <header
+      className={cn(
+        'fixed inset-x-0 top-0 z-50 transition-transform duration-300 ease-out',
+        hidden && !open && '-translate-y-full',
+      )}
+    >
       {/* 기타 사업분야 배너 */}
       <div
         className={cn(

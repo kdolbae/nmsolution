@@ -25,7 +25,7 @@ export default async function AboutPage() {
               <img
                 src={about.ceoImage}
                 alt={`${about.ceoTitle} ${about.ceoName}`}
-                className="absolute inset-0 h-full w-full object-cover object-[46%_50%]"
+                className="absolute inset-0 h-full w-full object-cover object-[40%_50%]"
               />
               <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-charcoal to-transparent" aria-hidden />
             </div>

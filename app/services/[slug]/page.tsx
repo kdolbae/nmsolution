@@ -11,8 +11,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const services = await getContent('services')
   const item = services.items.find((s) => s.slug === slug)
-  if (!item) return { title: '사업소개 | 엔엠솔루션' }
-  return { title: `${item.name} | 엔엠솔루션 NM SOLUTION`, description: item.summary }
+  if (!item) return { title: '사업소개' }
+  // 제목 뒤 회사명은 layout의 title.template이 붙인다
+  return { title: item.name, description: item.summary, alternates: { canonical: `/services/${slug}` } }
 }
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {

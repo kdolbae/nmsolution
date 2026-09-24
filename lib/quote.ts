@@ -5,6 +5,7 @@ export const QUOTE_CATEGORIES = [
   '바닥 · 단열 · 도장',
   '크린룸 · 방음 · 흡음',
   '장비 수리',
+  '누수 · 피해복구',
   '기타 · 모르겠음',
 ] as const
 

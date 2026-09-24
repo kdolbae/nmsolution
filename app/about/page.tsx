@@ -30,7 +30,7 @@ export default async function AboutPage() {
               <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-charcoal to-transparent" aria-hidden />
             </div>
             {/* 데스크톱: 왼쪽 위에 원래 비율 그대로 넓게, 오른쪽 인사말로 페이드 */}
-            <div className="absolute left-0 top-0 hidden w-[72%] lg:block" aria-hidden>
+            <div className="absolute left-0 top-0 hidden w-[min(72vw,1400px)] lg:block" aria-hidden>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={about.ceoImage} alt="" className="block h-auto w-full" />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-charcoal/25 to-charcoal" />
@@ -38,8 +38,8 @@ export default async function AboutPage() {
           </>
         )}
 
-        <div className="relative mx-auto grid max-w-7xl grid-cols-1 px-5 pb-20 lg:min-h-[820px] lg:grid-cols-12 lg:px-8 lg:py-24">
-          <article className="-mt-10 flex flex-col gap-8 lg:col-span-6 lg:col-start-7 lg:mt-0">
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 px-5 pb-20 lg:min-h-[calc(min(72vw,1400px)*0.823)] lg:grid-cols-12 lg:px-8 lg:py-24">
+          <article className="-mt-10 flex flex-col gap-8 lg:col-span-6 lg:col-start-7 lg:mt-0 lg:self-center">
             <p className="text-kicker flex items-center gap-3 text-charcoal-foreground/60">
               <span className="h-px w-8 bg-electric" aria-hidden />
               {about.kicker}

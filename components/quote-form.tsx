@@ -5,6 +5,8 @@ import { track } from '@vercel/analytics'
 import { ArrowRight, Check, Loader2, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QUOTE_CATEGORIES } from '@/lib/quote'
+import { loadAttribution } from '@/lib/attribution'
+import { reportConversion } from '@/lib/tracking'
 import { submitQuote } from '@/app/actions/quote'
 
 const FIELD =
@@ -45,12 +47,15 @@ export function QuoteForm({
       message: String(fd.get('message') ?? ''),
       website: String(fd.get('website') ?? ''),
       categories,
+      // 어느 광고에서 온 방문인지를 접수와 함께 남긴다 (`lib/attribution.ts`)
+      attribution: loadAttribution(),
     })
 
     setPending(false)
     if (res.ok) {
       setDone(true)
       track('quote_submitted', { categories: categories.join(',') || '미선택', from })
+      reportConversion('quote', { categories: categories.join(',') || '미선택', from })
     } else {
       setError(res.error)
     }

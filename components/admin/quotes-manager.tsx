@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Phone, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QUOTE_STATUSES, statusLabel } from '@/lib/quote'
+import { attributionSummary } from '@/lib/attribution'
 import { deleteQuote, updateQuoteMemo, updateQuoteStatus } from '@/app/actions/admin'
 import type { QuoteRequest } from '@/lib/db/schema'
 
@@ -91,7 +92,7 @@ export function QuotesManager({ quotes }: { quotes: QuoteRequest[] }) {
                 </span>
               </div>
 
-              {(q.location || q.categories) && (
+              {(q.location || q.categories || attributionSummary(q)) && (
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
                   {q.location && (
                     <>
@@ -103,6 +104,13 @@ export function QuotesManager({ quotes }: { quotes: QuoteRequest[] }) {
                     <>
                       <dt className="text-muted-foreground">작업</dt>
                       <dd>{q.categories.split(',').join(' · ')}</dd>
+                    </>
+                  )}
+                  {/* 어느 광고에서 왔는지. 추적을 깔기 전에 들어온 문의는 비어 있다. */}
+                  {attributionSummary(q) && (
+                    <>
+                      <dt className="text-muted-foreground">유입</dt>
+                      <dd>{attributionSummary(q)}</dd>
                     </>
                   )}
                 </dl>

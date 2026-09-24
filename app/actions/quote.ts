@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { QUOTE_CATEGORIES } from '@/lib/quote'
+import type { Attribution } from '@/lib/attribution'
 import { headers } from 'next/headers'
 
 export type QuoteInput = {
@@ -14,6 +15,8 @@ export type QuoteInput = {
   message: string
   /** 스팸 봇이 채우는 숨김 필드. 사람은 비워 둔다. */
   website?: string
+  /** 어느 광고에서 온 방문인지. 브라우저 쿠키에서 읽어 보낸다. */
+  attribution?: Partial<Attribution>
 }
 
 export type QuoteResult = { ok: true } | { ok: false; error: string }
@@ -45,6 +48,24 @@ function tooSoon(key: string): boolean {
   return false
 }
 
+/** 브라우저가 보낸 유입 정보를 길이만 잘라 저장 형태로 바꾼다. 없으면 빈 값이 들어간다. */
+function attributionValues(a: Partial<Attribution> | undefined) {
+  const s = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+  // 값을 못 믿을 이유는 없지만 클라이언트가 보낸 문자열이므로 길이는 잘라 둔다
+  const firstSeen = typeof a?.firstSeenAt === 'string' ? new Date(a.firstSeenAt) : null
+  return {
+    utmSource: s(a?.utmSource, 60),
+    utmMedium: s(a?.utmMedium, 60),
+    utmCampaign: s(a?.utmCampaign, 120),
+    utmTerm: s(a?.utmTerm, 120),
+    utmContent: s(a?.utmContent, 120),
+    clickId: s(a?.clickId, 200),
+    landingPath: s(a?.landingPath, 300),
+    referrer: s(a?.referrer, 300),
+    firstSeenAt: firstSeen && !Number.isNaN(firstSeen.getTime()) ? firstSeen : null,
+  }
+}
+
 export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
   // 봇이 채운 숨김 필드가 있으면 조용히 성공 처리한다 (재시도를 유도하지 않는다)
   if (input.website) return { ok: true }
@@ -74,6 +95,7 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
       location: (input.location ?? '').trim().slice(0, 200),
       categories: categories.join(','),
       message: message,
+      ...attributionValues(input.attribution),
     })
 
     return { ok: true }

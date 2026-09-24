@@ -1,5 +1,12 @@
 import { Fragment } from 'react'
 
+/** **굵게** 표시를 <strong>으로 렌더링 */
+function Emphasis({ text }: { text: string }) {
+  const parts = text.split(/\*\*(.+?)\*\*/)
+  if (parts.length === 1) return <>{text}</>
+  return <>{parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))}</>
+}
+
 /** "\n" 으로 구분된 문자열을 <br />로 렌더링 */
 export function MultilineText({ text }: { text: string }) {
   const lines = text.split('\n')
@@ -7,7 +14,7 @@ export function MultilineText({ text }: { text: string }) {
     <>
       {lines.map((line, i) => (
         <Fragment key={i}>
-          {line}
+          <Emphasis text={line} />
           {i < lines.length - 1 && <br />}
         </Fragment>
       ))}

@@ -3,12 +3,23 @@ import { SiteFooter } from './site-footer'
 import { FloatingContact, MobileContactBar } from './contact-widgets'
 import type { SettingsContent } from '@/lib/content/defaults'
 
-/** 내부 페이지 공통 레이아웃 (흰 헤더 + 푸터 + 상담 위젯) */
-export function PageShell({ settings, children }: { settings: SettingsContent; children: React.ReactNode }) {
+/**
+ * 내부 페이지 공통 레이아웃 (흰 헤더 + 푸터 + 상담 위젯)
+ * immersive: 헤더를 자동으로 숨기고 본문을 화면 맨 위부터 채운다 (회사소개처럼 사진이 주인공인 페이지)
+ */
+export function PageShell({
+  settings,
+  immersive = false,
+  children,
+}: {
+  settings: SettingsContent
+  immersive?: boolean
+  children: React.ReactNode
+}) {
   return (
     <>
-      <SiteHeader solidByDefault showProjects={settings.showProjects} />
-      <main className="pt-16 lg:pt-[7.5rem]">{children}</main>
+      <SiteHeader solidByDefault autoHide={immersive} showProjects={settings.showProjects} />
+      <main className={immersive ? undefined : 'pt-16 lg:pt-[7.5rem]'}>{children}</main>
       <SiteFooter settings={settings} />
       <FloatingContact
         phoneMain={settings.phoneMain}

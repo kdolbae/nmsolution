@@ -48,6 +48,29 @@ export function ServicesEditor({ initial }: { initial: ServicesContent }) {
                 <StringListField label="주요 작업" values={s.points} onChange={(points) => u({ points })} />
                 <StringListField label="대상 고객" values={s.targets} onChange={(targets) => u({ targets })} />
               </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium">세부 분야 (사진 카드)</p>
+                <p className="text-xs text-muted-foreground">
+                  상세 페이지 아래에 사진과 함께 표시됩니다. 공장 개보수의 세부 분야는 메인 페이지 개보수 범위에도 나옵니다. 비워두면 표시되지 않습니다.
+                </p>
+                <Field label="세부 분야 제목" multiline rows={2} value={s.areasTitle ?? ''} onChange={(v) => u({ areasTitle: v })} />
+                <Field label="세부 분야 설명" multiline rows={3} value={s.areasDescription ?? ''} onChange={(v) => u({ areasDescription: v })} />
+                <Field label="세부 분야 대표 이미지 (메인 페이지)" mono value={s.areasImage ?? ''} onChange={(v) => u({ areasImage: v })} />
+                <ListEditor
+                  items={s.areas ?? []}
+                  onChange={(areas) => u({ areas })}
+                  title={(a) => a.title}
+                  addLabel="세부 분야 추가"
+                  create={() => ({ title: '', description: '', image: '' })}
+                  render={(a, ua) => (
+                    <>
+                      <Field label="제목" value={a.title} onChange={(v) => ua({ title: v })} />
+                      <Field label="설명" multiline rows={2} value={a.description} onChange={(v) => ua({ description: v })} />
+                      <Field label="이미지 경로 또는 URL" mono value={a.image} onChange={(v) => ua({ image: v })} />
+                    </>
+                  )}
+                />
+              </div>
             </>
           )}
         />

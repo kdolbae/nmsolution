@@ -7,6 +7,8 @@ import { quoteRequests, siteContent } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
 const CARDS = [
+  { href: '/admin/stats', title: '마케팅 상황판', d: '채널·광고 그룹·검색어별 방문과 전화·카톡·견적 문의' },
+  { href: '/admin/ads', title: '검색광고 상황판', d: '네이버 광고 노출·클릭·광고비·순위 (매일 아침 갱신)' },
   { href: '/admin/quotes', title: '견적 문의', d: '홈페이지 폼으로 접수된 문의 확인 · 상태 관리' },
   { href: '/admin/home', title: '메인 페이지', d: '히어로 문구, 개보수 범위, 진행 프로세스, 회사 소개, 문의 문구' },
   { href: '/admin/services', title: '사업소개', d: '6개 사업분야의 소개 문구, 주요 작업, 대상 고객' },

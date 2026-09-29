@@ -6,7 +6,7 @@
 ## 1. DB 열 추가 (필수)
 
 ```bash
-psql "$DATABASE_URL" -f sql/005_quote_attribution.sql
+psql "$DATABASE_URL" -f sql/006_quote_attribution.sql
 ```
 
 공유 DB를 쓰는 경우 `SET search_path TO nmsolution;` 을 먼저 실행합니다. 자세한 내용은

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { track } from '@vercel/analytics'
+import { track } from '@/lib/track'
 import { ArrowRight, Check, Loader2, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QUOTE_CATEGORIES } from '@/lib/quote'

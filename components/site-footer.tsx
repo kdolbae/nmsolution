@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
+import { COMPANY, Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
 import type { SettingsContent } from '@/lib/content/defaults'
 
 export function SiteFooter({ settings }: { settings: SettingsContent }) {
@@ -48,6 +48,8 @@ export function SiteFooter({ settings }: { settings: SettingsContent }) {
               <dd>{settings.companyName}</dd>
               <dt className="text-muted-foreground">대표</dt>
               <dd>{settings.ceo}</dd>
+              <dt className="text-muted-foreground">사업자등록번호</dt>
+              <dd className="font-mono">{COMPANY.bizNumber}</dd>
               <dt className="text-muted-foreground">주소</dt>
               <dd>{settings.address}</dd>
               <dt className="text-muted-foreground">담당자 직통</dt>

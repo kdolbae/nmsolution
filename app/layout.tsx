@@ -1,4 +1,5 @@
 import { Analytics } from '@vercel/analytics/next'
+import { SiteTracker } from '@/components/site-tracker'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Noto_Sans_KR } from 'next/font/google'
 import { TrackingScripts } from '@/components/tracking-scripts'
@@ -100,6 +101,7 @@ export default function RootLayout({
         {children}
         <TrackingScripts />
         {process.env.NODE_ENV === 'production' && <Analytics />}
+        <SiteTracker />
       </body>
     </html>
   )

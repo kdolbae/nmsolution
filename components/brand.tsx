@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 export const COMPANY = {
   name: '엔엠솔루션 (NM SOLUTION)',
   ceo: '김성배',
+  bizNumber: '736-88-01988',
   address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',

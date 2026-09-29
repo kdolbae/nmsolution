@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db'
+import { ensureSiteEvents } from '@/lib/site-events-table'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
   const b = (await req.json().catch(() => null)) as Record<string, unknown> | null
   if (!b || !TYPES.has(String(b.type)) || String(b.path || '').startsWith('/admin')) return new Response(null, { status: 204 })
   try {
+    await ensureSiteEvents()
     await pool.query(
       `INSERT INTO site_events (type,label,path,referrer,source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,
          ad_query,ad_rank,session_id,visitor_id,seconds,scroll,ua)

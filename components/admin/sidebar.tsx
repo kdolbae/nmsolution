@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox } from 'lucide-react'
+import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox, BarChart3, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 
 const LINKS = [
   { href: '/admin', label: '대시보드', icon: LayoutDashboard },
+  { href: '/admin/stats', label: '마케팅 상황판', icon: BarChart3 },
+  { href: '/admin/ads', label: '검색광고 상황판', icon: Search },
   { href: '/admin/quotes', label: '견적 문의', icon: Inbox },
   { href: '/admin/home', label: '메인 페이지', icon: Home },
   { href: '/admin/services', label: '사업소개', icon: Layers },

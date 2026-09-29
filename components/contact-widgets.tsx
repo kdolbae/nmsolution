@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, MessageCircle, Phone, Plus, Smartphone, X } from 'lucide-react'
-import { track } from '@vercel/analytics'
+import { track } from '@/lib/track'
 import { cn } from '@/lib/utils'
 import { kakaoChatUrl, openKakaoChat } from '@/lib/kakao'
 

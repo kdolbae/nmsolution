@@ -1,6 +1,6 @@
 'use client'
 
-import { track } from '@vercel/analytics'
+import { track } from '@/lib/track'
 
 /**
  * 누른 횟수를 집계하는 링크. 서버 컴포넌트 안에서 전화·견적 버튼을 만들 때 쓴다.

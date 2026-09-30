@@ -6,10 +6,12 @@ import { db } from '@/lib/db'
 import { quoteRequests, siteContent } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { ensureQuoteRequests } from '@/lib/quote-table'
+import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
 
 const CARDS = [
-  { href: '/admin/stats', title: '마케팅 상황판', d: '채널·광고 그룹·검색어별 방문과 전화·카톡·견적 문의' },
-  { href: '/admin/ads', title: '검색광고 상황판', d: '네이버 광고 노출·클릭·광고비·순위 (매일 아침 갱신)' },
+  // 상황판 두 개는 나노마스터 관리 화면과 같은 화면이다(새 창, 나노마스터 관리자 로그인)
+  { href: BOARD_STATS_URL, title: '마케팅 상황판', d: '나노마스터 상황판과 같은 화면 — 유입·지역·검색어·전환·광고비 (새 창)' },
+  { href: BOARD_ADS_URL, title: '검색광고 상황판', d: '네이버 광고 노출·클릭·광고비·순위, 매일 아침 갱신 (새 창)' },
   { href: '/admin/quotes', title: '견적 문의', d: '홈페이지 폼으로 접수된 문의 확인 · 상태 관리' },
   { href: '/admin/home', title: '메인 페이지', d: '히어로 문구, 개보수 범위, 진행 프로세스, 회사 소개, 문의 문구' },
   { href: '/admin/services', title: '사업소개', d: '6개 사업분야의 소개 문구, 주요 작업, 대상 고객' },
@@ -56,7 +58,7 @@ export default async function AdminDashboard() {
       <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2">
         {CARDS.map((c) => (
           <li key={c.href} className="bg-background">
-            <Link href={c.href} className="group flex h-full flex-col justify-between gap-6 p-6 transition-colors hover:bg-secondary">
+            <Link href={c.href} target={c.href.startsWith('http') ? '_blank' : undefined} className="group flex h-full flex-col justify-between gap-6 p-6 transition-colors hover:bg-secondary">
               <div className="flex flex-col gap-1.5">
                 <h2 className="text-lg font-bold tracking-tight">{c.title}</h2>
                 <p className="text-sm text-muted-foreground">{c.d}</p>

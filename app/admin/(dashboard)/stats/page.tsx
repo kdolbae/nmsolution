@@ -4,11 +4,17 @@ import { pool } from '@/lib/db'
 import { ensureSiteEvents } from '@/lib/site-events-table'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { cn } from '@/lib/utils'
+import { BoardSyncButton } from '@/components/admin/board-sync-button'
+import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
 
 export const dynamic = 'force-dynamic'
 
 /*
- * 마케팅 상황판 — 나노마스터(nanomaster.co.kr/admin/stats)와 같은 방식.
+ * 자체 방문 기록 — 이 사이트 DB 만으로 그리는 간단한 표.
+ * 2026-09-30 부터 '마케팅 상황판'은 나노마스터 관리 화면의 같은 상황판(?brand=nmsolution)이다(lib/board-sync.ts).
+ * 이 화면은 그 사본이 제대로 가는지 견줘 보고, 지난 기록을 다시 보내는 곳으로 남긴다.
+ *
+ * (원래 설명) 나노마스터(nanomaster.co.kr/admin/stats)와 같은 방식.
  * 사이트가 직접 남긴 방문·유입·문의 기록(site_events, lib/site-events.ts)으로
  * 어느 채널·광고 그룹·검색어로 들어온 사람이 얼마나 읽고 연락했는지 본다.
  * 광고비·클릭·순위는 네이버 쪽 숫자라 '검색광고 상황판'(/admin/ads)에 있다.
@@ -178,7 +184,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader
-        title="마케팅 상황판"
+        title="자체 방문 기록"
         description="사이트가 직접 남긴 방문·유입·문의 기록입니다. 같은 사람(같은 기기)은 한 명으로 셉니다. 관리자 화면을 연 기기는 기록하지 않습니다."
       >
         <div className="flex gap-px bg-border">
@@ -193,6 +199,24 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           ))}
         </div>
       </PageHeader>
+
+      <div className="mb-6 flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+        <p className="text-sm leading-relaxed">
+          <b>마케팅 상황판은 나노마스터 관리 화면과 같은 화면으로 봅니다.</b> 유입 경로·지역·검색어·전환·광고비까지 나노마스터 상황판과
+          같은 계산입니다. 이 사이트가 방문·문의를 적을 때마다 그쪽으로 사본이 갑니다(문의는 건수·시각만, 이름·연락처는 안 갑니다).
+          나노마스터 관리자 계정으로 로그인해 엽니다.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href={BOARD_STATS_URL} target="_blank" rel="noopener" className="bg-navy px-3 py-2 text-sm font-semibold text-navy-foreground hover:opacity-90">
+            마케팅 상황판 열기
+          </a>
+          <a href={BOARD_ADS_URL} target="_blank" rel="noopener" className="bg-background px-3 py-2 text-sm font-medium ring-1 ring-border hover:bg-secondary">
+            검색광고 상황판 열기
+          </a>
+        </div>
+        <p className="text-xs text-muted-foreground">연동 전에 쌓인 기록은 아래 단추로 한 번 보내면 그쪽에도 나옵니다. 여러 번 눌러도 중복되지 않습니다.</p>
+        <BoardSyncButton />
+      </div>
 
       {error && <p className="mb-6 bg-background p-4 text-sm text-destructive ring-1 ring-border">{error}</p>}
 

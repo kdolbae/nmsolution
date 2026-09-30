@@ -34,7 +34,13 @@ export function ensureSiteEvents(): Promise<void> {
            ua           text
          );
          CREATE INDEX IF NOT EXISTS site_events_created_idx ON site_events (created_at desc);
-         CREATE INDEX IF NOT EXISTS site_events_visitor_idx ON site_events (visitor_id);`,
+         CREATE INDEX IF NOT EXISTS site_events_visitor_idx ON site_events (visitor_id);
+         -- 2026-09-30 나노마스터 상황판 연동(lib/board-sync.ts)에 필요한 칸
+         ALTER TABLE site_events ADD COLUMN IF NOT EXISTS ad_group text;
+         ALTER TABLE site_events ADD COLUMN IF NOT EXISTS is_new   boolean;
+         ALTER TABLE site_events ADD COLUMN IF NOT EXISTS country  text;
+         ALTER TABLE site_events ADD COLUMN IF NOT EXISTS region   text;
+         ALTER TABLE site_events ADD COLUMN IF NOT EXISTS city     text;`,
       )
       .then(() => undefined)
       .catch((e) => {

@@ -5,7 +5,9 @@ import { quoteRequests } from '@/lib/db/schema'
 import { QUOTE_CATEGORIES, isValidKoreanPhone } from '@/lib/quote'
 import { attributionValues, type Attribution } from '@/lib/attribution'
 import { headers } from 'next/headers'
+import { after } from 'next/server'
 import { ensureQuoteRequests } from '@/lib/quote-table'
+import { sendToBoard } from '@/lib/board-sync'
 
 export type QuoteInput = {
   name: string
@@ -38,6 +40,15 @@ function tooSoon(key: string): boolean {
   return false
 }
 
+/** 문의가 나온 페이지(주소의 경로만). */
+function pathOf(ref: string | null): string | null {
+  try {
+    return ref ? new URL(ref).pathname.slice(0, 300) : null
+  } catch {
+    return null
+  }
+}
+
 export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
   // 봇이 채운 숨김 필드가 있으면 조용히 성공 처리한다 (재시도를 유도하지 않는다)
   if (input.website) return { ok: true }
@@ -61,7 +72,7 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
     }
 
     await ensureQuoteRequests()
-    await db.insert(quoteRequests).values({
+    const [row] = await db.insert(quoteRequests).values({
       name: name.slice(0, 100),
       phone: phone.slice(0, 40),
       company: (input.company ?? '').trim().slice(0, 100),
@@ -69,7 +80,11 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
       categories: categories.join(','),
       message: message,
       ...attributionValues(input.attribution),
-    })
+    }).returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
+
+    // 나노마스터 상황판으로 건수·시각만 보낸다(이름·연락처 원문은 안 나간다. lib/board-sync.ts)
+    const page = pathOf(h.get('referer'))
+    if (row) after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'quote', phone, source_page: page }]).then(() => undefined))
 
     return { ok: true }
   } catch (e) {

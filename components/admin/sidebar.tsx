@@ -2,14 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox, BarChart3, Search, KeyRound } from 'lucide-react'
+import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox, BarChart3, Search, KeyRound, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
+import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
 
-const LINKS = [
+
+const LINKS: Array<{ href: string; label: string; icon: typeof Home; external?: boolean }> = [
   { href: '/admin', label: '대시보드', icon: LayoutDashboard },
-  { href: '/admin/stats', label: '마케팅 상황판', icon: BarChart3 },
-  { href: '/admin/ads', label: '검색광고 상황판', icon: Search },
+  { href: BOARD_STATS_URL, label: '마케팅 상황판', icon: BarChart3, external: true },
+  { href: BOARD_ADS_URL, label: '검색광고 상황판', icon: Search, external: true },
+  { href: '/admin/stats', label: '자체 방문 기록', icon: Activity },
   { href: '/admin/quotes', label: '견적 문의', icon: Inbox },
   { href: '/admin/home', label: '메인 페이지', icon: Home },
   { href: '/admin/services', label: '사업소개', icon: Layers },
@@ -43,6 +46,20 @@ export function AdminSidebar({ userName }: { userName: string }) {
 
       <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="관리자 메뉴">
         {LINKS.map((l) => {
+          if (l.external)
+            return (
+              <a
+                key={l.href}
+                href={l.href}
+                target="_blank"
+                rel="noopener"
+                className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <l.icon className="size-4" strokeWidth={1.75} />
+                {l.label}
+                <ExternalLink className="ml-auto size-3.5 opacity-50" strokeWidth={1.75} />
+              </a>
+            )
           const active = l.href === '/admin' ? pathname === '/admin' : pathname.startsWith(l.href)
           return (
             <Link

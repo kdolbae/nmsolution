@@ -20,6 +20,7 @@ type Inflow = {
   utm_term?: string
   ad_query?: string
   ad_rank?: number
+  ad_group?: string
 }
 
 const rand = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -74,8 +75,10 @@ function inflow(): Inflow {
   try {
     const saved = sessionStorage.getItem('nm-inflow')
     const q = new URLSearchParams(location.search)
+    // 네이버 검색광고 '자동 추적 파라미터'(n_media·n_ad_group·n_query …)가 붙어 있으면 광고로 들어온 것이다
+    const naverAd = ['n_media', 'n_ad_group', 'n_keyword', 'n_campaign_type', 'n_ad', 'n_query'].some((k) => q.has(k))
     const fresh: Inflow = {
-      source: refSource(document.referrer),
+      source: naverAd ? 'naver_ad' : refSource(document.referrer),
       utm_source: q.get('utm_source') || undefined,
       utm_medium: q.get('utm_medium') || undefined,
       utm_campaign: q.get('utm_campaign') || undefined,
@@ -84,9 +87,10 @@ function inflow(): Inflow {
       // 네이버 검색광고 '자동 추적 파라미터' 를 켜면 실제 검색어와 순위가 붙는다
       ad_query: q.get('n_query') || q.get('n_keyword') || undefined,
       ad_rank: q.get('n_rank') ? Number(q.get('n_rank')) : undefined,
+      ad_group: q.get('n_ad_group') || undefined,
     }
-    // 새 광고 클릭(utm 이 붙은 주소)으로 다시 들어오면 새 유입으로 본다
-    if (!saved || fresh.utm_source) {
+    // 새 광고 클릭(utm·네이버 광고 표식이 붙은 주소)으로 다시 들어오면 새 유입으로 본다
+    if (!saved || fresh.utm_source || naverAd) {
       if (fresh.source === 'internal' && saved) return JSON.parse(saved)
       sessionStorage.setItem('nm-inflow', JSON.stringify(fresh))
       return fresh
@@ -94,6 +98,21 @@ function inflow(): Inflow {
     return JSON.parse(saved)
   } catch {
     return { source: 'direct' }
+  }
+}
+
+/** 방문자 표식과 '처음 온 사람' 여부. 표식을 이 방문에서 처음 만들었으면 이 방문 내내 처음 온 사람이다. */
+function visitor(): { visitor_id: string; is_new: boolean } {
+  try {
+    let id = localStorage.getItem('nm-vid')
+    if (!id) {
+      id = rand()
+      localStorage.setItem('nm-vid', id)
+      sessionStorage.setItem('nm-new', '1')
+    }
+    return { visitor_id: id, is_new: sessionStorage.getItem('nm-new') === '1' }
+  } catch {
+    return { visitor_id: '', is_new: false }
   }
 }
 
@@ -105,7 +124,7 @@ function send(type: Kind, extra: { label?: string; seconds?: number; scroll?: nu
     path: location.pathname,
     referrer: document.referrer || undefined,
     session_id: store('session', 'nm-sid', rand),
-    visitor_id: store('local', 'nm-vid', rand),
+    ...visitor(),
     ...inflow(),
   })
   try {

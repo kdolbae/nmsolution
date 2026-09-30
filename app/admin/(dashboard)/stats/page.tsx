@@ -3,15 +3,22 @@ import { PageHeader } from '@/components/admin/form'
 import { pool } from '@/lib/db'
 import { ensureSiteEvents } from '@/lib/site-events-table'
 import { ensureQuoteRequests } from '@/lib/quote-table'
+import { isPaid } from '@/lib/ads'
 import { cn } from '@/lib/utils'
+import { BoardSyncButton } from '@/components/admin/board-sync-button'
+import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
 
 export const dynamic = 'force-dynamic'
 
 /*
- * 마케팅 상황판 — 나노마스터(nanomaster.co.kr/admin/stats)와 같은 방식.
+ * 자체 방문 기록 — 이 사이트 DB 만으로 그리는 간단한 표.
+ * 2026-09-30 부터 '마케팅 상황판'은 나노마스터 관리 화면의 같은 상황판(?brand=nmsolution)이다(lib/board-sync.ts).
+ * 이 화면은 그 사본이 제대로 가는지 견줘 보고, 지난 기록을 다시 보내는 곳으로 남긴다.
+ *
+ * (원래 설명) 나노마스터(nanomaster.co.kr/admin/stats)와 같은 방식.
  * 사이트가 직접 남긴 방문·유입·문의 기록(site_events, lib/site-events.ts)으로
  * 어느 채널·광고 그룹·검색어로 들어온 사람이 얼마나 읽고 연락했는지 본다.
- * 광고비·클릭·순위는 네이버 쪽 숫자라 '검색광고 상황판'(/admin/ads)에 있다.
+ * 광고비·클릭·순위는 네이버 쪽 숫자라 나노마스터의 '검색광고 상황판'(lib/board-urls.ts)에 있다.
  */
 
 type Ev = {
@@ -162,6 +169,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams
   const days = DAYS.includes(Number(sp.days)) ? Number(sp.days) : 7
   const { events, quotes, error } = await load(days)
+  const quoteAttribution = await quotesByKeyword(days)
   const ps = people(events)
   const total = ps.length
   const engaged = ps.filter(meaningful).length
@@ -178,7 +186,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader
-        title="마케팅 상황판"
+        title="자체 방문 기록"
         description="사이트가 직접 남긴 방문·유입·문의 기록입니다. 같은 사람(같은 기기)은 한 명으로 셉니다. 관리자 화면을 연 기기는 기록하지 않습니다."
       >
         <div className="flex gap-px bg-border">
@@ -193,6 +201,24 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           ))}
         </div>
       </PageHeader>
+
+      <div className="mb-6 flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+        <p className="text-sm leading-relaxed">
+          <b>마케팅 상황판은 나노마스터 관리 화면과 같은 화면으로 봅니다.</b> 유입 경로·지역·검색어·전환·광고비까지 나노마스터 상황판과
+          같은 계산입니다. 이 사이트가 방문·문의를 적을 때마다 그쪽으로 사본이 갑니다(문의는 건수·시각만, 이름·연락처는 안 갑니다).
+          나노마스터 관리자 계정으로 로그인해 엽니다.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href={BOARD_STATS_URL} target="_blank" rel="noopener" className="bg-navy px-3 py-2 text-sm font-semibold text-navy-foreground hover:opacity-90">
+            마케팅 상황판 열기
+          </a>
+          <a href={BOARD_ADS_URL} target="_blank" rel="noopener" className="bg-background px-3 py-2 text-sm font-medium ring-1 ring-border hover:bg-secondary">
+            검색광고 상황판 열기
+          </a>
+        </div>
+        <p className="text-xs text-muted-foreground">연동 전에 쌓인 기록은 아래 단추로 한 번 보내면 그쪽에도 나옵니다. 여러 번 눌러도 중복되지 않습니다.</p>
+        <BoardSyncButton />
+      </div>
 
       {error && <p className="mb-6 bg-background p-4 text-sm text-destructive ring-1 ring-border">{error}</p>}
 
@@ -259,7 +285,89 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           </div>
         )}
       </section>
+
+      <QuoteAttribution days={days} data={quoteAttribution} />
     </>
+  )
+}
+
+/**
+ * 접수된 견적 문의를 유입 키워드별로 센다.
+ *
+ * 위의 표들은 site_events(방문·문의 버튼 클릭)에서 나오고, 이 표는 quote_requests 에
+ * 실제로 저장된 문의에서 나온다. 버튼을 눌렀지만 접수가 안 된 건이 있어 둘은 어긋날 수 있고,
+ * "이 키워드가 문의를 만들었다"는 판단은 저장된 쪽이 맞다.
+ */
+type QuoteRow = { created_at: Date; utm_source: string; utm_medium: string; utm_campaign: string; utm_term: string; utm_content: string }
+
+async function quotesByKeyword(days: number) {
+  try {
+    await ensureQuoteRequests()
+    const { rows } = await pool.query<QuoteRow>(
+      `SELECT created_at, utm_source, utm_medium, utm_campaign, utm_term, utm_content
+         FROM quote_requests
+        WHERE created_at >= now() - ($1 || ' days')::interval
+        ORDER BY created_at DESC`,
+      [String(days)],
+    )
+    const paid = rows.filter((r) => isPaid(r.utm_source ?? '', r.utm_medium ?? ''))
+    const by = new Map<string, { count: number; last: Date; group: string }>()
+    for (const r of paid) {
+      const key = r.utm_term || '(키워드 미확인)'
+      const cur = by.get(key)
+      if (cur) cur.count += 1
+      else by.set(key, { count: 1, last: new Date(r.created_at), group: r.utm_content || r.utm_campaign || '' })
+    }
+    return {
+      total: rows.length,
+      paid: paid.length,
+      naver: paid.filter((r) => r.utm_source === 'naver').length,
+      noKeyword: paid.filter((r) => !r.utm_term).length,
+      keywords: [...by.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20),
+    }
+  } catch (e) {
+    // 유입 출처 열이 아직 없는 DB 에서도 화면은 떠야 한다.
+    console.error('[admin] 문의 유입 조회 실패', e)
+    return { total: 0, paid: 0, naver: 0, noKeyword: 0, keywords: [] as [string, { count: number; last: Date; group: string }][] }
+  }
+}
+
+function QuoteAttribution({ days, data }: { days: number; data: Awaited<ReturnType<typeof quotesByKeyword>> }) {
+  return (
+    <section className="mb-6 bg-background p-6 ring-1 ring-border lg:p-8">
+      <h2 className="mb-1 text-lg font-bold tracking-tight">접수된 문의의 유입 키워드</h2>
+      <p className="mb-4 text-sm text-muted-foreground">
+        최근 {days}일에 <b>실제로 접수된</b> 견적 문의 {data.total}건 중 광고로 들어온 것이 {data.paid}건
+        (네이버 검색광고 {data.naver}건)입니다. 위의 표는 문의 버튼을 누른 기록이고, 이 표는 저장된 문의입니다.
+        {data.noKeyword > 0 && ' 키워드가 비어 있는 건이 있으면 네이버 자동 추적이 꺼져 있을 수 있습니다.'}
+      </p>
+      {data.keywords.length === 0 ? (
+        <p className="text-sm text-muted-foreground">아직 광고로 들어온 문의가 없습니다. 광고 주소에 utm 을 붙여야 남습니다.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead className="text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="py-2 pr-3 font-medium">키워드</th>
+                <th className="py-2 pr-3 font-medium">광고 그룹</th>
+                <th className="py-2 pr-3 text-right font-medium">문의</th>
+                <th className="py-2 pr-3 text-right font-medium">마지막</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.keywords.map(([kw, v]) => (
+                <tr key={kw} className="border-t border-border">
+                  <td className="py-2 pr-3 font-semibold">{kw}</td>
+                  <td className="py-2 pr-3 text-muted-foreground">{v.group || '—'}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{v.count}건</td>
+                  <td className="py-2 pr-3 text-right text-muted-foreground tabular-nums">{v.last.toLocaleDateString('ko-KR')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   )
 }
 

@@ -1,5 +1,7 @@
 import { db, pool } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
+import { after } from 'next/server'
+import { sendToBoard } from '@/lib/board-sync'
 import { isValidKoreanPhone } from '@/lib/quote'
 import { attributionValues, type Attribution } from '@/lib/attribution'
 import { ensureQuoteRequests } from '@/lib/quote-table'
@@ -94,7 +96,7 @@ export async function POST(req: Request) {
         message: body,
         ...attributionValues(attribution),
       })
-      .returning({ id: quoteRequests.id })
+      .returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
 
     if (photos.length) {
       await ensureQuotePhotos()
@@ -107,6 +109,12 @@ export async function POST(req: Request) {
         ])
       }
     }
+    // 나노마스터 상황판으로 건수·시각만 보낸다(이름·연락처·사진은 안 나간다. lib/board-sync.ts)
+    let page: string | null = null
+    try {
+      page = new URL(req.headers.get('referer') || '').pathname.slice(0, 300)
+    } catch {}
+    after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'photo', phone, source_page: page }]).then(() => undefined))
     return Response.json({ ok: true })
   } catch (e) {
     console.error('[quote-photo] 접수 실패', e)

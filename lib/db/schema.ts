@@ -94,6 +94,28 @@ export const quoteRequests = pgTable('quote_requests', {
   status: text('status').notNull().default('new'),
   /** 관리자 메모 */
   memo: text('memo').notNull().default(''),
+
+  // ---- 광고 유입 출처 ----
+  // 어느 광고·키워드에서 온 문의인지. 비어 있으면 광고비가 어디로 갔는지 알 수 없다.
+  // 값을 채우는 곳은 `lib/attribution.ts`, 저장은 `app/actions/quote.ts`.
+  /** naver | google | meta | direct | (모르는 리퍼러는 호스트 그대로) */
+  utmSource: text('utm_source').notNull().default(''),
+  /** cpc | organic 등 */
+  utmMedium: text('utm_medium').notNull().default(''),
+  /** 캠페인 이름 */
+  utmCampaign: text('utm_campaign').notNull().default(''),
+  /** 검색광고 키워드 */
+  utmTerm: text('utm_term').notNull().default(''),
+  /** 광고그룹·소재 구분 */
+  utmContent: text('utm_content').notNull().default(''),
+  /** 매체가 붙이는 클릭 식별자 (gclid / fbclid 등) */
+  clickId: text('click_id').notNull().default(''),
+  /** 처음 들어온 페이지 */
+  landingPath: text('landing_path').notNull().default(''),
+  referrer: text('referrer').notNull().default(''),
+  /** 광고를 처음 클릭한 시각. 접수 시각과 며칠 차이가 나는 것이 정상이다. */
+  firstSeenAt: timestamp('first_seen_at', { withTimezone: true }),
+
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

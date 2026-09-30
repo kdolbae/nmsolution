@@ -20,3 +20,13 @@ export type QuoteStatus = (typeof QUOTE_STATUSES)[number]['value']
 export function statusLabel(value: string): string {
   return QUOTE_STATUSES.find((s) => s.value === value)?.label ?? value
 }
+
+/** 010-1234-5678, 01012345678, +82 10 ... 등을 숫자만 남긴다 */
+export function phoneDigits(phone: string): string {
+  return phone.replace(/[^0-9]/g, '').replace(/^82/, '0')
+}
+
+/** 휴대전화 010~019 (10~11자리), 지역번호/대표번호 (9~12자리) */
+export function isValidKoreanPhone(phone: string): boolean {
+  return /^0\d{8,11}$/.test(phoneDigits(phone))
+}

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { PageHeader } from '@/components/admin/form'
 import { pool } from '@/lib/db'
+import { ensureSiteEvents } from '@/lib/site-events-table'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -131,6 +132,7 @@ const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : 'â€
 async function load(days: number) {
   const since = new Date(Date.now() - days * 86400_000)
   try {
+    await ensureSiteEvents()
     const [ev, quotes] = await Promise.all([
       pool.query<Ev>(
         `SELECT created_at,type,label,path,source,utm_source,utm_medium,utm_content,ad_query,ad_rank,session_id,visitor_id,seconds,scroll

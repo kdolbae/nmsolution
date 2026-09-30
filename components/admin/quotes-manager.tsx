@@ -10,7 +10,14 @@ import type { QuoteRequest } from '@/lib/db/schema'
 
 const FILTERS = [{ value: 'all', label: '전체' }, ...QUOTE_STATUSES] as const
 
-export function QuotesManager({ quotes }: { quotes: QuoteRequest[] }) {
+export function QuotesManager({
+  quotes,
+  photos = {},
+}: {
+  quotes: QuoteRequest[]
+  /** 견적 id → 현장 사진 id (누수 사진 견적 등). 사진은 /api/admin/quote-photo/[id] 로 관리자만 본다 */
+  photos?: Record<number, number[]>
+}) {
   const [filter, setFilter] = useState<string>('all')
   const [pending, startTransition] = useTransition()
 
@@ -121,6 +128,19 @@ export function QuotesManager({ quotes }: { quotes: QuoteRequest[] }) {
                   {q.message}
                 </p>
               )}
+
+              {photos[q.id]?.length ? (
+                <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-label="현장 사진">
+                  {photos[q.id].map((pid, i) => (
+                    <li key={pid} className="relative aspect-square overflow-hidden bg-muted">
+                      <a href={`/api/admin/quote-photo/${pid}`} target="_blank" rel="noopener noreferrer" title="크게 보기">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/api/admin/quote-photo/${pid}`} alt={`현장 사진 ${i + 1}`} loading="lazy" className="size-full object-cover" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
 
               <div className="flex flex-col gap-2">
                 <label htmlFor={`memo-${q.id}`} className="text-xs font-medium text-muted-foreground">

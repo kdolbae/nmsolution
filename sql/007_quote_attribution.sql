@@ -3,7 +3,10 @@
 -- 이 열이 없으면 광고를 켜도 어느 키워드·어느 광고가 문의를 가져왔는지 알 수 없고,
 -- 나중에 소급해서 알아낼 방법도 없다. 광고 집행 전에 먼저 실행한다.
 --
---   psql "$DATABASE_URL" -f sql/005_quote_attribution.sql
+--   psql "$DATABASE_URL" -f sql/007_quote_attribution.sql
+--
+-- 앱(lib/quote-table.ts)이 첫 접수·첫 관리자 조회 때 같은 열을 스스로 붙이므로
+-- 반드시 돌려야 하는 것은 아니다. 배포 전에 미리 붙여 두고 싶을 때 쓴다.
 --
 -- 공유 DB(B안)를 쓰는 경우 먼저 실행한다:
 --   SET search_path TO nmsolution;

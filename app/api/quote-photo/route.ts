@@ -2,6 +2,7 @@ import { db, pool } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { isValidKoreanPhone } from '@/lib/quote'
 import { attributionValues, type Attribution } from '@/lib/attribution'
+import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
 
 export const dynamic = 'force-dynamic'
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
     .join('\n')
 
   try {
+    await ensureQuoteRequests()
     const [row] = await db
       .insert(quoteRequests)
       .values({

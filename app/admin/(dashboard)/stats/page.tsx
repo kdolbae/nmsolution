@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/admin/form'
 import { pool } from '@/lib/db'
 import { ensureSiteEvents } from '@/lib/site-events-table'
+import { ensureQuoteRequests } from '@/lib/quote-table'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -131,21 +132,30 @@ const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '�
 
 async function load(days: number) {
   const since = new Date(Date.now() - days * 86400_000)
+  // 방문 기록과 견적 수는 따로 읽는다. 한쪽 표가 없어도 다른 쪽은 보이게 (10/1 견적 표가 없어 상황판 전체가 비었다).
+  let events: Ev[] = []
+  let quotes = 0
+  let error: string | null = null
   try {
     await ensureSiteEvents()
-    const [ev, quotes] = await Promise.all([
-      pool.query<Ev>(
-        `SELECT created_at,type,label,path,source,utm_source,utm_medium,utm_content,ad_query,ad_rank,session_id,visitor_id,seconds,scroll
-           FROM site_events WHERE created_at >= $1 ORDER BY created_at ASC LIMIT 50000`,
-        [since],
-      ),
-      pool.query<{ n: number }>(`SELECT count(*)::int AS n FROM quote_requests WHERE created_at >= $1`, [since]),
-    ])
-    return { events: ev.rows, quotes: quotes.rows[0]?.n ?? 0, error: null as string | null }
+    const ev = await pool.query<Ev>(
+      `SELECT created_at,type,label,path,source,utm_source,utm_medium,utm_content,ad_query,ad_rank,session_id,visitor_id,seconds,scroll
+         FROM site_events WHERE created_at >= $1 ORDER BY created_at ASC LIMIT 50000`,
+      [since],
+    )
+    events = ev.rows
   } catch (e) {
-    console.error('[admin/stats] 조회 실패', e)
-    return { events: [] as Ev[], quotes: 0, error: '기록을 불러오지 못했습니다. site_events 표가 있는지 확인해 주세요 (sql/005_site_events.sql).' }
+    console.error('[admin/stats] 방문 기록 조회 실패', e)
+    error = '방문 기록을 불러오지 못했습니다.'
   }
+  try {
+    await ensureQuoteRequests()
+    const q = await pool.query<{ n: number }>(`SELECT count(*)::int AS n FROM quote_requests WHERE created_at >= $1`, [since])
+    quotes = q.rows[0]?.n ?? 0
+  } catch (e) {
+    console.error('[admin/stats] 견적 수 조회 실패', e)
+  }
+  return { events, quotes, error }
 }
 
 export default async function StatsPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {

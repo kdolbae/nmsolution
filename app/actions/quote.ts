@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { QUOTE_CATEGORIES, isValidKoreanPhone } from '@/lib/quote'
 import { headers } from 'next/headers'
+import { ensureQuoteRequests } from '@/lib/quote-table'
 
 export type QuoteInput = {
   name: string
@@ -56,6 +57,7 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
       return { ok: false, error: '방금 접수되었습니다. 잠시 후 다시 시도해 주세요.' }
     }
 
+    await ensureQuoteRequests()
     await db.insert(quoteRequests).values({
       name: name.slice(0, 100),
       phone: phone.slice(0, 40),

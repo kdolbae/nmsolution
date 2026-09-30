@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db'
+import { ensureQuoteRequests } from '@/lib/quote-table'
 
 /** 사진 견적 한 건에 붙일 수 있는 사진 수와 크기. 브라우저에서 줄여 보내므로 한 장 수백 KB 정도다. */
 export const MAX_PHOTOS = 5
@@ -15,17 +16,19 @@ let ready: Promise<void> | null = null
 
 export function ensureQuotePhotos(): Promise<void> {
   if (!ready) {
-    ready = pool
-      .query(
-        `CREATE TABLE IF NOT EXISTS quote_photos (
-           id         serial PRIMARY KEY,
-           quote_id   integer NOT NULL REFERENCES quote_requests(id) ON DELETE CASCADE,
-           mime       text NOT NULL,
-           bytes      integer NOT NULL,
-           data       bytea NOT NULL,
-           created_at timestamptz NOT NULL DEFAULT now()
-         );
-         CREATE INDEX IF NOT EXISTS quote_photos_quote_idx ON quote_photos (quote_id);`,
+    ready = ensureQuoteRequests()
+      .then(() =>
+        pool.query(
+          `CREATE TABLE IF NOT EXISTS quote_photos (
+             id         serial PRIMARY KEY,
+             quote_id   integer NOT NULL REFERENCES quote_requests(id) ON DELETE CASCADE,
+             mime       text NOT NULL,
+             bytes      integer NOT NULL,
+             data       bytea NOT NULL,
+             created_at timestamptz NOT NULL DEFAULT now()
+           );
+           CREATE INDEX IF NOT EXISTS quote_photos_quote_idx ON quote_photos (quote_id);`,
+        ),
       )
       .then(() => undefined)
       .catch((e) => {

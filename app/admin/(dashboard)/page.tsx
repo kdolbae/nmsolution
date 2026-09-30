@@ -5,6 +5,7 @@ import { getAllProjects, getContent } from '@/lib/content/get'
 import { db } from '@/lib/db'
 import { quoteRequests, siteContent } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
+import { ensureQuoteRequests } from '@/lib/quote-table'
 
 const CARDS = [
   { href: '/admin/stats', title: '마케팅 상황판', d: '채널·광고 그룹·검색어별 방문과 전화·카톡·견적 문의' },
@@ -22,10 +23,8 @@ export default async function AdminDashboard() {
     getContent('settings'),
     getAllProjects(),
     db.select({ key: siteContent.key, updatedAt: siteContent.updatedAt }).from(siteContent),
-    db
-      .select({ id: quoteRequests.id })
-      .from(quoteRequests)
-      .where(eq(quoteRequests.status, 'new'))
+    ensureQuoteRequests()
+      .then(() => db.select({ id: quoteRequests.id }).from(quoteRequests).where(eq(quoteRequests.status, 'new')))
       .catch(() => []),
   ])
   const lastUpdated = rows.reduce<Date | null>((acc, r) => (!acc || r.updatedAt > acc ? r.updatedAt : acc), null)

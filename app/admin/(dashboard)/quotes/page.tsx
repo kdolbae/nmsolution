@@ -4,11 +4,13 @@ import { db } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { desc } from 'drizzle-orm'
 import { photoIdsByQuote } from '@/lib/quote-photos'
+import { ensureQuoteRequests } from '@/lib/quote-table'
 
 export const dynamic = 'force-dynamic'
 
 async function getQuotes() {
   try {
+    await ensureQuoteRequests()
     return await db.select().from(quoteRequests).orderBy(desc(quoteRequests.createdAt))
   } catch (e) {
     console.error('[admin] 견적 문의 조회 실패', e)

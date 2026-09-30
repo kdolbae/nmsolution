@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox, BarChart3, Search } from 'lucide-react'
+import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox, BarChart3, Search, KeyRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 
@@ -16,6 +16,7 @@ const LINKS = [
   { href: '/admin/about', label: '회사소개', icon: User },
   { href: '/admin/projects', label: '시공사례', icon: Images },
   { href: '/admin/settings', label: '사이트 설정', icon: Settings },
+  { href: '/admin/account', label: '계정 · 비밀번호', icon: KeyRound },
 ]
 
 export function AdminSidebar({ userName }: { userName: string }) {

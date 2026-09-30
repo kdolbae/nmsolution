@@ -3,6 +3,7 @@ import { QuotesManager } from '@/components/admin/quotes-manager'
 import { db } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { desc } from 'drizzle-orm'
+import { photoIdsByQuote } from '@/lib/quote-photos'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ async function getQuotes() {
 }
 
 export default async function AdminQuotesPage() {
-  const quotes = await getQuotes()
+  const [quotes, photos] = await Promise.all([getQuotes(), photoIdsByQuote()])
   const newCount = quotes.filter((q) => q.status === 'new').length
 
   return (
@@ -29,7 +30,7 @@ export default async function AdminQuotesPage() {
             : '홈페이지 문의 폼으로 접수된 내역입니다.'
         }
       />
-      <QuotesManager quotes={quotes} />
+      <QuotesManager quotes={quotes} photos={photos} />
     </>
   )
 }

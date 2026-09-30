@@ -13,6 +13,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url, lastModified: now, changeFrequency: 'weekly', priority: 1 },
     { url: `${url}/services`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${url}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    // 안성 · 평택 누수 사진 견적 광고 랜딩
+    { url: `${url}/leak`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     ...services.items.map((s) => ({
       url: `${url}/services/${s.slug}`,
       lastModified: now,

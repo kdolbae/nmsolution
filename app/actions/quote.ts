@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
-import { QUOTE_CATEGORIES } from '@/lib/quote'
+import { QUOTE_CATEGORIES, isValidKoreanPhone } from '@/lib/quote'
 import { headers } from 'next/headers'
 
 export type QuoteInput = {
@@ -17,17 +17,6 @@ export type QuoteInput = {
 }
 
 export type QuoteResult = { ok: true } | { ok: false; error: string }
-
-/** 010-1234-5678, 01012345678, +82 10 ... 등을 숫자만 남겨 검사 */
-function phoneDigits(phone: string): string {
-  return phone.replace(/[^0-9]/g, '').replace(/^82/, '0')
-}
-
-function isValidKoreanPhone(phone: string): boolean {
-  const d = phoneDigits(phone)
-  // 휴대전화 010~019 (10~11자리), 지역번호/대표번호 (9~12자리)
-  return /^0\d{8,11}$/.test(d)
-}
 
 /**
  * 같은 IP에서 짧은 시간에 반복 접수되는 것을 막는다.

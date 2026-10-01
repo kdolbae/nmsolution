@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
+import { getAdminSession } from '@/lib/sso'
 import { db } from '@/lib/db'
 import { projects, quoteRequests, siteContent } from '@/lib/db/schema'
 import { CONTENT_DEFAULTS, PROJECT_CATEGORIES, type ContentKey } from '@/lib/content/defaults'
@@ -10,7 +10,7 @@ import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 
 async function requireAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getAdminSession(await headers())
   if (!session?.user) throw new Error('Unauthorized')
   return session.user
 }

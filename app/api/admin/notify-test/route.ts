@@ -13,8 +13,8 @@ export async function POST(req: Request) {
   if (!session?.user) return new Response('로그인이 필요합니다.', { status: 401 })
 
   const on = notifyConfigured()
-  if (!on.ntfy && !on.solapi) {
-    return Response.json({ ok: false, configured: on, error: '알림 수단이 하나도 켜져 있지 않습니다(NTFY_TOPIC 또는 SOLAPI_* 환경변수).' })
+  if (!on.teams && !on.ntfy && !on.solapi) {
+    return Response.json({ ok: false, configured: on, error: '알림 수단이 하나도 켜져 있지 않습니다(TEAMS_WEBHOOK_URL, NTFY_TOPIC, SOLAPI_* 환경변수).' })
   }
   const results = await notifyQuote(
     { id: 0, name: '시험 발송', phone: '010-0000-0000', location: '시험', categories: '알림 점검', message: '관리자 화면에서 보낸 시험 알림입니다.' },

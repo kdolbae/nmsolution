@@ -4,9 +4,12 @@ import { phoneDigits } from '@/lib/quote'
 /**
  * 견적 문의가 저장되면 사업주에게 알린다. 아무 키도 없으면 아무것도 하지 않는다(사이트는 그대로 돈다).
  *
- * 두 갈래이고 둘 다 환경변수로만 켠다 — 이 저장소는 공개라 키·번호를 코드에 두지 않는다.
+ * 수단은 셋이고 모두 환경변수로만 켠다 — 이 저장소는 공개라 키·주소·번호를 코드에 두지 않는다.
  *
- *  1) 폰 푸시(ntfy)      NTFY_TOPIC  [NTFY_SERVER]
+ *  0) 팀즈 채팅(Workflows 웹훅)  TEAMS_WEBHOOK_URL
+ *     팀즈 채널·채팅에서 "웹훅 요청을 받으면 게시" 워크플로를 만들면 나오는 주소 하나면 된다. 무료·검수 없음.
+ *     사업주 본인의 팀즈로만 가므로 이름·연락처·문의 첫 줄을 카드로 싣는다.
+ *  1) 폰 푸시(ntfy)      NTFY_TOPIC  [NTFY_SERVER]   (예비. 쓰지 않으면 비워 둔다)
  *     앱 하나만 깔고 주제 이름을 구독하면 된다. 가입·검수가 없어 바로 켠다.
  *     ntfy 는 외부 서비스라 **연락처·이름은 싣지 않는다**. 분야·지역·접수 번호와 관리자 링크만 간다.
  *  2) 솔라피(문자·알림톡) SOLAPI_API_KEY SOLAPI_API_SECRET SOLAPI_SENDER NOTIFY_PHONE
@@ -29,7 +32,7 @@ export type QuoteNotice = {
   kind?: 'quote' | 'photo'
 }
 
-export type NotifyResult = { channel: 'ntfy' | 'solapi'; ok: boolean; detail?: string }
+export type NotifyResult = { channel: 'teams' | 'ntfy' | 'solapi'; ok: boolean; detail?: string }
 
 const TIMEOUT_MS = 6000
 const HOURLY_CAP = 20
@@ -47,6 +50,7 @@ const env = (k: string) => (process.env[k] || '').trim()
 
 export function notifyConfigured() {
   return {
+    teams: /^https:\/\//.test(env('TEAMS_WEBHOOK_URL')),
     ntfy: !!env('NTFY_TOPIC'),
     solapi: !!(env('SOLAPI_API_KEY') && env('SOLAPI_API_SECRET') && env('SOLAPI_SENDER') && env('NOTIFY_PHONE')),
     alimtalk: !!(env('SOLAPI_PF_ID') && env('SOLAPI_TEMPLATE_ID')),
@@ -85,6 +89,43 @@ export function smsText(q: QuoteNotice): string {
     adminUrl(),
   ]
   return lines.filter(Boolean).join('\n')
+}
+
+async function sendTeams(q: QuoteNotice): Promise<NotifyResult> {
+  const facts = [
+    { title: '이름', value: q.name },
+    { title: '연락처', value: prettyPhone(q.phone) },
+    { title: '분야', value: q.categories || '미선택' },
+    { title: '지역', value: q.location || '미입력' },
+  ]
+  const note = clip(bodyOf(q.message), 300)
+  // Workflows "웹훅 요청을 받으면 채널/채팅에 게시" 가 받는 모양: 메시지 하나에 적응형 카드 하나.
+  const res = await fetch(env('TEAMS_WEBHOOK_URL'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'message',
+      attachments: [
+        {
+          contentType: 'application/vnd.microsoft.card.adaptive',
+          contentUrl: null,
+          content: {
+            $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+            type: 'AdaptiveCard',
+            version: '1.4',
+            body: [
+              { type: 'TextBlock', text: `${q.kind === 'photo' ? '새 사진 견적' : '새 견적 문의'} #${q.id}`, weight: 'Bolder', size: 'Medium', wrap: true },
+              { type: 'FactSet', facts },
+              ...(note ? [{ type: 'TextBlock', text: note, wrap: true }] : []),
+            ],
+            actions: [{ type: 'Action.OpenUrl', title: '관리자에서 보기', url: adminUrl() }],
+          },
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+  return res.ok ? { channel: 'teams', ok: true } : { channel: 'teams', ok: false, detail: `HTTP ${res.status}` }
 }
 
 async function sendNtfy(q: QuoteNotice): Promise<NotifyResult> {
@@ -154,12 +195,13 @@ async function sendSolapi(q: QuoteNotice): Promise<NotifyResult> {
 /** 켜져 있는 수단으로 모두 보낸다. 던지지 않고 수단별 결과를 돌려준다. */
 export async function notifyQuote(q: QuoteNotice, opts: { bypassCap?: boolean } = {}): Promise<NotifyResult[]> {
   const on = notifyConfigured()
-  if (!on.ntfy && !on.solapi) return []
+  if (!on.teams && !on.ntfy && !on.solapi) return []
   if (!opts.bypassCap && !underCap()) {
     console.error('[notify] 한 시간 발송 한도(20건)를 넘어 보내지 않았습니다.')
     return []
   }
   const jobs: Promise<NotifyResult>[] = []
+  if (on.teams) jobs.push(sendTeams(q).catch((e) => ({ channel: 'teams' as const, ok: false, detail: String(e?.name || e) })))
   if (on.ntfy) jobs.push(sendNtfy(q).catch((e) => ({ channel: 'ntfy' as const, ok: false, detail: String(e?.name || e) })))
   if (on.solapi) jobs.push(sendSolapi(q).catch((e) => ({ channel: 'solapi' as const, ok: false, detail: String(e?.name || e) })))
   const results = await Promise.all(jobs)

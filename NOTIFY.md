@@ -4,19 +4,37 @@
 코드는 `lib/notify.ts`. 키·번호는 **Vercel 환경변수**로만 둔다(이 저장소는 공개다).
 환경변수가 하나도 없으면 아무것도 보내지 않고 사이트는 그대로 돈다.
 
-## 1. 폰 푸시 (ntfy) — 가입·검수 없이 바로
+## 1. 팀즈 채팅 (Workflows 웹훅) — 무료, 검수 없음
+
+문의가 오면 팀즈 채널(또는 채팅)에 **카드 한 장**이 올라온다: 이름·연락처·분야·지역·문의 첫 줄과 '관리자에서 보기' 버튼.
+본인 팀즈로만 가므로 이름·연락처를 싣는다.
+
+**주소 만들기 (PC 팀즈 또는 웹 teams.microsoft.com, 5분. 폰 앱에서는 워크플로를 못 만든다)**
+
+1. 알림 받을 곳을 정한다. 추천: 본인만 들어 있는 비공개 채널 `견적알림`
+   (팀즈 → 팀 선택 → `…` → 채널 추가 → 개인정보 보호 '비공개').
+2. 그 채널 이름 옆 `…` → **워크플로**(Workflows) → **"웹후크 요청을 받으면 채널에 게시"**
+   (영문: *Post to a channel when a webhook request is received*) 선택 → 이름 적고 다음 → 팀·채널 확인 → **워크플로 추가**.
+3. 마지막 화면에 나오는 **HTTP POST URL** 을 복사한다(`https://…logic.azure.com/…` 로 시작).
+   이 주소를 아는 사람은 누구나 그 채널에 글을 올릴 수 있으니 남에게 알리지 않는다.
+4. Vercel → nm-solution → Settings → Environment Variables 에 `TEAMS_WEBHOOK_URL` = 그 주소(Production). 재배포.
+5. 폰에서 알림이 울리려면: 팀즈 앱 → 그 채널 `…` → 채널 알림 → **모든 활동**.
+
+채팅에 받고 싶으면 2번에서 **"웹후크 요청을 받으면 채팅에 게시"**(*Post to a chat…*)를 고른다.
+
+## 2. 폰 푸시 (ntfy) — 예비, 쓰지 않으면 비워 둔다
 
 1. 폰에 **ntfy** 앱을 깐다(iOS·Android).
 2. 앱에서 `+` → 주제(topic)에 **추측하기 어려운 이름**을 적고 구독한다. 예: `nm-quote-` 뒤에 무작위 12자.
    주제 이름이 곧 비밀번호다. 아는 사람이 구독하면 알림을 볼 수 있으니 남에게 알리지 않는다.
 3. Vercel → nm-solution → Settings → Environment Variables 에 `NTFY_TOPIC` = 그 이름(Production). 재배포.
-4. 관리자 로그인한 상태에서 `POST /api/admin/notify-test` 를 호출하면 시험 알림이 간다
+4. 관리자 로그인한 상태에서 `POST /api/admin/notify-test` 를 호출하면 켜진 수단 전부로 시험 알림이 간다
    (브라우저 콘솔: `fetch('/api/admin/notify-test',{method:'POST'}).then(r=>r.json()).then(console.log)`).
 
 ntfy 는 외부 서비스라 **이름·연락처를 싣지 않는다.** 접수 번호·분야·지역과 관리자 링크만 간다.
 알림을 누르면 `/admin/quotes` 가 열린다(로그인 필요).
 
-## 2. 문자·알림톡 (솔라피)
+## 3. 문자·알림톡 (솔라피)
 
 사업주 본인 휴대폰으로 가므로 이름·연락처·문의 첫 줄이 들어간다.
 

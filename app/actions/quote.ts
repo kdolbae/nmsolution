@@ -7,6 +7,7 @@ import { headers } from 'next/headers'
 import { after } from 'next/server'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { sendToBoard } from '@/lib/board-sync'
+import { notifyQuote } from '@/lib/notify'
 
 export type QuoteInput = {
   name: string
@@ -81,6 +82,14 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
     // 나노마스터 상황판으로 건수·시각만 보낸다(이름·연락처 원문은 안 나간다. lib/board-sync.ts)
     const page = pathOf(h.get('referer'))
     if (row) after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'quote', phone, source_page: page }]).then(() => undefined))
+
+    // 사업주에게 알림(폰 푸시 · 문자/알림톡). 키가 없으면 아무것도 안 한다(lib/notify.ts)
+    if (row) {
+      after(() => notifyQuote({
+        id: row.id, name, phone, location: (input.location ?? '').trim().slice(0, 200),
+        categories: categories.join(' · '), message, kind: 'quote',
+      }).then(() => undefined))
+    }
 
     return { ok: true }
   } catch (e) {

@@ -2,6 +2,7 @@ import { db, pool } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { after } from 'next/server'
 import { sendToBoard } from '@/lib/board-sync'
+import { notifyQuote } from '@/lib/notify'
 import { isValidKoreanPhone } from '@/lib/quote'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
@@ -103,6 +104,8 @@ export async function POST(req: Request) {
       page = new URL(req.headers.get('referer') || '').pathname.slice(0, 300)
     } catch {}
     after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'photo', phone, source_page: page }]).then(() => undefined))
+    // 사업주에게 알림(폰 푸시 · 문자/알림톡). 사진까지 저장된 뒤에 보내 링크를 눌렀을 때 사진이 있다.
+    after(() => notifyQuote({ id: row.id, name: name || '사진 견적', phone, location, categories: '누수 · 피해복구', message: body, kind: 'photo' }).then(() => undefined))
     return Response.json({ ok: true })
   } catch (e) {
     console.error('[quote-photo] 접수 실패', e)

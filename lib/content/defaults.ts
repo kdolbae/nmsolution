@@ -91,6 +91,8 @@ export type AboutContent = {
 
 export type SettingsContent = {
   showProjects: boolean
+  /** 메인의 '작업 사진'(현장 사진) 섹션과 메뉴 노출 */
+  showGallery: boolean
   companyName: string
   ceo: string
   address: string
@@ -399,6 +401,7 @@ export const DEFAULT_ABOUT: AboutContent = {
 
 export const DEFAULT_SETTINGS: SettingsContent = {
   showProjects: false,
+  showGallery: false,
   companyName: '엔엠솔루션 (NM SOLUTION)',
   ceo: '김성배',
   address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',

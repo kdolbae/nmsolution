@@ -18,7 +18,7 @@ export function PageShell({
 }) {
   return (
     <>
-      <SiteHeader solidByDefault autoHide={immersive} showProjects={settings.showProjects} />
+      <SiteHeader solidByDefault autoHide={immersive} showProjects={settings.showProjects} showGallery={settings.showGallery} />
       <main className={immersive ? undefined : 'pt-16 lg:pt-[7.5rem]'}>{children}</main>
       <SiteFooter settings={settings} />
       <FloatingContact

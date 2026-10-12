@@ -10,11 +10,12 @@ type Props = {
   /** true면 스크롤 전에도 흰 배경 (내부 페이지용) */
   solidByDefault?: boolean
   showProjects?: boolean
+  showGallery?: boolean
   /** true면 스크롤과 상관없이 잠깐 보였다가 숨고, 마우스를 화면 위쪽에 올리거나 스크롤을 올리면 나온다 */
   autoHide?: boolean
 }
 
-export function SiteHeader({ solidByDefault = false, showProjects = true, autoHide = false }: Props) {
+export function SiteHeader({ solidByDefault = false, showProjects = true, showGallery = true, autoHide = false }: Props) {
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [peek, setPeek] = useState(true)
@@ -82,7 +83,10 @@ export function SiteHeader({ solidByDefault = false, showProjects = true, autoHi
   }, [open])
 
   const solid = solidByDefault || scrolled || open
-  const nav = NAV_ITEMS.filter((n) => !(n.hideWhen === 'projectsHidden' && !showProjects))
+  const nav = NAV_ITEMS.filter(
+    (n) =>
+      !(n.hideWhen === 'projectsHidden' && !showProjects) && !(n.hideWhen === 'galleryHidden' && !showGallery),
+  )
 
   return (
     <header

@@ -3,7 +3,11 @@ import { COMPANY, Logo, NAV_ITEMS, OTHER_SERVICES } from './brand'
 import type { SettingsContent } from '@/lib/content/defaults'
 
 export function SiteFooter({ settings }: { settings: SettingsContent }) {
-  const nav = NAV_ITEMS.filter((n) => !(n.hideWhen === 'projectsHidden' && !settings.showProjects))
+  const nav = NAV_ITEMS.filter(
+    (n) =>
+      !(n.hideWhen === 'projectsHidden' && !settings.showProjects) &&
+      !(n.hideWhen === 'galleryHidden' && !settings.showGallery),
+  )
 
   return (
     <footer className="border-t border-border bg-background pb-28 pt-16 lg:pb-16">

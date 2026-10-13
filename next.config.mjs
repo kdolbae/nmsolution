@@ -10,19 +10,18 @@ const nextConfig = {
   async redirects() {
     return [{ source: '/admin/ads', destination: 'https://nanomaster.co.kr/admin/ads?brand=nmsolution', permanent: false }]
   },
-  // 금강변압기 제출 자료(정적 페이지, public/kkt). 한글 주소와 영문 별칭이 같은 페이지를 연다.
+  // 금강변압기 제출 자료(app/kkt/route.ts, 비밀번호 잠금). 한글 주소도 같은 페이지를 연다.
   async rewrites() {
     return [
       // 요청 경로는 퍼센트 인코딩된 채로 비교되므로 인코딩된 형태로 적는다 (/금강변압기)
-      { source: '/%EA%B8%88%EA%B0%95%EB%B3%80%EC%95%95%EA%B8%B0', destination: '/kkt/index.html' },
-      { source: '/kkt', destination: '/kkt/index.html' },
+      { source: '/%EA%B8%88%EA%B0%95%EB%B3%80%EC%95%95%EA%B8%B0', destination: '/kkt' },
     ]
   },
   async headers() {
     return [
       // 발주처 제출용이라 검색에 노출하지 않는다
       { source: '/%EA%B8%88%EA%B0%95%EB%B3%80%EC%95%95%EA%B8%B0', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }] },
-      { source: '/kkt/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }] },
+      { source: '/kkt-assets/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }] },
       {
         source: '/(.*)',
         headers: [

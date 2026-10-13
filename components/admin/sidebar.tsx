@@ -1,15 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Inbox, BarChart3, Search, KeyRound, Activity } from 'lucide-react'
+import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Building2, Inbox, BarChart3, Search, KeyRound, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
+import { ADMIN_MARK_COOKIE } from '@/components/admin-fab'
 
 
 const LINKS: Array<{ href: string; label: string; icon: typeof Home; external?: boolean }> = [
   { href: '/admin', label: '대시보드', icon: LayoutDashboard },
+  { href: '/admin/clients', label: '업체 관리', icon: Building2 },
   { href: BOARD_STATS_URL, label: '마케팅 상황판', icon: BarChart3, external: true },
   { href: BOARD_ADS_URL, label: '검색광고 상황판', icon: Search, external: true },
   { href: '/admin/stats', label: '자체 방문 기록', icon: Activity },
@@ -26,7 +29,13 @@ export function AdminSidebar({ userName }: { userName: string }) {
   const pathname = usePathname()
   const router = useRouter()
 
+  // 사이트 화면에 관리자 버튼(components/admin-fab.tsx)을 띄우기 위한 표시. 권한은 버튼이 세션으로 다시 확인한다
+  useEffect(() => {
+    document.cookie = `${ADMIN_MARK_COOKIE}=1; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`
+  }, [])
+
   const signOut = async () => {
+    document.cookie = `${ADMIN_MARK_COOKIE}=; Path=/; Max-Age=0`
     await authClient.signOut()
     router.push('/admin/login')
     router.refresh()

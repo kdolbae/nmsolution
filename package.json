@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "seed:projects": "tsx scripts/seed-projects.ts",
-    "db:setup": "psql \"$DATABASE_URL\" -f sql/001_quote_requests.sql -f sql/002_seed_projects.sql -f sql/007_quote_attribution.sql"
+    "db:setup": "psql \"$DATABASE_URL\" -f sql/001_quote_requests.sql -f sql/002_seed_projects.sql -f sql/008_quote_attribution.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -19,6 +19,7 @@
     "lucide-react": "^1.16.0",
     "next": "16.3.3",
     "pg": "^8.23.0",
+    "pretendard": "1.3.9",
     "react": "^19",
     "react-dom": "^19",
     "shadcn": "^4.11.0",

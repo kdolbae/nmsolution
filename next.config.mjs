@@ -12,6 +12,8 @@ const nextConfig = {
   },
   async headers() {
     return [
+      // 발주처 제출용이라 검색에 노출하지 않는다
+      { source: '/kkt-assets/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }] },
       {
         source: '/(.*)',
         headers: [

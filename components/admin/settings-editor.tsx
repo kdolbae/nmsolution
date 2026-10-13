@@ -27,6 +27,17 @@ export function SettingsEditor({ initial }: { initial: SettingsContent }) {
           </div>
           <Switch id="show-projects" checked={c.showProjects} onCheckedChange={(v) => setC({ ...c, showProjects: v })} />
         </div>
+        <div className="flex items-center justify-between gap-6 border border-border p-4">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="show-gallery" className="text-base font-semibold">
+              작업 사진 노출
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              끄면 헤더 · 푸터 메뉴와 메인 페이지의 작업 사진 섹션이 모두 숨겨집니다.
+            </p>
+          </div>
+          <Switch id="show-gallery" checked={c.showGallery} onCheckedChange={(v) => setC({ ...c, showGallery: v })} />
+        </div>
       </Section>
 
       <Section title="연락처" description="사이트 전체의 전화번호 표시에 사용됩니다.">

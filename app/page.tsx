@@ -29,11 +29,11 @@ export default async function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(localBusinessJsonLd({ settings, services })) }}
       />
-      <SiteHeader showProjects={settings.showProjects} />
+      <SiteHeader showProjects={settings.showProjects} showGallery={settings.showGallery} />
       <main>
         <Hero content={home.hero} />
         <FactoryScope content={home.scope} factory={factory} />
-        <WorkGallery content={home.gallery} />
+        {settings.showGallery && <WorkGallery content={home.gallery} />}
         <FactoryProcess content={home.process} />
         {settings.showProjects && <Projects projects={projects} />}
         <Why content={home.why} />

@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { access } from 'node:fs/promises'
 import path from 'node:path'
-import { auth } from '@/lib/auth'
+import { getAdminSession } from '@/lib/sso'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -14,7 +14,7 @@ const EXCLUDES = ['node_modules/*', '.next/*', '.git/*', '.vercel/*', '.env*', '
  * Vercel 서버리스 배포에서는 소스가 번들에 포함되지 않아 안내 메시지를 반환합니다.
  */
 export async function GET(req: Request) {
-  const session = await auth.api.getSession({ headers: req.headers })
+  const session = await getAdminSession(req.headers)
   if (!session?.user) return new Response('Unauthorized', { status: 401 })
 
   const root = process.cwd()

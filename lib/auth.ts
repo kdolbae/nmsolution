@@ -44,6 +44,8 @@ export const auth = betterAuth({
           ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
             ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
             : []),
+          // sbworks.bond 관리 웹 안에서 여는 주소 (lib/sso.ts). 여기서도 원래 관리자 로그인·로그아웃이 된다.
+          'https://nmsolution.sbworks.bond',
         ]
       : []),
   ],

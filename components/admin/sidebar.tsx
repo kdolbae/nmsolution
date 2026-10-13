@@ -37,6 +37,8 @@ export function AdminSidebar({ userName }: { userName: string }) {
   const signOut = async () => {
     document.cookie = `${ADMIN_MARK_COOKIE}=; Path=/; Max-Age=0`
     await authClient.signOut()
+    // sbworks.bond 관리 웹에서 넘어온 로그인 쿠키도 지운다 (lib/sso.ts)
+    await fetch('/api/admin/sso', { method: 'DELETE' }).catch(() => {})
     router.push('/admin/login')
     router.refresh()
   }

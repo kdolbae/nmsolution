@@ -3,7 +3,7 @@ import { PAGE_HTML } from './page-html'
 import { NO_STORE, cookieValue } from './http'
 
 /**
- * 금강변압기 제출 자료 페이지. /금강변압기 도 proxy.ts 가 여기로 rewrite 한다.
+ * 금강변압기 공사제안서 페이지. /금강변압기 도 proxy.ts 가 여기로 rewrite 한다.
  *
  * - 링크를 아는 사람도 비밀번호(KKT_PASSWORD)를 넣어야 볼 수 있다. 관리자도 같다.
  * - 본문에는 금액이 없다. 견적서는 맨 아래 칸에서 같은 비밀번호를 열 때마다 다시 넣어야
@@ -31,8 +31,8 @@ button{width:100%;margin-top:12px;font:inherit;font-weight:700;font-size:15px;pa
 </style></head><body>
 <form method="post">
 <div class="mark">NM</div>
-<h1>금강변압기 제출 자료</h1>
-<p>엔엠솔루션이 금강변압기 유한회사에 제출한 자료임. 전달받은 비밀번호를 입력해 주세요.</p>
+<h1>금강변압기 공사제안서</h1>
+<p>엔엠솔루션이 주식회사 금강변압기에 제출한 공사제안서임. 전달받은 비밀번호를 입력해야 열람할 수 있음.</p>
 <input name="password" type="password" inputmode="numeric" autocomplete="off" autofocus required aria-label="비밀번호">
 ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' : ''}
 <button type="submit">열기</button>

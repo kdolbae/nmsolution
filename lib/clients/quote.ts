@@ -271,7 +271,6 @@ export const QUOTE_CSS = `
 .nmq .q-sign p{margin:0 0 4px}
 .nmq .q-sign .who{font-size:12pt;font-weight:600;margin-top:8px}
 .nmq .q-foot{margin-top:22px;padding-top:8px;border-top:1px solid var(--line);font-size:8pt;color:var(--muted);text-align:center;line-height:1.4}
-.nmq .q-rate{font-size:8pt;color:var(--muted);margin:4px 0 0}
 @media print{.nmq tr,.nmq .q-total,.nmq .q-sign{break-inside:avoid}.nmq thead{display:table-header-group}}
 `
 
@@ -373,7 +372,6 @@ ${rows.join('\n')}
 <tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td><td></td></tr>
 <tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>
 </tbody></table>
-${q.costCalc ? `<p class="q-rate">요율: 산재보험료 ${q.rates.injury}%·고용보험료 ${q.rates.employment}% (노무비 기준), 산업안전보건관리비 ${q.rates.safety}% ((재료비 + 노무비) 기준), 일반관리비 ${q.rates.overhead}% (순공사원가 기준), 이윤 ${q.rates.profit}% ((노무비 + 경비 + 일반관리비) 기준).</p>` : ''}
 <h2 class="q-sub">특기사항</h2>
 <ol class="q-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ol>
 <div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">엔엠솔루션 대표 김성배 (인)</p></div>

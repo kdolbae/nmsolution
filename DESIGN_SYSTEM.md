@@ -217,25 +217,23 @@ Electric Blue는 넓은 배경 장식이 아니라 CTA, 키커 선, 링크 호�
 
 | 역할 | 폰트 | Tailwind |
 | --- | --- | --- |
-| 한글·본문·제목 | Noto Sans KR | `font-sans` |
+| 한글·본문·제목 | Pretendard (회사 공식 폰트) | `font-sans` |
 | 영문 키커·숫자·전화·메타 | Geist Mono | `font-mono` |
 
 Fallback:
 
 ```css
---font-sans: var(--font-noto), 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
---font-mono: var(--font-geist-mono), var(--font-noto), 'Apple SD Gothic Neo', 'Malgun Gothic', ui-monospace, monospace;
+--font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+--font-mono: var(--font-geist-mono), 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', ui-monospace, monospace;
 ```
 
 ### 4.2 폰트 로딩
 
+Pretendard는 npm `pretendard` 패키지의 dynamic subset CSS를 `app/layout.tsx`에서 import해 자체 호스팅한다.
+가변 폰트라 `font-normal`부터 `font-black`까지 모든 굵기를 쓸 수 있다.
+
 ```tsx
-const notoSansKr = Noto_Sans_KR({
-  subsets: ['latin'],
-  weight: ['400', '500', '700', '900'],
-  variable: '--font-noto',
-  display: 'swap',
-})
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 
 const geistMono = Geist_Mono({
   subsets: ['latin'],
@@ -958,7 +956,7 @@ Home의 첫 화면에는 기타 사업을 공장 개보수와 동급으로 나�
 
 ### 타이포
 
-- [ ] Noto Sans KR + Geist Mono만 사용하는가?
+- [ ] Pretendard + Geist Mono만 사용하는가?
 - [ ] 제목에 `text-balance`, 본문에 `text-pretty`를 사용했는가?
 - [ ] 본문이 14px보다 작지 않은가?
 - [ ] 제목/본문/메타데이터 계층이 명확한가?
@@ -1013,7 +1011,7 @@ MUST와 MUST NOT 규칙을 모두 준수하고, design-system.tokens.json의 값
 
 우선 기존 저장소의 globals.css, layout.tsx, 공통 컴포넌트를 읽고 재사용하세요.
 디자인의 핵심은 White/Light Gray 기반, Deep Navy의 신뢰감, Electric Blue의 제한적인 행동 강조,
-Noto Sans KR의 강한 한글 제목, Geist Mono의 영문 키커와 숫자, 4px 이하의 모서리,
+Pretendard의 강한 한글 제목, Geist Mono의 영문 키커와 숫자, 4px 이하의 모서리,
 실제 산업 현장 이미지, 1280px 콘텐츠 컨테이너입니다.
 
 보라색 그라디언트, glow, blob, glassmorphism, 큰 radius, 불필요한 shadow,

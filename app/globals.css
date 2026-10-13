@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-noto), 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  --font-mono: var(--font-geist-mono), var(--font-noto), 'Apple SD Gothic Neo', 'Malgun Gothic', ui-monospace, monospace;
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-mono: var(--font-geist-mono), 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', ui-monospace, monospace;
 
   --color-ring: var(--ring);
   --color-input: var(--input);

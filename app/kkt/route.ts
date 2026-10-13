@@ -1,40 +1,17 @@
-import { getSession } from '@/lib/admin'
 import { KKT_COOKIE, KKT_COOKIE_MAX_AGE, hasKktAccess, isKktPassword, kktToken } from '@/lib/kkt-access'
-import { ADMIN_HTML, GUEST_HTML } from './page-html'
+import { PAGE_HTML } from './page-html'
+import { NO_STORE, cookieValue } from './http'
 
 /**
- * 금강변압기 제출 자료 페이지. /금강변압기 도 next.config.mjs rewrite 로 여기로 온다.
+ * 금강변압기 제출 자료 페이지. /금강변압기 도 proxy.ts 가 여기로 rewrite 한다.
  *
  * - 링크를 아는 사람도 비밀번호(KKT_PASSWORD)를 넣어야 볼 수 있다. 관리자도 같다.
- * - 견적 부분(견적서·금액)은 관리자로 로그인한 경우에만 보인다. 그 외에는 GUEST_HTML(금액 제외본).
+ * - 본문에는 금액이 없다. 견적서는 맨 아래 칸에서 같은 비밀번호를 열 때마다 다시 넣어야
+ *   ./quote/route.ts 가 내려준다.
  * - 본문은 /mnt/project-files/kkt-web/build.py 가 만든 page-html.ts 를 그대로 내보낸다.
  */
 
 export const dynamic = 'force-dynamic'
-
-const NO_STORE = {
-  'Cache-Control': 'private, no-store',
-  'X-Robots-Tag': 'noindex, nofollow, noarchive',
-  'Referrer-Policy': 'no-referrer',
-}
-
-function cookieValue(req: Request): string | undefined {
-  const raw = req.headers.get('cookie') ?? ''
-  for (const part of raw.split(';')) {
-    const [k, ...v] = part.trim().split('=')
-    if (k === KKT_COOKIE) return v.join('=')
-  }
-  return undefined
-}
-
-async function isAdmin(): Promise<boolean> {
-  try {
-    const session = await getSession()
-    return Boolean(session?.user)
-  } catch {
-    return false
-  }
-}
 
 function lockPage(error: boolean): Response {
   const html = `<!doctype html>
@@ -68,8 +45,7 @@ ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' :
 
 export async function GET(req: Request) {
   if (!(await hasKktAccess(cookieValue(req)))) return lockPage(false)
-  const html = (await isAdmin()) ? ADMIN_HTML : GUEST_HTML
-  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
+  return new Response(PAGE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }
 
 export async function POST(req: Request) {

@@ -38,7 +38,7 @@
   },
   "typography": {
     "families": {
-      "sans": "Noto Sans KR",
+      "sans": "Pretendard",
       "mono": "Geist Mono"
     },
     "allowedWeights": {

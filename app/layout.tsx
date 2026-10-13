@@ -2,16 +2,11 @@ import { Analytics } from '@vercel/analytics/next'
 import { SiteTracker } from '@/components/site-tracker'
 import { AdminFab } from '@/components/admin-fab'
 import type { Metadata, Viewport } from 'next'
-import { Geist_Mono, Noto_Sans_KR } from 'next/font/google'
+import { Geist_Mono } from 'next/font/google'
 import { siteUrl, siteVerification } from '@/lib/site'
+// 공식 폰트 Pretendard (디자인 규격). 쓰는 글자 범위만 나눠 받는 dynamic subset을 자체 호스팅한다.
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import './globals.css'
-
-const notoSansKr = Noto_Sans_KR({
-  subsets: ['latin'],
-  weight: ['400', '500', '700', '900'],
-  variable: '--font-noto',
-  display: 'swap',
-})
 
 const geistMono = Geist_Mono({
   subsets: ['latin'],
@@ -96,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ko" className={`bg-background ${notoSansKr.variable} ${geistMono.variable}`}>
+    <html lang="ko" className={`bg-background ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

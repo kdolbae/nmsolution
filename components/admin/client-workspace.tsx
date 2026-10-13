@@ -1,0 +1,763 @@
+'use client'
+
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Bold,
+  Check,
+  Code,
+  FileText,
+  Calculator,
+  ImagePlus,
+  Loader2,
+  Pencil,
+  Plus,
+  Printer,
+  RotateCcw,
+  Trash2,
+  Undo2,
+  X,
+} from 'lucide-react'
+import { Field } from '@/components/admin/form'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
+import {
+  ITEM_KINDS,
+  calcQuote,
+  emptyItem,
+  itemAmount,
+  newId,
+  quoteDocument,
+  won,
+  type ItemKind,
+  type Quote,
+  type QuoteItem,
+  type QuoteSection,
+} from '@/lib/clients/quote'
+import { withBrandFont } from '@/lib/clients/proposal'
+
+type ClientInfo = {
+  id: number
+  name: string
+  contactPerson: string
+  phone: string
+  email: string
+  siteAddress: string
+  memo: string
+}
+
+type Tab = 'proposal' | 'quote'
+type PrintDocs = 'both' | 'proposal' | 'quote'
+
+export function ClientWorkspace({
+  client: initialClient,
+  proposalHtml,
+  quote: initialQuote,
+  initialTab,
+}: {
+  client: ClientInfo
+  proposalHtml: string
+  quote: Quote
+  initialTab: Tab
+}) {
+  const [client, setClient] = useState(initialClient)
+  const [tab, setTab] = useState<Tab>(initialTab)
+  const [proposalDirty, setProposalDirty] = useState(false)
+  const [quoteDirty, setQuoteDirty] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
+
+  const switchTab = (t: Tab) => {
+    setTab(t)
+    window.history.replaceState(null, '', `?tab=${t}`)
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <ClientHeader client={client} onSaved={setClient} />
+
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border">
+        <div className="flex gap-1" role="tablist" aria-label="문서">
+          {(
+            [
+              ['proposal', '제안서', FileText],
+              ['quote', '견적서', Calculator],
+            ] as const
+          ).map(([value, label, Icon]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={tab === value}
+              onClick={() => switchTab(value)}
+              className={cn(
+                '-mb-px inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-colors',
+                tab === value ? 'border-electric text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="size-4" strokeWidth={1.75} />
+              {label}
+              {(value === 'proposal' ? proposalDirty : quoteDirty) && <span className="size-1.5 rounded-full bg-orange-500" />}
+            </button>
+          ))}
+        </div>
+        <Button variant="outline" className="mb-2 rounded-none" onClick={() => setPrintOpen(true)}>
+          <Printer /> 인쇄
+        </Button>
+      </div>
+
+      <div hidden={tab !== 'proposal'}>
+        <ProposalPanel clientId={client.id} initialHtml={proposalHtml} onDirty={setProposalDirty} />
+      </div>
+      <div hidden={tab !== 'quote'}>
+        <QuotePanel client={client} initialQuote={initialQuote} onDirty={setQuoteDirty} visible={tab === 'quote'} />
+      </div>
+
+      {printOpen && (
+        <PrintDialog
+          clientId={client.id}
+          tab={tab}
+          unsaved={[proposalDirty && '제안서', quoteDirty && '견적서'].filter(Boolean) as string[]}
+          onClose={() => setPrintOpen(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ---------- 업체 정보 ----------
+
+function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: ClientInfo) => void }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState(client)
+  const [error, setError] = useState('')
+  const [pending, startTransition] = useTransition()
+  const set = (k: keyof ClientInfo) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
+
+  const save = () =>
+    startTransition(async () => {
+      setError('')
+      try {
+        await saveClientInfo(client.id, form)
+        onSaved(form)
+        setOpen(false)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '저장하지 못했습니다.')
+      }
+    })
+
+  const remove = () => {
+    if (!confirm(`'${client.name}' 업체와 제안서·견적서를 모두 지울까요? 되돌릴 수 없습니다.`)) return
+    startTransition(async () => {
+      await deleteClient(client.id)
+      router.push('/admin/clients')
+    })
+  }
+
+  return (
+    <div className="bg-background p-5 ring-1 ring-border lg:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {[client.contactPerson, client.phone, client.email, client.siteAddress].filter(Boolean).join(' · ') || '담당자·연락처 미입력'}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="rounded-none" onClick={() => setOpen((v) => !v)}>
+          <Pencil /> 업체 정보
+        </Button>
+      </div>
+      {open && (
+        <div className="mt-5 flex flex-col gap-4 border-t border-border pt-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="업체명 *" value={form.name} onChange={set('name')} />
+            <Field label="담당자" value={form.contactPerson} onChange={set('contactPerson')} />
+            <Field label="연락처" value={form.phone} onChange={set('phone')} />
+            <Field label="이메일" value={form.email} onChange={set('email')} />
+            <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />
+            <Field label="메모 (인쇄 안 됨)" value={form.memo} onChange={set('memo')} />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex flex-wrap gap-2">
+            <Button className="rounded-none" onClick={save} disabled={pending}>
+              {pending ? <Loader2 className="animate-spin" /> : <Check />} 저장
+            </Button>
+            <Button variant="outline" className="rounded-none" onClick={() => setOpen(false)}>
+              닫기
+            </Button>
+            <Button variant="destructive" className="ml-auto rounded-none" onClick={remove} disabled={pending}>
+              <Trash2 /> 업체 삭제
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- 제안서 ----------
+
+const DISABLED_SCRIPT = 'text/nm-disabled'
+
+/** 편집 중에는 제안서 안의 스크립트(확대 보기·탭 등)가 돌지 않게 막는다 */
+function disableScripts(html: string) {
+  return html.replace(/<script(?![^>]*\btype=)([^>]*)>/gi, `<script type="${DISABLED_SCRIPT}"$1>`)
+}
+function enableScripts(html: string) {
+  return html.split(`<script type="${DISABLED_SCRIPT}"`).join('<script')
+}
+
+const EDIT_CSS = `<style data-nm-injected>
+[data-nm-sel]{outline:3px solid #e8742a!important;outline-offset:2px}
+body{cursor:text}img,video{cursor:pointer}
+</style>`
+
+function ProposalPanel({
+  clientId,
+  initialHtml,
+  onDirty,
+}: {
+  clientId: number
+  initialHtml: string
+  onDirty: (v: boolean) => void
+}) {
+  const [html, setHtml] = useState(initialHtml)
+  const [editing, setEditing] = useState(false)
+  const [source, setSource] = useState<string | null>(null)
+  const [message, setMessage] = useState('')
+  const [pending, startTransition] = useTransition()
+  const frame = useRef<HTMLIFrameElement>(null)
+  const selected = useRef<HTMLElement | null>(null)
+
+  const srcDoc = useMemo(() => {
+    if (!html) return ''
+    const shown = withBrandFont(editing ? disableScripts(html) : html)
+    return editing ? shown.replace(/<\/head>/i, `${EDIT_CSS}</head>`) : shown
+  }, [html, editing])
+
+  useEffect(() => onDirty(editing), [editing, onDirty])
+
+  const doc = () => frame.current?.contentDocument ?? null
+
+  const onLoad = () => {
+    const d = doc()
+    if (!d || !editing) return
+    d.designMode = 'on'
+    d.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement
+      selected.current?.removeAttribute('data-nm-sel')
+      selected.current = null
+      if (t.tagName === 'IMG' || t.tagName === 'VIDEO') {
+        e.preventDefault()
+        t.setAttribute('data-nm-sel', '')
+        selected.current = t
+      }
+    })
+    d.addEventListener('input', () => setMessage(''))
+  }
+
+  const serialize = () => {
+    const d = doc()
+    if (!d) return null
+    d.designMode = 'off'
+    d.querySelectorAll('[data-nm-injected]').forEach((n) => n.remove())
+    d.querySelectorAll('[data-nm-sel]').forEach((n) => n.removeAttribute('data-nm-sel'))
+    return enableScripts(`<!doctype html>\n${d.documentElement.outerHTML}`)
+  }
+
+  const persist = (next: string) =>
+    startTransition(async () => {
+      try {
+        await saveProposal(clientId, next)
+        setHtml(next)
+        setEditing(false)
+        setSource(null)
+        setMessage('저장했습니다.')
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : '저장하지 못했습니다.')
+      }
+    })
+
+  const save = () => {
+    const next = serialize()
+    if (next) persist(next)
+  }
+
+  const cancel = () => {
+    if (!confirm('고친 내용을 버릴까요?')) return
+    setEditing(false)
+    setMessage('')
+  }
+
+  const exec = (cmd: string, value?: string) => {
+    const d = doc()
+    d?.execCommand(cmd, false, value)
+    frame.current?.contentWindow?.focus()
+  }
+
+  const insertMedia = () => {
+    const sel = selected.current
+    const url = prompt(
+      sel ? '바꿀 이미지·영상 주소를 넣어 주세요.' : '넣을 이미지 또는 영상 주소 (mp4, 유튜브)를 넣어 주세요. 글자 커서 위치에 들어갑니다.',
+      sel?.getAttribute('src') ?? '',
+    )?.trim()
+    if (!url) return
+    if (sel && sel.tagName === 'IMG') {
+      sel.setAttribute('src', url)
+      return
+    }
+    if (sel && sel.tagName === 'VIDEO') {
+      sel.querySelectorAll('source').forEach((s) => s.remove())
+      sel.setAttribute('src', url)
+      ;(sel as HTMLVideoElement).load()
+      return
+    }
+    const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/)
+    const safe = url.replace(/"/g, '&quot;')
+    const media = yt
+      ? `<iframe src="https://www.youtube.com/embed/${yt[1]}" style="width:100%;aspect-ratio:16/9;border:0" allowfullscreen></iframe>`
+      : /\.(mp4|webm|mov)(\?|$)/i.test(url)
+        ? `<video controls preload="metadata" playsinline src="${safe}" style="width:100%;aspect-ratio:16/9;background:#0b1224"></video>`
+        : `<img src="${safe}" alt="" style="width:100%">`
+    exec('insertHTML', `<figure style="margin:16px 0">${media}</figure>`)
+  }
+
+  const removeBlock = () => {
+    const d = doc()
+    if (!d) return
+    const target =
+      selected.current?.closest('figure') ??
+      selected.current ??
+      (d.getSelection()?.anchorNode?.parentElement?.closest('section, .step, figure, table, .table-wrap') as HTMLElement | null)
+    if (!target) {
+      alert('지울 부분(이미지나 섹션 안의 글자)을 먼저 눌러 주세요.')
+      return
+    }
+    const label = target.tagName === 'SECTION' ? `'${target.querySelector('h2')?.textContent ?? '이'}' 섹션` : '선택한 부분'
+    if (!confirm(`${label}을 지울까요? 저장 전에는 취소로 되돌릴 수 있습니다.`)) return
+    target.remove()
+    selected.current = null
+  }
+
+  const regenerate = () => {
+    if (!confirm('지금 제안서를 지우고 홈페이지 내용으로 기본 제안서를 다시 만들까요?')) return
+    startTransition(async () => {
+      const res = await resetProposal(clientId)
+      setHtml(res.html)
+      setEditing(false)
+      setMessage('기본 제안서로 다시 만들었습니다.')
+    })
+  }
+
+  if (source !== null) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">제안서 HTML 을 직접 고칩니다. 잘 모르면 화면 편집을 쓰세요.</p>
+        <textarea
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+          spellCheck={false}
+          className="h-[70vh] w-full border border-input bg-background p-3 font-mono text-xs"
+        />
+        <div className="flex gap-2">
+          <Button className="rounded-none" disabled={pending} onClick={() => persist(source)}>
+            {pending ? <Loader2 className="animate-spin" /> : <Check />} 저장
+          </Button>
+          <Button variant="outline" className="rounded-none" onClick={() => setSource(null)}>
+            취소
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-secondary py-2">
+        {editing ? (
+          <>
+            <Button className="rounded-none" onClick={save} disabled={pending}>
+              {pending ? <Loader2 className="animate-spin" /> : <Check />} 저장
+            </Button>
+            <Button variant="outline" className="rounded-none" onClick={cancel}>
+              <X /> 취소
+            </Button>
+            <span className="mx-1 h-6 w-px bg-border" />
+            <Button variant="outline" size="icon" className="rounded-none" title="실행 취소" onClick={() => exec('undo')}>
+              <Undo2 />
+            </Button>
+            <Button variant="outline" size="icon" className="rounded-none" title="굵게" onClick={() => exec('bold')}>
+              <Bold />
+            </Button>
+            <Button variant="outline" className="rounded-none" onClick={insertMedia}>
+              <ImagePlus /> 이미지·영상
+            </Button>
+            <Button variant="outline" className="rounded-none" onClick={removeBlock}>
+              <Trash2 /> 부분 삭제
+            </Button>
+            <span className="text-xs text-muted-foreground">글자는 화면에서 바로 고치세요. 이미지·영상은 눌러서 바꿉니다.</span>
+          </>
+        ) : (
+          <>
+            <Button className="rounded-none" onClick={() => setEditing(true)} disabled={!html}>
+              <Pencil /> 편집
+            </Button>
+            <Button variant="outline" className="rounded-none" onClick={() => setSource(html)}>
+              <Code /> HTML
+            </Button>
+            <Button variant="ghost" className="rounded-none" onClick={regenerate} disabled={pending}>
+              <RotateCcw /> 기본 제안서로
+            </Button>
+          </>
+        )}
+        {message && <span className="text-sm text-electric">{message}</span>}
+      </div>
+      {html ? (
+        <iframe
+          ref={frame}
+          key={editing ? 'edit' : 'view'}
+          srcDoc={srcDoc}
+          onLoad={onLoad}
+          title="제안서"
+          className="h-[80vh] w-full border border-border bg-white"
+        />
+      ) : (
+        <p className="border border-dashed border-border bg-background px-6 py-16 text-center text-sm text-muted-foreground">
+          제안서가 비어 있습니다. &lsquo;기본 제안서로&rsquo;를 눌러 만들어 주세요.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ---------- 견적서 ----------
+
+function NumInput({ value, onChange, className }: { value: number; onChange: (n: number) => void; className?: string }) {
+  // 입력 중에는 친 글자를 그대로 두고, 칸을 벗어나면 천 단위 쉼표로 보여 준다
+  const [text, setText] = useState<string | null>(null)
+  return (
+    <input
+      inputMode="decimal"
+      value={text ?? (value ? value.toLocaleString('ko-KR', { maximumFractionDigits: 3 }) : '')}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        setText(e.target.value)
+        onChange(Number(e.target.value.replace(/[^\d.-]/g, '')) || 0)
+      }}
+      className={cn('h-8 w-full border border-input bg-background px-2 text-right text-sm tabular-nums', className)}
+    />
+  )
+}
+
+function TextIn({ value, onChange, className, placeholder }: { value: string; onChange: (v: string) => void; className?: string; placeholder?: string }) {
+  return (
+    <input
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn('h-8 w-full border border-input bg-background px-2 text-sm', className)}
+    />
+  )
+}
+
+function QuotePanel({
+  client,
+  initialQuote,
+  onDirty,
+  visible,
+}: {
+  client: ClientInfo
+  initialQuote: Quote
+  onDirty: (v: boolean) => void
+  visible: boolean
+}) {
+  const [q, setQ] = useState(initialQuote)
+  const [dirty, setDirtyState] = useState(false)
+  const [message, setMessage] = useState('')
+  const [pending, startTransition] = useTransition()
+  const calc = useMemo(() => calcQuote(q), [q])
+  const preview = useMemo(() => quoteDocument(q, client), [q, client])
+  const previewFrame = useRef<HTMLIFrameElement>(null)
+
+  const setDirty = (v: boolean) => {
+    setDirtyState(v)
+    onDirty(v)
+  }
+
+  const update = (patch: Partial<Quote>) => {
+    setQ((cur) => ({ ...cur, ...patch }))
+    setDirty(true)
+    setMessage('')
+  }
+  const updateSection = (sid: string, patch: Partial<QuoteSection>) =>
+    update({ sections: q.sections.map((s) => (s.id === sid ? { ...s, ...patch } : s)) })
+  const updateItem = (sid: string, iid: string, patch: Partial<QuoteItem>) =>
+    update({
+      sections: q.sections.map((s) =>
+        s.id === sid ? { ...s, items: s.items.map((i) => (i.id === iid ? { ...i, ...patch } : i)) } : s,
+      ),
+    })
+
+  const save = () =>
+    startTransition(async () => {
+      try {
+        await saveQuote(client.id, q)
+        setDirty(false)
+        setMessage('저장했습니다.')
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : '저장하지 못했습니다.')
+      }
+    })
+
+  // 미리보기 높이를 내용에 맞춘다
+  const fitPreview = () => {
+    const f = previewFrame.current
+    const d = f?.contentDocument
+    if (f && d && d.documentElement.scrollHeight) f.style.height = `${d.documentElement.scrollHeight + 4}px`
+  }
+  // 숨겨진 탭에서 읽히면 높이가 0 이므로 탭이 보일 때 다시 맞춘다
+  useEffect(() => {
+    if (visible) fitPreview()
+  }, [visible])
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 bg-secondary py-2">
+        <Button className="rounded-none" onClick={save} disabled={pending || !dirty}>
+          {pending ? <Loader2 className="animate-spin" /> : <Check />} 저장
+        </Button>
+        <div className="text-sm tabular-nums">
+          공급가액 <b>{won(calc.supply)}</b> · 부가세 {won(calc.vat)} · 합계 <b className="text-electric">{won(calc.grand)}원</b>
+        </div>
+        {message && <span className="text-sm text-electric">{message}</span>}
+      </div>
+
+      <section className="grid gap-4 bg-background p-5 ring-1 ring-border sm:grid-cols-3">
+        <Field label="견적번호" value={q.number} onChange={(v) => update({ number: v })} />
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          견적일자
+          <input
+            type="date"
+            value={q.date}
+            onChange={(e) => update({ date: e.target.value })}
+            className="h-9 border border-input bg-background px-2 text-sm"
+          />
+        </label>
+        <Field label="유효기간 (일)" value={String(q.validDays)} onChange={(v) => update({ validDays: Number(v.replace(/\D/g, '')) || 30 })} />
+        <div className="sm:col-span-3">
+          <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
+        </div>
+      </section>
+
+      {q.sections.map((s, si) => {
+        const c = calc.sections[si]
+        return (
+          <section key={s.id} className="bg-background ring-1 ring-border">
+            <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
+              <span className="font-mono text-xs text-muted-foreground">공종 {si + 1}</span>
+              <TextIn value={s.name} onChange={(v) => updateSection(s.id, { name: v })} placeholder="공종명 (예: 배관·설비)" className="max-w-56 font-semibold" />
+              <TextIn value={s.desc} onChange={(v) => updateSection(s.id, { desc: v })} placeholder="한 줄 설명 (선택)" className="min-w-40 flex-1" />
+              <span className="ml-auto text-sm font-semibold tabular-nums">{won(c.total)}원</span>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="공종 삭제"
+                onClick={() => confirm(`'${s.name || '공종'}'을 지울까요?`) && update({ sections: q.sections.filter((x) => x.id !== s.id) })}
+              >
+                <Trash2 />
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[960px] text-sm">
+                <thead className="bg-secondary text-xs text-muted-foreground">
+                  <tr>
+                    <th className="w-24 px-2 py-2 text-left font-medium">구분</th>
+                    <th className="px-2 py-2 text-left font-medium">품명</th>
+                    <th className="px-2 py-2 text-left font-medium">규격</th>
+                    <th className="w-20 px-2 py-2 text-right font-medium">수량</th>
+                    <th className="w-16 px-2 py-2 text-left font-medium">단위</th>
+                    <th className="w-28 px-2 py-2 text-right font-medium">단가</th>
+                    <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
+                    <th className="px-2 py-2 text-left font-medium">비고</th>
+                    <th className="w-8" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.items.map((i) => (
+                    <tr key={i.id} className="border-t border-border">
+                      <td className="px-1 py-1">
+                        <select
+                          value={i.kind}
+                          onChange={(e) => updateItem(s.id, i.id, { kind: e.target.value as ItemKind })}
+                          className="h-8 w-full border border-input bg-background px-1 text-sm"
+                        >
+                          {ITEM_KINDS.map((k) => (
+                            <option key={k}>{k}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-1 py-1"><TextIn value={i.name} onChange={(v) => updateItem(s.id, i.id, { name: v })} /></td>
+                      <td className="px-1 py-1"><TextIn value={i.spec} onChange={(v) => updateItem(s.id, i.id, { spec: v })} /></td>
+                      <td className="px-1 py-1"><NumInput value={i.qty} onChange={(n) => updateItem(s.id, i.id, { qty: n })} /></td>
+                      <td className="px-1 py-1"><TextIn value={i.unit} onChange={(v) => updateItem(s.id, i.id, { unit: v })} /></td>
+                      <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
+                      <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
+                      <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
+                      <td className="px-1 py-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          title="줄 삭제"
+                          onClick={() => updateSection(s.id, { items: s.items.filter((x) => x.id !== i.id) })}
+                        >
+                          <X />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border p-3 text-xs text-muted-foreground">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-none"
+                onClick={() => updateSection(s.id, { items: [...s.items, emptyItem(s.items.at(-1)?.kind)] })}
+              >
+                <Plus /> 줄 추가
+              </Button>
+              <span className="tabular-nums">재료비 {won(c.mat)} · 노무비 {won(c.lab)} · 경비 {won(c.exp)}</span>
+              {q.costCalc && (
+                <span className="tabular-nums">
+                  보험·안전 {won(c.injury + c.employment + c.safety)} · 일반관리비 {won(c.overhead)} · 이윤 {won(c.profit)}
+                </span>
+              )}
+            </div>
+          </section>
+        )
+      })}
+
+      <div>
+        <Button
+          variant="outline"
+          className="rounded-none"
+          onClick={() => update({ sections: [...q.sections, { id: newId('s'), name: '', desc: '', items: [emptyItem()] }] })}
+        >
+          <Plus /> 공종 추가
+        </Button>
+      </div>
+
+      <section className="flex flex-col gap-4 bg-background p-5 ring-1 ring-border">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={q.costCalc} onChange={(e) => update({ costCalc: e.target.checked })} />
+          원가계산 적용 (공종마다 산재·고용보험료, 산업안전보건관리비, 일반관리비, 이윤을 붙임)
+        </label>
+        {q.costCalc && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {(
+              [
+                ['injury', '산재보험료 %'],
+                ['employment', '고용보험료 %'],
+                ['safety', '안전관리비 %'],
+                ['overhead', '일반관리비 %'],
+                ['profit', '이윤 %'],
+              ] as const
+            ).map(([k, label]) => (
+              <label key={k} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {label}
+                <NumInput value={q.rates[k]} onChange={(n) => update({ rates: { ...q.rates, [k]: n } })} />
+              </label>
+            ))}
+          </div>
+        )}
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={q.truncate} onChange={(e) => update({ truncate: e.target.checked })} />
+          공종 합계 천원 미만 절사
+        </label>
+        <Field
+          label="특기사항 (한 줄에 한 항목)"
+          multiline
+          rows={6}
+          value={q.notes}
+          onChange={(v) => update({ notes: v })}
+          hint="공사 기간, 결제 조건, 포함·제외 사항. 견적 유효기간 줄은 자동으로 붙습니다."
+        />
+      </section>
+
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">미리보기 (인쇄되는 모양)</h2>
+        <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
+      </div>
+    </div>
+  )
+}
+
+// ---------- 인쇄 ----------
+
+function PrintDialog({ clientId, tab, unsaved, onClose }: { clientId: number; tab: Tab; unsaved: string[]; onClose: () => void }) {
+  const [docs, setDocs] = useState<PrintDocs>('both')
+  const options: { value: PrintDocs; label: string; hint: string }[] = [
+    { value: 'both', label: '제안서 + 견적서 함께', hint: '제안서 뒤에 견적서를 새 쪽으로 붙여 인쇄' },
+    { value: tab, label: tab === 'proposal' ? '제안서만' : '견적서만', hint: '지금 보고 있는 문서만' },
+    {
+      value: tab === 'proposal' ? 'quote' : 'proposal',
+      label: tab === 'proposal' ? '견적서만' : '제안서만',
+      hint: '다른 탭 문서만',
+    },
+  ]
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const print = () => {
+    window.open(`/api/admin/clients/${clientId}/print?docs=${docs}`, '_blank')
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="인쇄"
+        className="w-full max-w-md bg-background p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold">제안서와 견적서를 함께 인쇄할까요?</h2>
+        <div className="mt-4 flex flex-col gap-2">
+          {options.map((o) => (
+            <label
+              key={o.value}
+              className={cn(
+                'flex cursor-pointer items-start gap-3 border px-4 py-3',
+                docs === o.value ? 'border-electric bg-electric/5' : 'border-border',
+              )}
+            >
+              <input type="radio" name="docs" className="mt-1" checked={docs === o.value} onChange={() => setDocs(o.value)} />
+              <span>
+                <span className="block text-sm font-semibold">{o.label}</span>
+                <span className="block text-xs text-muted-foreground">{o.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        {unsaved.length > 0 && (
+          <p className="mt-3 text-sm text-orange-600">{unsaved.join('·')}에 저장하지 않은 변경이 있습니다. 인쇄에는 저장된 내용만 들어갑니다.</p>
+        )}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="outline" className="rounded-none" onClick={onClose}>
+            취소
+          </Button>
+          <Button className="rounded-none" onClick={print}>
+            <Printer /> 인쇄
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}

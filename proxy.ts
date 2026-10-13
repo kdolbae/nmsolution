@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { KKT_COOKIE, hasKktAccess } from '@/lib/kkt-access'
+import { auth } from '@/lib/auth'
 
 const KKT_KOREAN_PATH = '/금강변압기'
 
@@ -14,9 +15,12 @@ function decodedPath(pathname: string): string {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 금강변압기 제출 자료의 이미지·영상은 비밀번호를 통과한 사람에게만 내준다 (lib/kkt-access.ts)
+  // 금강변압기 제출 자료의 이미지·영상은 비밀번호를 통과한 사람에게만 내준다 (lib/kkt-access.ts).
+  // 관리자는 업체 관리(제안서 탭·인쇄)에서 같은 이미지·영상을 쓰므로 로그인만 되어 있으면 내준다.
   if (pathname.startsWith('/kkt-assets/')) {
     if (await hasKktAccess(request.cookies.get(KKT_COOKIE)?.value)) return NextResponse.next()
+    const session = await auth.api.getSession({ headers: request.headers }).catch(() => null)
+    if (session?.user) return NextResponse.next()
     return new NextResponse('Not Found', { status: 404, headers: { 'X-Robots-Tag': 'noindex, nofollow' } })
   }
 

@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import { SiteTracker } from '@/components/site-tracker'
+import { AdminFab } from '@/components/admin-fab'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Noto_Sans_KR } from 'next/font/google'
 import { siteUrl, siteVerification } from '@/lib/site'
@@ -100,6 +101,7 @@ export default function RootLayout({
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
         <SiteTracker />
+        <AdminFab />
       </body>
     </html>
   )

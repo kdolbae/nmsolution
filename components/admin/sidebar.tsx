@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
 import { ADMIN_MARK_COOKIE } from '@/components/admin-fab'
+import { LogoImage } from '@/components/brand'
 
 
 const LINKS: Array<{ href: string; label: string; icon: typeof Home; external?: boolean }> = [
@@ -43,14 +44,9 @@ export function AdminSidebar({ userName }: { userName: string }) {
 
   return (
     <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r border-border bg-background lg:flex">
-      <div className="flex items-center gap-2.5 border-b border-border px-5 py-5">
-        <span className="flex h-7 w-7 items-center justify-center bg-navy text-navy-foreground">
-          <span className="font-mono text-[11px] font-bold leading-none">NM</span>
-        </span>
-        <div className="flex flex-col">
-          <span className="font-mono text-xs font-semibold uppercase tracking-[0.18em]">NM Solution</span>
-          <span className="text-kicker text-electric">Admin</span>
-        </div>
+      <div className="flex items-center justify-between border-b border-border px-5 py-5">
+        <LogoImage className="h-7" />
+        <span className="text-kicker text-electric">Admin</span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="관리자 메뉴">

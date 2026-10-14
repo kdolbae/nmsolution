@@ -1,6 +1,8 @@
 import { KKT_COOKIE, KKT_COOKIE_MAX_AGE, hasKktAccess, isKktPassword, kktToken } from '@/lib/kkt-access'
 import { PAGE_HTML } from './page-html'
 import { NO_STORE, cookieValue } from './http'
+import { logoSvg } from '@/lib/brand-logo'
+import { withBrandLogo } from '@/lib/clients/proposal'
 
 /**
  * 금강변압기 공사제안서 페이지. /금강변압기 도 proxy.ts 가 여기로 rewrite 한다.
@@ -22,7 +24,7 @@ function lockPage(error: boolean): Response {
 *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:#f4f5f7;color:#1b1f27;
 font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:20px}
 form{width:100%;max-width:360px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:28px 24px}
-.mark{width:32px;height:32px;border-radius:4px;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 12px ui-monospace,monospace}
+.mark{height:30px}
 h1{font-size:20px;font-weight:900;color:var(--navy);margin:16px 0 6px;letter-spacing:-.02em}p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.6}
 input{width:100%;font:inherit;font-size:18px;letter-spacing:.3em;padding:12px 14px;border:1px solid var(--line);border-radius:4px;text-align:center}
 input:focus{outline:2px solid var(--electric);outline-offset:-1px;border-color:transparent}
@@ -30,7 +32,7 @@ button{width:100%;margin-top:12px;font:inherit;font-weight:700;font-size:15px;pa
 .err{color:#c8372d;font-size:13px;margin:10px 0 0}
 </style></head><body>
 <form method="post">
-<div class="mark">NM</div>
+<div class="mark">${logoSvg('horizontal', { height: '100%' })}</div>
 <h1>금강변압기 공사제안서</h1>
 <p>엔엠솔루션이 주식회사 금강변압기에 제출한 공사제안서임. 전달받은 비밀번호를 입력해야 열람할 수 있음.</p>
 <input name="password" type="password" inputmode="numeric" autocomplete="off" autofocus required aria-label="비밀번호">
@@ -45,7 +47,7 @@ ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' :
 
 export async function GET(req: Request) {
   if (!(await hasKktAccess(cookieValue(req)))) return lockPage(false)
-  return new Response(PAGE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
+  return new Response(withBrandLogo(PAGE_HTML), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }
 
 export async function POST(req: Request) {

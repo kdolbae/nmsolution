@@ -1,5 +1,6 @@
 import type { AboutContent, HomeContent, ServicesContent, SettingsContent } from '@/lib/content/defaults'
 import { PRETENDARD_CSS } from './quote'
+import { logoSvg } from '@/lib/brand-logo'
 
 /**
  * 업체별 제안서 HTML.
@@ -16,7 +17,16 @@ export const BRAND_FONT_TAGS = `<link data-nm-injected rel="stylesheet" href="${
 <style data-nm-injected>html body,html body *:not(svg):not(svg *){font-family:${FONT_STACK}!important}
 .mono,.n,td.n,th.n{font-variant-numeric:tabular-nums}</style>`
 
+/** 예전 'NM' 네모 표시를 공식 로고로 바꾼다 (로고 적용 전에 저장된 제안서용) */
+export function withBrandLogo(html: string): string {
+  return html.replace(
+    /<span class="mark">NM<\/span>\s*엔엠솔루션/g,
+    () => `<span style="display:inline-block;height:26px">${logoSvg('horizontal', { height: '100%' })}</span>`,
+  )
+}
+
 export function withBrandFont(html: string): string {
+  html = withBrandLogo(html)
   if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, () => `${BRAND_FONT_TAGS}\n</head>`)
   return `${BRAND_FONT_TAGS}\n${html}`
 }
@@ -32,7 +42,7 @@ export function esc(s: unknown) {
  * - 비밀번호로 여는 견적서 칸은 견적서 탭으로 옮겼으므로 안내 문구로 바꾼다.
  */
 export function kktProposalHtml(page: string): string {
-  return page
+  return withBrandLogo(page)
     .replace(/<link[^>]+fonts\.googleapis\.com\/css2[^>]*>/, `<link rel="stylesheet" href="${PRETENDARD_CSS}">`)
     .replace(/--sans:[^;]+;/, `--sans:${FONT_STACK};`)
     .replace(/--mono:[^;]+;/, `--mono:${FONT_STACK};`)
@@ -123,6 +133,7 @@ footer .phone{font-size:24px;font-weight:700;color:#fff}
 <body>
 <div class="hero">
   <div class="wrap">
+    <div class="logo" style="height:40px;margin-bottom:28px">${logoSvg('horizontal', { ink: '#FFFFFF', height: '100%' })}</div>
     <div class="kicker">Proposal · 공사제안서</div>
     <h1>${esc(client.name)}<br>공사제안서</h1>
     <p>[제안 공사명과 한 줄 요약을 적어 주세요.]</p>
@@ -221,6 +232,7 @@ ${c.home.why.items.map((w) => `      <div class="box"><div class="kicker">${esc(
 
 <footer>
   <div class="wrap">
+    <div style="height:32px;margin-bottom:14px">${logoSvg('horizontal', { ink: '#FFFFFF', height: '100%' })}</div>
     <b>${esc(s.companyName)}</b><br>
     대표 ${esc(s.ceo)} · ${esc(s.address)}<br>
     <span class="phone">${esc(s.phoneMobile)}</span> · 대표전화 ${esc(s.phoneMain)} · nm-solution.co.kr

@@ -153,7 +153,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true, showGa
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:h-20 lg:px-8">
           <div className="flex items-center gap-4">
-            <Logo />
+            <Logo inverted={!solid} />
             <span
               className={cn(
                 'hidden items-center gap-2 border-l pl-4 text-xs font-semibold tracking-tight md:flex',

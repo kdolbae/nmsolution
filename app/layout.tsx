@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: SITE_NAME,
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-icon.png',
+  },
   keywords: [
     '공장 수리',
     '공장 개보수',

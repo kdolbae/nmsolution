@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { LOGO_COLORS, logoSvg, type LogoVariant } from '@/lib/brand-logo'
 
 export const COMPANY = {
   name: '엔엠솔루션 (NM SOLUTION)',
@@ -32,13 +33,29 @@ export const OTHER_SERVICES = [
   { label: '시공 교육', href: '/services/academy' },
 ]
 
-export function Logo({ className }: { className?: string }) {
+/** 공식 로고(lib/brand-logo.ts). inverted 는 어두운 배경용(회색 부분을 흰색으로) */
+export function Logo({ className, inverted = false }: { className?: string; inverted?: boolean }) {
   return (
-    <Link href="/" className={cn('flex items-center gap-2.5', className)} aria-label="NM SOLUTION 홈">
-      <span className="flex h-7 w-7 items-center justify-center bg-navy text-navy-foreground" aria-hidden>
-        <span className="font-mono text-[11px] font-bold leading-none tracking-tight">NM</span>
-      </span>
-      <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em]">NM Solution</span>
+    <Link href="/" className={cn('flex items-center', className)} aria-label="엔엠솔루션 홈">
+      <LogoImage className="h-7 lg:h-8" inverted={inverted} />
     </Link>
+  )
+}
+
+export function LogoImage({
+  className,
+  inverted = false,
+  variant = 'horizontal',
+}: {
+  className?: string
+  inverted?: boolean
+  variant?: LogoVariant
+}) {
+  return (
+    <span
+      className={cn('inline-block shrink-0 [&>svg]:h-full [&>svg]:w-auto', className)}
+      style={{ color: inverted ? '#FFFFFF' : LOGO_COLORS.ink }}
+      dangerouslySetInnerHTML={{ __html: logoSvg(variant, { ink: 'currentColor' }) }}
+    />
   )
 }

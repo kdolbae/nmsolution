@@ -6,6 +6,8 @@
  * 브라우저·서버 양쪽에서 쓰므로 Node 전용 API 를 쓰지 않는다.
  */
 
+import { logoSvg } from '@/lib/brand-logo'
+
 /** 구분. 재료비·노무비 외에는 모두 원가계산에서 경비로 묶인다 */
 export const ITEM_KINDS = ['재료비', '노무비', '장비', '안전시설', '경비'] as const
 export type ItemKind = (typeof ITEM_KINDS)[number]
@@ -239,7 +241,7 @@ export const QUOTE_CSS = `
 .nmq *{box-sizing:border-box;font-family:inherit}
 .nmq .q-page{width:100%;max-width:178mm;margin:0 auto}
 .nmq .q-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2pt solid var(--navy);padding-bottom:10px;margin-bottom:16px}
-.nmq .q-logo{font-size:9pt;font-weight:700;letter-spacing:.32em;color:var(--accent)}
+.nmq .q-logo{height:9mm;margin-bottom:6px}.nmq .q-logo svg{height:100%;width:auto;display:block}
 .nmq .q-title{font-size:22pt;font-weight:700;letter-spacing:.5em;color:var(--navy);line-height:1.3;margin:4px 0 0}
 .nmq .q-meta{text-align:right;font-size:9.5pt;color:var(--muted);line-height:1.7}
 .nmq .q-meta b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
@@ -343,7 +345,7 @@ ${(
 
   return `<div class="nmq"><div class="q-page">
 <div class="q-head">
-  <div><div class="q-logo">NM SOLUTION</div><h1 class="q-title">견 적 서</h1></div>
+  <div><div class="q-logo">${logoSvg()}</div><h1 class="q-title">견 적 서</h1></div>
   <div class="q-meta">견적일자 <b>${esc(fmtDate(q.date))}</b><br>견적번호 <b>${esc(q.number)}</b></div>
 </div>
 <div class="q-parties">

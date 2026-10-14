@@ -28,7 +28,7 @@ export default function AdminResetPage() {
         body: JSON.stringify({ token }),
       })
       if (r.status === 404) {
-        setError('초기화 기능이 꺼져 있습니다. Vercel 환경변수 ADMIN_RESET_TOKEN(24자 이상)을 넣고 다시 배포해 주세요.')
+        setError('초기화 기능이 꺼져 있습니다. Vercel 환경변수 ADMIN_RESET_TOKEN(10자 이상)을 넣고 다시 배포해 주세요.')
         return
       }
       const res = (await r.json().catch(() => null)) as { ok: boolean; error?: string } | null

@@ -7,11 +7,11 @@ export const dynamic = 'force-dynamic'
  * 관리자 계정 초기화 — 비밀번호를 잊었을 때 (2026-09-30 사업주 요청).
  *
  * 이 사이트는 관리자 1명만 가입할 수 있고 비밀번호 찾기가 없다. 그래서 Vercel 환경변수
- * ADMIN_RESET_TOKEN(24자 이상)을 아는 사람만 기존 관리자 계정을 지울 수 있게 한다.
+ * ADMIN_RESET_TOKEN(10자 이상)을 아는 사람만 기존 관리자 계정을 지울 수 있게 한다.
  * 지우면 /admin/login 이 다시 '관리자 계정 만들기' 화면이 되고, 그때 새로 만든다.
  * 콘텐츠 · 시공사례 · 견적 문의는 건드리지 않는다 (지우는 것은 user · session · account · verification 뿐).
  *
- * 값이 없거나 24자보다 짧으면 이 기능은 꺼져 있다(404). 쓰고 나면 환경변수를 지운다.
+ * 값이 없거나 10자보다 짧으면 이 기능은 꺼져 있다(404). 쓰고 나면 환경변수를 지운다.
  */
 const tries = new Map<string, { n: number; t: number }>()
 const WINDOW_MS = 10 * 60_000
@@ -21,7 +21,7 @@ const digest = (s: string) => createHash('sha256').update(s).digest()
 
 export async function POST(req: Request) {
   const secret = process.env.ADMIN_RESET_TOKEN || ''
-  if (secret.length < 24) return new Response('Not Found', { status: 404 })
+  if (secret.length < 10) return new Response('Not Found', { status: 404 })
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   const now = Date.now()

@@ -10,6 +10,7 @@
     "db:setup": "psql \"$DATABASE_URL\" -f sql/001_quote_requests.sql -f sql/002_seed_projects.sql"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@base-ui/react": "^1.5.0",
     "@vercel/analytics": "1.6.1",
     "better-auth": "^1.7.2",

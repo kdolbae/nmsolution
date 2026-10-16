@@ -21,7 +21,13 @@ export function PortalLoginForm({ notice, canReset }: { notice: string; canReset
     setError('')
     setInfo('')
     setLoading(true)
-    const { data, error } = await authClient.signIn.email({ email, password, callbackURL: '/portal/login?verified=1' })
+    const signIn = (pw: string) => authClient.signIn.email({ email: email.trim(), password: pw, callbackURL: '/portal/login?verified=1' })
+    let { data, error } = await signIn(password)
+    // 관리자가 만든 계정은 비밀번호가 휴대폰 번호 숫자만이다. 010-1234-5678 처럼 넣었으면 숫자만으로 한 번 더 해 본다
+    const digits = password.replace(/\D/g, '')
+    if (error?.status === 401 && digits !== password && /^[\d\s.-]+$/.test(password) && /^0\d{9,10}$/.test(digits)) {
+      ;({ data, error } = await signIn(digits))
+    }
     setLoading(false)
     if (error) {
       if (error.status === 403 || error.code === 'EMAIL_NOT_VERIFIED') {

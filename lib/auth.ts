@@ -9,7 +9,7 @@ import { mailEnabled, mailLayout, sendMail } from '@/lib/mail'
  * 협력업체 관계자 가입 중임을 표시한다. 업체 코드를 확인한 서버 액션(app/actions/portal.ts)만 이 안에서 가입시킨다.
  * /api/auth/sign-up 을 직접 부르는 가입은 이 표시가 없으므로, 관리자가 이미 있으면 막힌다.
  */
-export const partnerSignup = new AsyncLocalStorage<{ clientId: number }>()
+export const partnerSignup = new AsyncLocalStorage<{ clientId: number; verified?: boolean }>()
 
 export const auth = betterAuth({
   database: pool,
@@ -66,9 +66,11 @@ export const auth = betterAuth({
         // 관리자는 1명, ADMIN_EMAIL 로만 만든다. 그 밖의 가입은 업체 코드를 확인한 협력업체 관계자만 된다
         before: async (user) => {
           await ensureUserRole()
-          if (partnerSignup.getStore()) {
+          const partner = partnerSignup.getStore()
+          if (partner) {
             if (isAdminEmail(user.email)) throw new APIError('FORBIDDEN', { message: '이 이메일로는 가입할 수 없습니다.' })
-            return { data: { ...user, role: 'partner' } }
+            // 관리자가 업체 화면에서 직접 만든 계정은 인증된 것으로 둔다(인증 메일을 보내지 않음)
+            return { data: { ...user, role: 'partner', ...(partner.verified ? { emailVerified: true } : {}) } }
           }
           if ((await adminCount()) > 0) {
             throw new APIError('FORBIDDEN', { message: '관리자 계정이 이미 존재합니다.' })

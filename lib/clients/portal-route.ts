@@ -1,5 +1,6 @@
 import { logoSvg } from '@/lib/brand-logo'
-import { calcQuote, PRETENDARD_CSS, QUOTE_CSS, renderQuote, won } from './quote'
+import { PRETENDARD_CSS, QUOTE_CSS, renderQuote } from './quote'
+import { quoteSummaryHtml } from './quote-summary'
 import { esc, withBrandLogo } from './proposal'
 import { getClientBySlug } from './table'
 import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie } from './portal'
@@ -60,19 +61,8 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   if (!client) return notFound()
   if (!(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) return loginPage(`${client.name} 공사 자료`, false)
 
-  const q = client.quote
-  const calc = calcQuote(q)
-  const optNames = q.sections.filter((s) => s.option).map((s) => s.name.replace(/\s*\(선택\)\s*$/, '') || '선택 항목')
-  const summary = `<div class="qsum">
-  <div class="qcard main"><div class="l">합계 금액 (부가세 포함)</div><div class="v">₩${won(calc.grand)}</div><div class="s">공급가액 ${won(calc.supply)} + 부가세 ${won(calc.vat)}</div></div>
-  ${
-    calc.options > 0
-      ? `<div class="qcard opt"><div class="l">선택 항목 · ${esc(optNames.join(', '))}</div><div class="v">+₩${won(calc.options)}</div><div class="s">부가세 별도 · 적용 시 견적금액에 더함</div></div>`
-      : ''
-  }
-  <div class="qcard"><div class="l">견적번호 · 견적일</div><div class="v" style="font-size:20px">${esc(q.number)}</div><div class="s">${esc(q.date)} · 유효기간 ${q.validDays}일</div></div>
-</div>`
-  const sheet = `<div class="quote-sheet">${renderQuote(q, client)}</div>`
+  const summary = quoteSummaryHtml(client.quote)
+  const sheet = `<div class="quote-sheet">${renderQuote(client.quote, client)}</div>`
   const hasSummarySlot = client.proposalHtml.includes('<!--NM:QUOTE-SUMMARY-->')
 
   let html = withBrandLogo(client.proposalHtml)

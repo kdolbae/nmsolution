@@ -58,7 +58,7 @@ type ClientInfo = {
 }
 
 type Tab = 'proposal' | 'quote'
-type PrintDocs = 'both' | 'proposal' | 'quote'
+type PrintDocs = 'both' | 'book' | 'proposal' | 'quote'
 
 export function ClientWorkspace({
   client: initialClient,
@@ -935,6 +935,7 @@ function PrintDialog({
       label: tab === 'proposal' ? '견적서만' : '제안서만',
       hint: '다른 탭 문서만',
     },
+    { value: 'book', label: '제본용 (양면 · 펼침면)', hint: '표지·목차, 소제목마다 펼친 두 쪽, 견적서는 왼쪽 쪽부터. 양면·여백 없음·배경 그래픽 켜고 인쇄' },
   ]
 
   useEffect(() => {

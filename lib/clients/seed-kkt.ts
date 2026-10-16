@@ -97,7 +97,7 @@ export const KKT_QUOTE: Quote = {
           "unit": "대·일",
           "qty": 1,
           "price": 2400000,
-          "note": "안착일 1일"
+          "note": "안착일 1일. 현장 상황에 따라 200TON 1대(호이스트 30t 보조)로 대체 가능, 견적 금액 안에서 처리"
         },
         {
           "id": "i5",
@@ -107,7 +107,7 @@ export const KKT_QUOTE: Quote = {
           "unit": "대·일",
           "qty": 1,
           "price": 1700000,
-          "note": "안착일 1일"
+          "note": "안착일 1일. 200TON 1대로 대체 시 이 줄 포함, 추가비용 없음"
         },
         {
           "id": "i6",
@@ -368,7 +368,7 @@ export const KKT_QUOTE: Quote = {
   "truncate": true,
   "discount": 1731636,
   "discountLabel": "특별할인 (NEGO)",
-  "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n인양 작업 크레인은 100TON·60TON 2대 기준이며, 현장 상황에 따라 상위 크레인 1대(200TON, 호이스트 30t 보조 조건)로 작업할 수 있음. 이 경우에도 본 견적 금액 안에서 처리하며 추가비용은 없음.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.02, 작업일 11일 (일요일 휴무)\n결제 조건: 선수금 30%, 안착 완료 시 중도금 30%, 용접 완료 후 잔금 40%",
+  "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n인양 작업 크레인은 100TON·60TON 2대 기준이며, 현장 상황에 따라 상위 크레인 1대(200TON, 호이스트 30t 보조 조건)로 작업할 수 있음. 이 경우에도 본 견적 금액 안에서 처리하며 추가비용은 없음.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.02, 작업일 11일 (일요일 휴무)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양 작업 완료 후 10%",
   "validDays": 30
 }
 
@@ -379,6 +379,8 @@ const KKT_BASE_ITEMS = KKT_QUOTE.sections.find((s) => s.name === '베이스 작�
 export const KKT_ORDER = ['베이스 작업', '인양 작업', '사상·용접 작업', '전체 인양 작업']
 export const KKT_GRAND = 70_000_000
 /** 2026-10-16 kevin: 크레인 2대 대신 200TON 1대(호이스트 30t 보조)로 할 수도 있고, 견적 금액 안에서 처리 */
+const KKT_PAY_NEW = '결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양 작업 완료 후 10%'
+const KKT_CRANE_ITEM_NOTES: Record<string, string> = { '100TON': '안착일 1일. 현장 상황에 따라 200TON 1대(호이스트 30t 보조)로 대체 가능, 견적 금액 안에서 처리', '60TON': '안착일 1일. 200TON 1대로 대체 시 이 줄 포함, 추가비용 없음' }
 const KKT_CRANE_OLD = '크레인 사양·배치가 바뀌어도 추가비용은 없음.'
 export const KKT_CRANE_NOTE =
   '인양 작업 크레인은 100TON·60TON 2대 기준이며, 현장 상황에 따라 상위 크레인 1대(200TON, 호이스트 30t 보조 조건)로 작업할 수 있음. 이 경우에도 본 견적 금액 안에서 처리하며 추가비용은 없음.'
@@ -447,6 +449,25 @@ export function upgradeKkt(
       .join('\n')
     done.push('견적서 B안 문구 삭제')
   }
+  // 2026-10-16 kevin: 결제 조건 30/30/30/10, 크레인 줄 비고에도 200TON 대체 안내
+  const payLines = notes.split('\n')
+  const pi = payLines.findIndex((l) => l.startsWith('결제 조건:'))
+  if (pi >= 0 && payLines[pi] !== KKT_PAY_NEW) {
+    payLines[pi] = KKT_PAY_NEW
+    notes = payLines.join('\n')
+    done.push('결제 조건 30/30/30/10')
+  }
+  let craneNoted = false
+  next = next.map((s) => ({
+    ...s,
+    items: s.items.map((i) => {
+      const n = KKT_CRANE_ITEM_NOTES[i.spec]
+      if (s.name !== '인양 작업' || i.name !== '크레인' || !n || i.note !== '안착일 1일') return i
+      craneNoted = true
+      return { ...i, note: n }
+    }),
+  }))
+  if (craneNoted) done.push('크레인 비고 200TON 대체 안내')
   if (notes.includes(KKT_CRANE_OLD)) {
     notes = notes.replace(KKT_CRANE_OLD, KKT_CRANE_NOTE)
     done.push('특기사항 200TON 크레인 1대 대체 안내')

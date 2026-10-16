@@ -32,6 +32,23 @@ export type QuoteSection = {
   flat?: boolean
   /** 선택 항목: 견적금액(공급가액)에 넣지 않고 견적서 아래 '선택 항목'으로 따로 보여 준다 */
   option?: boolean
+  /** 일반관리비만: 보험료·안전관리비·이윤 없이 재료·노무·경비에 일반관리비만 붙인다 (flat 이 우선) */
+  overheadOnly?: boolean
+  /** 일반관리비·이윤만: 보험료·안전관리비 없이 일반관리비와 이윤을 붙인다 (flat·overheadOnly 가 우선) */
+  noInsurance?: boolean
+}
+
+/** 공종의 원가계산 방식. 화면의 선택 칸과 flat·overheadOnly 를 잇는다 */
+export type SectionCalcMode = 'full' | 'margin' | 'overhead' | 'none'
+
+type ModeFields = Pick<QuoteSection, 'flat' | 'overheadOnly' | 'noInsurance'>
+
+export function sectionMode(s: ModeFields): SectionCalcMode {
+  return s.flat ? 'none' : s.overheadOnly ? 'overhead' : s.noInsurance ? 'margin' : 'full'
+}
+
+export function modeFields(m: SectionCalcMode): ModeFields {
+  return { flat: m === 'none', overheadOnly: m === 'overhead', noInsurance: m === 'margin' }
 }
 
 export type QuoteRates = {
@@ -58,6 +75,10 @@ export type Quote = {
   rates: QuoteRates
   /** 공종 합계의 천원 미만 절사 */
   truncate: boolean
+  /** 공정 합계에서 빼는 할인 금액 (부가세 별도). 0 이면 표시하지 않는다 */
+  discount: number
+  /** 할인 줄 이름 */
+  discountLabel: string
   /** 특기사항. 한 줄에 한 항목 */
   notes: string
   validDays: number
@@ -74,6 +95,8 @@ export type QuoteRecipient = {
   siteAddress?: string | null
   bizNumber?: string | null
 }
+
+export const DEFAULT_DISCOUNT_LABEL = '가격 조정 (NEGO)'
 
 export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safety: 3.11, overhead: 5, profit: 15 }
 
@@ -110,6 +133,8 @@ export function emptyQuote(): Quote {
     costCalc: false,
     rates: { ...DEFAULT_RATES },
     truncate: true,
+    discount: 0,
+    discountLabel: DEFAULT_DISCOUNT_LABEL,
     notes: '공사 기간: 협의\n결제 조건: 협의',
     validDays: 30,
     recipientFields: 'biz',
@@ -125,6 +150,8 @@ export function normalizeQuote(raw: unknown): Quote {
     ...base,
     ...q,
     rates: { ...DEFAULT_RATES, ...(q.rates ?? {}) },
+    discount: Math.max(0, Math.round(Number(q.discount) || 0)),
+    discountLabel: q.discountLabel?.trim() || DEFAULT_DISCOUNT_LABEL,
     // 이 칸이 없던 견적서(금강변압기 등)는 예전 양식 그대로 인쇄한다
     recipientFields: q.recipientFields === 'biz' ? 'biz' : 'contact',
     sections: Array.isArray(q.sections)
@@ -133,6 +160,8 @@ export function normalizeQuote(raw: unknown): Quote {
           name: s.name ?? '',
           desc: s.desc ?? '',
           flat: Boolean(s.flat),
+          overheadOnly: Boolean(s.overheadOnly),
+          noInsurance: Boolean(s.noInsurance),
           option: Boolean(s.option),
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
@@ -177,13 +206,16 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
   for (const i of s.items) sum[costGroup(i.kind)] += itemAmount(i)
   const { mat, lab, exp } = sum
   const r = q.rates
-  const on = q.costCalc && !s.flat
+  const mode = q.costCalc ? sectionMode(s) : 'none'
+  const on = mode === 'full'
+  const ohOn = mode !== 'none'
+  const profitOn = mode === 'full' || mode === 'margin'
   const injury = on ? Math.round((lab * r.injury) / 100) : 0
   const employment = on ? Math.round((lab * r.employment) / 100) : 0
   const safety = on ? Math.round(((mat + lab) * r.safety) / 100) : 0
   const net = mat + lab + exp + injury + employment + safety
-  const overhead = on ? Math.round((net * r.overhead) / 100) : 0
-  const profit = on ? Math.round(((lab + exp + injury + employment + safety + overhead) * r.profit) / 100) : 0
+  const overhead = ohOn ? Math.round((net * r.overhead) / 100) : 0
+  const profit = profitOn ? Math.round(((lab + exp + injury + employment + safety + overhead) * r.profit) / 100) : 0
   const raw = net + overhead + profit
   const total = q.truncate ? Math.floor(raw / 1000) * 1000 : raw
   return { mat, lab, exp, injury, employment, safety, net, overhead, profit, adjust: total - raw, total }
@@ -191,10 +223,24 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
 
 export function calcQuote(q: Quote) {
   const sections = q.sections.map((s) => calcSection(s, q))
-  const supply = sections.reduce((a, s, i) => (q.sections[i].option ? a : a + s.total), 0)
+  /** 공정 합계 (할인 전, 부가세 별도, 선택 항목 제외) */
+  const works = sections.reduce((a, s, i) => (q.sections[i].option ? a : a + s.total), 0)
   const options = sections.reduce((a, s, i) => (q.sections[i].option ? a + s.total : a), 0)
+  const discount = Math.min(Math.max(0, Math.round(Number(q.discount) || 0)), works)
+  const supply = works - discount
   const vat = Math.round(supply / 10)
-  return { sections, supply, vat, grand: supply + vat, options }
+  return { sections, works, discount, supply, vat, grand: supply + vat, options }
+}
+
+/** 부가세 포함 합계를 target 으로 맞추는 할인 금액. 맞출 수 없으면(공정 합계보다 크면) null */
+export function discountForGrand(q: Quote, target: number): number | null {
+  const { works } = calcQuote({ ...q, discount: 0 })
+  const base = Math.floor(target / 1.1)
+  for (const s of [base, base + 1, base - 1]) {
+    if (s >= 0 && s <= works && s + Math.round(s / 10) === target) return works - s
+  }
+  const s = Math.round(target / 1.1)
+  return s <= works ? works - s : null
 }
 
 // ---------- 표기 ----------
@@ -282,6 +328,10 @@ export const QUOTE_CSS = `
 .nmq tr.q-subtotal td{font-weight:600;border-bottom:1px solid #b9c3cf}
 .nmq tr.q-sum td{font-weight:600}
 .nmq tr.q-grand td{font-weight:700;font-size:11pt;color:var(--navy);border-top:2pt solid var(--navy);border-bottom:2pt solid var(--navy)}
+.nmq tr.q-disc td{font-weight:600;color:var(--accent)}
+.nmq table.q-summary td.n,.nmq table.q-summary td:nth-child(2){white-space:nowrap}
+.nmq .q-total .v small{display:block;margin:2px 0 0}
+.nmq p.q-hint{font-size:8.5pt;color:var(--muted);margin:4px 0 0}
 .nmq ol.q-notes{margin:0;padding-left:1.4em}
 .nmq ol.q-notes li{margin:2px 0}
 .nmq .q-sign{margin-top:22px;text-align:center}
@@ -294,6 +344,8 @@ export const QUOTE_CSS = `
 /** 견적서 본문 HTML (QUOTE_CSS 와 함께 쓴다) */
 export function renderQuote(q: Quote, to: QuoteRecipient): string {
   const calc = calcQuote(q)
+  // 할인이 있는 견적서(금강변압기)는 공정별 금액·최종 금액을 총괄표로 떼어 보인다. 할인이 없으면(신일 등) 예전 한 표 양식 그대로
+  const withSummary = calc.discount > 0
   const mainIdx = q.sections.map((s, i) => (s.option ? -1 : i)).filter((i) => i >= 0)
   const optIdx = q.sections.map((s, i) => (s.option ? i : -1)).filter((i) => i >= 0)
   const multi = mainIdx.length > 1
@@ -318,11 +370,14 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
     if (q.costCalc && !s.flat) {
       const r = q.rates
       out.push(sub('재료비 계', c.mat), sub('노무비 계', c.lab), sub('경비 계', c.exp))
-      out.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
-      out.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
-      out.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
-      out.push(sub('일반관리비', c.overhead, `순공사원가 × ${r.overhead}%`))
-      out.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))
+      const m = sectionMode(s)
+      if (m === 'full') {
+        out.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
+        out.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
+        out.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
+      }
+      out.push(sub('일반관리비', c.overhead, `${m === 'full' ? '순공사원가' : '(재료비 + 노무비 + 경비)'} × ${r.overhead}%`))
+      if (m !== 'overhead') out.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))
     }
     if (c.adjust) out.push(sub('단수정리', c.adjust, '천원 미만 절사'))
     if (s.option ? optIdx.length > 1 : multi || q.costCalc) {
@@ -359,9 +414,29 @@ ${(
     return `<tr><td>${label}</td>${vals.map((v) => `<td class="n">${won(v)}</td>`).join('')}<td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`
   })
   .join('')}
-<tr class="q-sum"><td>공급가액</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.supply)}</td></tr>
+<tr class="q-sum"><td>${withSummary ? '공정 합계' : '공급가액'}</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.works)}</td></tr>
 </tbody></table>`
       : ''
+
+  // 공정별 금액과 최종 금액은 내역과 떼어 총괄표 한 곳에 모은다
+  const summary = `<h2 class="q-sub">견적 총괄표</h2>
+<table class="grid q-summary"><thead><tr><th class="c">번호</th><th>공정</th><th>내용</th><th class="n">금액</th></tr></thead><tbody>
+${mainIdx
+  .map(
+    (i, n) =>
+      `<tr><td class="c">${n + 1}</td><td><b>${esc(q.sections[i].name || '공종')}</b></td><td class="q-spec">${esc(q.sections[i].desc)}</td><td class="n">${won(calc.sections[i].total)}</td></tr>`,
+  )
+  .join('\n')}
+${
+  calc.discount
+    ? `<tr class="q-sum"><td></td><td colspan="2">공정 합계</td><td class="n">${won(calc.works)}</td></tr>
+<tr class="q-disc"><td></td><td colspan="2">${esc(q.discountLabel)}</td><td class="n">-${won(calc.discount)}</td></tr>`
+    : ''
+}
+<tr class="q-sum"><td></td><td colspan="2">공급가액</td><td class="n">${won(calc.supply)}</td></tr>
+<tr class="q-sum"><td></td><td colspan="2">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td></tr>
+<tr class="q-grand"><td></td><td colspan="2">합계 (부가세 포함)</td><td class="n">${won(calc.grand)}</td></tr>
+</tbody></table>`
 
   return `<div class="nmq"><div class="q-page">
 <div class="q-head">
@@ -388,16 +463,26 @@ ${(
     <tr><th>연락처</th><td>${SUPPLIER.phoneMain} · ${SUPPLIER.phoneMobile}</td></tr>
   </tbody></table></div>
 </div>
-<div class="q-total"><span class="l">견적금액</span><span class="v">일금 ${koreanAmount(calc.supply)}원정 (₩${won(calc.supply)})<small>VAT 별도</small></span></div>
+${
+  withSummary
+    ? `<div class="q-total"><span class="l">견적금액</span><span class="v">일금 ${koreanAmount(calc.grand)}원정 (₩${won(calc.grand)})<small>VAT 포함 · 공급가액 ${won(calc.supply)} + 부가세 ${won(calc.vat)}</small></span></div>`
+    : `<div class="q-total"><span class="l">견적금액</span><span class="v">일금 ${koreanAmount(calc.supply)}원정 (₩${won(calc.supply)})<small>VAT 별도</small></span></div>`
+}
+${withSummary ? summary : ''}
 ${costTable}
-<h2 class="q-sub">견적 내역</h2>
+<h2 class="q-sub">${withSummary ? '공정별 세부 내역' : '견적 내역'}</h2>
 <table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
 <tbody>
 ${rows.join('\n')}
-<tr class="q-sum"><td></td><td colspan="5">공급가액</td><td class="n">${won(calc.supply)}</td><td></td></tr>
+${
+  withSummary
+    ? ''
+    : `<tr class="q-sum"><td></td><td colspan="5">공급가액</td><td class="n">${won(calc.supply)}</td><td></td></tr>
 <tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td><td></td></tr>
-<tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>
+<tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>`
+}
 </tbody></table>
+${withSummary ? '<p class="q-hint">공정별 금액은 부가세 별도이며, 할인과 최종 금액은 위 견적 총괄표에 있습니다.</p>' : ''}
 ${
   optRows.length
     ? `<h2 class="q-sub">${esc(q.optionLabel || '선택 항목')} (견적금액 별도)</h2>

@@ -1,6 +1,7 @@
 import { hasKktAccess, isKktPassword } from '@/lib/kkt-access'
 import { cookieValue, NO_STORE } from '../http'
-import { QUOTE_HTML } from '../page-html'
+import { publicQuoteHtml } from '@/lib/clients/kkt-public-quote'
+import { KKT_QUOTE } from '@/lib/clients/seed-kkt'
 
 /**
  * 견적서 본문. 페이지 맨 아래 잠금 칸에서 비밀번호를 넣을 때마다 POST 로 받아 간다.
@@ -18,5 +19,5 @@ export async function POST(req: Request) {
     await new Promise((r) => setTimeout(r, 1500))
     return new Response('', { status: 401, headers: NO_STORE })
   }
-  return new Response(QUOTE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
+  return new Response(publicQuoteHtml(KKT_QUOTE), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }

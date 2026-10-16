@@ -1,4 +1,4 @@
-import { DEFAULT_RATES, emptyItem, newId, type ItemKind, type Quote } from './quote'
+import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind, type Quote } from './quote'
 
 /**
  * 신일공업 안성 일죽 공장 지붕 교체 견적 (2026-10-16 등록).
@@ -125,5 +125,7 @@ export function sinilQuote(date: string): Quote {
     validDays: 30,
     recipientFields: 'biz',
     optionLabel: '상황에 따라 추가되는 비용',
+    discount: 0,
+    discountLabel: DEFAULT_DISCOUNT_LABEL,
   }
 }

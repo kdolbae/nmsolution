@@ -102,12 +102,57 @@ export async function findClientByCode(input: string): Promise<{ id: number; nam
   return rows[0] ? { id: Number(rows[0].id), name: rows[0].name } : null
 }
 
-export async function addMember(m: { clientId: number; userId: string; name: string; title: string; phone: string }) {
+export async function addMember(m: { clientId: number; userId: string; name: string; title: string; phone: string; approvedBy?: string }) {
   await ensurePortal()
   await pool.query(
-    `INSERT INTO client_members (client_id, user_id, name, title, phone) VALUES ($1, $2, $3, $4, $5)`,
-    [m.clientId, m.userId, m.name, m.title, m.phone],
+    m.approvedBy
+      ? `INSERT INTO client_members (client_id, user_id, name, title, phone, status, approved_at, approved_by)
+         VALUES ($1, $2, $3, $4, $5, 'approved', now(), $6)`
+      : `INSERT INTO client_members (client_id, user_id, name, title, phone) VALUES ($1, $2, $3, $4, $5)`,
+    m.approvedBy ? [m.clientId, m.userId, m.name, m.title, m.phone, m.approvedBy] : [m.clientId, m.userId, m.name, m.title, m.phone],
   )
+}
+
+/** 휴대폰 번호를 숫자만으로 (010-1234-5678 → 01012345678). 관리자가 만든 계정의 비밀번호로 쓴다 */
+export function phoneDigits(input: string): string {
+  return String(input ?? '').replace(/\D/g, '')
+}
+
+/** 휴대폰 번호 꼴인지 (숫자 10~11자리, 0으로 시작) */
+export function isPhone(digits: string): boolean {
+  return /^0\d{9,10}$/.test(digits)
+}
+
+/** 이 이메일로 된 계정이 이미 있는지 */
+export async function emailTaken(email: string): Promise<boolean> {
+  const { rowCount } = await pool.query(`SELECT 1 FROM "user" WHERE lower(email) = lower($1)`, [email])
+  return !!rowCount
+}
+
+/** 이 계정의 로그인을 모두 끊는다 */
+export async function endSessions(userId: string) {
+  await pool.query(`DELETE FROM session WHERE "userId" = $1`, [userId])
+}
+
+/** 관계자의 계정 id 와 휴대폰 번호 (비밀번호 되돌리기용) */
+export async function memberAccount(memberId: number): Promise<{ userId: string; phone: string; clientId: number } | null> {
+  await ensurePortal()
+  const { rows } = await pool.query<{ user_id: string; phone: string | null; client_id: string }>(
+    `SELECT m.user_id, m.phone, m.client_id FROM client_members m JOIN "user" u ON u.id = m.user_id
+     WHERE m.id = $1 AND u.role = 'partner'`,
+    [memberId],
+  )
+  const r = rows[0]
+  return r ? { userId: r.user_id, phone: r.phone ?? '', clientId: Number(r.client_id) } : null
+}
+
+/** 이메일·비밀번호 로그인 계정의 비밀번호를 바꾼다 (hash 는 Better Auth 로 만든 값) */
+export async function setPasswordHash(userId: string, hash: string) {
+  const { rowCount } = await pool.query(
+    `UPDATE account SET password = $2, "updatedAt" = now() WHERE "userId" = $1 AND "providerId" = 'credential'`,
+    [userId, hash],
+  )
+  if (!rowCount) throw new Error('이메일 로그인 계정이 아닙니다.')
 }
 
 export type Membership = { memberId: number; clientId: number; clientName: string; name: string; status: MemberStatus }

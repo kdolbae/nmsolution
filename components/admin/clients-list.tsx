@@ -17,6 +17,8 @@ type Item = {
   supply: number
   quoteNumber: string
   updatedAt: string
+  /** 최종본으로 확정한 버전 */
+  finalizedVersion: number | null
 }
 
 const EMPTY = { name: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
@@ -96,7 +98,12 @@ export function ClientsList({ clients }: { clients: Item[] }) {
           {clients.map((c) => (
             <li key={c.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
               <Link href={`/admin/clients/${c.id}`} className="min-w-0 flex-1">
-                <div className="truncate text-base font-bold hover:text-electric">{c.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-base font-bold hover:text-electric">{c.name}</span>
+                  {c.finalizedVersion && (
+                    <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">최종본 v{c.finalizedVersion}</span>
+                  )}
+                </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
                   {[c.contactPerson, c.phone, `견적 ${c.quoteNumber}`, `수정 ${c.updatedAt.slice(0, 10)}`]
                     .filter(Boolean)

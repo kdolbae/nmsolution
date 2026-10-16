@@ -11,6 +11,7 @@ import {
   Calculator,
   ImagePlus,
   Loader2,
+  Lock,
   Pencil,
   Plus,
   Printer,
@@ -37,6 +38,7 @@ import {
   type QuoteSection,
 } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
+import { LockBanner, VersionHistory, VersionView, type Finalized, type VersionRow } from '@/components/admin/client-versions'
 
 type ClientInfo = {
   id: number
@@ -57,6 +59,9 @@ export function ClientWorkspace({
   quote: initialQuote,
   initialTab,
   files = [],
+  versions,
+  finalized,
+  view,
 }: {
   client: ClientInfo
   proposalHtml: string
@@ -64,6 +69,12 @@ export function ClientWorkspace({
   initialTab: Tab
   /** 인쇄용 제출 서류(lib/clients/files.ts) */
   files?: { file: string; label: string }[]
+  /** 버전 기록 (최신이 먼저) */
+  versions: VersionRow[]
+  /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
+  finalized: Finalized
+  /** ?v=N 으로 고른 지난 버전. 있으면 편집 화면 대신 읽기 전용으로 보여 준다 */
+  view: { no: number; at: string; summary: string; proposalHtml: string; quote: Quote } | null
 }) {
   const [client, setClient] = useState(initialClient)
   const [tab, setTab] = useState<Tab>(initialTab)
@@ -71,14 +82,19 @@ export function ClientWorkspace({
   const [quoteDirty, setQuoteDirty] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
 
+  const locked = !!finalized
+  const latest = versions[0]?.no ?? 0
+
   const switchTab = (t: Tab) => {
     setTab(t)
-    window.history.replaceState(null, '', `?tab=${t}`)
+    window.history.replaceState(null, '', view ? `?v=${view.no}&tab=${t}` : `?tab=${t}`)
   }
 
   return (
     <div className="flex flex-col gap-5">
       <ClientHeader client={client} onSaved={setClient} />
+
+      {finalized && <LockBanner finalized={finalized} />}
 
       {files.length > 0 && (
         <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
@@ -100,6 +116,8 @@ export function ClientWorkspace({
           </div>
         </section>
       )}
+
+      <VersionHistory clientId={client.id} versions={versions} finalized={finalized} viewing={view?.no ?? null} />
 
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border">
         <div className="flex gap-1" role="tablist" aria-label="문서">
@@ -131,17 +149,24 @@ export function ClientWorkspace({
         </Button>
       </div>
 
-      <div hidden={tab !== 'proposal'}>
-        <ProposalPanel clientId={client.id} initialHtml={proposalHtml} onDirty={setProposalDirty} />
-      </div>
-      <div hidden={tab !== 'quote'}>
-        <QuotePanel client={client} initialQuote={initialQuote} onDirty={setQuoteDirty} visible={tab === 'quote'} />
-      </div>
+      {view ? (
+        <VersionView clientId={client.id} client={client} version={view} tab={tab} />
+      ) : (
+        <>
+          <div hidden={tab !== 'proposal'}>
+            <ProposalPanel clientId={client.id} initialHtml={proposalHtml} onDirty={setProposalDirty} locked={locked} />
+          </div>
+          <div hidden={tab !== 'quote'}>
+            <QuotePanel client={client} initialQuote={initialQuote} onDirty={setQuoteDirty} visible={tab === 'quote'} locked={locked} />
+          </div>
+        </>
+      )}
 
       {printOpen && (
         <PrintDialog
           clientId={client.id}
           tab={tab}
+          version={view?.no ?? latest}
           unsaved={[proposalDirty && '제안서', quoteDirty && '견적서'].filter(Boolean) as string[]}
           onClose={() => setPrintOpen(false)}
         />
@@ -242,11 +267,14 @@ function ProposalPanel({
   clientId,
   initialHtml,
   onDirty,
+  locked,
 }: {
   clientId: number
   initialHtml: string
   onDirty: (v: boolean) => void
+  locked: boolean
 }) {
+  const router = useRouter()
   const [html, setHtml] = useState(initialHtml)
   const [editing, setEditing] = useState(false)
   const [source, setSource] = useState<string | null>(null)
@@ -294,11 +322,13 @@ function ProposalPanel({
   const persist = (next: string) =>
     startTransition(async () => {
       try {
-        await saveProposal(clientId, next)
+        const res = await saveProposal(clientId, next)
+        if (!res.ok) return setMessage(res.error)
         setHtml(next)
         setEditing(false)
         setSource(null)
-        setMessage('저장했습니다.')
+        setMessage(res.version ? `저장했습니다. v${res.version}` : '바뀐 내용이 없어 버전을 늘리지 않았습니다.')
+        router.refresh()
       } catch (e) {
         setMessage(e instanceof Error ? e.message : '저장하지 못했습니다.')
       }
@@ -369,9 +399,11 @@ function ProposalPanel({
     if (!confirm('지금 제안서를 지우고 홈페이지 내용으로 기본 제안서를 다시 만들까요?')) return
     startTransition(async () => {
       const res = await resetProposal(clientId)
+      if (!res.ok) return setMessage(res.error)
       setHtml(res.html)
       setEditing(false)
-      setMessage('기본 제안서로 다시 만들었습니다.')
+      setMessage(`기본 제안서로 다시 만들었습니다.${res.version ? ` v${res.version}` : ''}`)
+      router.refresh()
     })
   }
 
@@ -423,6 +455,10 @@ function ProposalPanel({
             </Button>
             <span className="text-xs text-muted-foreground">글자는 화면에서 바로 고치세요. 이미지·영상은 눌러서 바꿉니다.</span>
           </>
+        ) : locked ? (
+          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Lock className="size-4" /> 최종본 확정으로 잠김
+          </span>
         ) : (
           <>
             <Button className="rounded-none" onClick={() => setEditing(true)} disabled={!html}>
@@ -491,12 +527,15 @@ function QuotePanel({
   initialQuote,
   onDirty,
   visible,
+  locked,
 }: {
   client: ClientInfo
   initialQuote: Quote
   onDirty: (v: boolean) => void
   visible: boolean
+  locked: boolean
 }) {
+  const router = useRouter()
   const [q, setQ] = useState(initialQuote)
   const [dirty, setDirtyState] = useState(false)
   const [message, setMessage] = useState('')
@@ -527,9 +566,11 @@ function QuotePanel({
   const save = () =>
     startTransition(async () => {
       try {
-        await saveQuote(client.id, q)
+        const res = await saveQuote(client.id, q)
+        if (!res.ok) return setMessage(res.error)
         setDirty(false)
-        setMessage('저장했습니다.')
+        setMessage(res.version ? `저장했습니다. v${res.version}` : '바뀐 내용이 없어 버전을 늘리지 않았습니다.')
+        router.refresh()
       } catch (e) {
         setMessage(e instanceof Error ? e.message : '저장하지 못했습니다.')
       }
@@ -549,173 +590,183 @@ function QuotePanel({
   return (
     <div className="flex flex-col gap-5">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 bg-secondary py-2">
-        <Button className="rounded-none" onClick={save} disabled={pending || !dirty}>
-          {pending ? <Loader2 className="animate-spin" /> : <Check />} 저장
-        </Button>
+        {locked ? (
+          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Lock className="size-4" /> 최종본 확정으로 잠김
+          </span>
+        ) : (
+          <Button className="rounded-none" onClick={save} disabled={pending || !dirty}>
+            {pending ? <Loader2 className="animate-spin" /> : <Check />} 저장
+          </Button>
+        )}
         <div className="text-sm tabular-nums">
           공급가액 <b>{won(calc.supply)}</b> · 부가세 {won(calc.vat)} · 합계 <b className="text-electric">{won(calc.grand)}원</b>
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
       </div>
 
-      <section className="grid gap-4 bg-background p-5 ring-1 ring-border sm:grid-cols-3">
-        <Field label="견적번호" value={q.number} onChange={(v) => update({ number: v })} />
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          견적일자
-          <input
-            type="date"
-            value={q.date}
-            onChange={(e) => update({ date: e.target.value })}
-            className="h-9 border border-input bg-background px-2 text-sm"
-          />
-        </label>
-        <Field label="유효기간 (일)" value={String(q.validDays)} onChange={(v) => update({ validDays: Number(v.replace(/\D/g, '')) || 30 })} />
-        <div className="sm:col-span-3">
-          <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
-        </div>
-      </section>
-
-      {q.sections.map((s, si) => {
-        const c = calc.sections[si]
-        return (
-          <section key={s.id} className="bg-background ring-1 ring-border">
-            <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
-              <span className="font-mono text-xs text-muted-foreground">공종 {si + 1}</span>
-              <TextIn value={s.name} onChange={(v) => updateSection(s.id, { name: v })} placeholder="공종명 (예: 배관·설비)" className="max-w-56 font-semibold" />
-              <TextIn value={s.desc} onChange={(v) => updateSection(s.id, { desc: v })} placeholder="한 줄 설명 (선택)" className="min-w-40 flex-1" />
-              <span className="ml-auto text-sm font-semibold tabular-nums">{won(c.total)}원</span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                title="공종 삭제"
-                onClick={() => confirm(`'${s.name || '공종'}'을 지울까요?`) && update({ sections: q.sections.filter((x) => x.id !== s.id) })}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[960px] text-sm">
-                <thead className="bg-secondary text-xs text-muted-foreground">
-                  <tr>
-                    <th className="w-24 px-2 py-2 text-left font-medium">구분</th>
-                    <th className="px-2 py-2 text-left font-medium">품명</th>
-                    <th className="px-2 py-2 text-left font-medium">규격</th>
-                    <th className="w-20 px-2 py-2 text-right font-medium">수량</th>
-                    <th className="w-16 px-2 py-2 text-left font-medium">단위</th>
-                    <th className="w-28 px-2 py-2 text-right font-medium">단가</th>
-                    <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
-                    <th className="px-2 py-2 text-left font-medium">비고</th>
-                    <th className="w-8" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.items.map((i) => (
-                    <tr key={i.id} className="border-t border-border">
-                      <td className="px-1 py-1">
-                        <select
-                          value={i.kind}
-                          onChange={(e) => updateItem(s.id, i.id, { kind: e.target.value as ItemKind })}
-                          className="h-8 w-full border border-input bg-background px-1 text-sm"
-                        >
-                          {ITEM_KINDS.map((k) => (
-                            <option key={k}>{k}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-1 py-1"><TextIn value={i.name} onChange={(v) => updateItem(s.id, i.id, { name: v })} /></td>
-                      <td className="px-1 py-1"><TextIn value={i.spec} onChange={(v) => updateItem(s.id, i.id, { spec: v })} /></td>
-                      <td className="px-1 py-1"><NumInput value={i.qty} onChange={(n) => updateItem(s.id, i.id, { qty: n })} /></td>
-                      <td className="px-1 py-1"><TextIn value={i.unit} onChange={(v) => updateItem(s.id, i.id, { unit: v })} /></td>
-                      <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
-                      <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
-                      <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
-                      <td className="px-1 py-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          title="줄 삭제"
-                          onClick={() => updateSection(s.id, { items: s.items.filter((x) => x.id !== i.id) })}
-                        >
-                          <X />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border p-3 text-xs text-muted-foreground">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-none"
-                onClick={() => updateSection(s.id, { items: [...s.items, emptyItem(s.items.at(-1)?.kind)] })}
-              >
-                <Plus /> 줄 추가
-              </Button>
-              <span className="tabular-nums">재료비 {won(c.mat)} · 노무비 {won(c.lab)} · 경비 {won(c.exp)}</span>
-              {q.costCalc && !s.flat && (
-                <span className="tabular-nums">
-                  보험·안전 {won(c.injury + c.employment + c.safety)} · 일반관리비 {won(c.overhead)} · 이윤 {won(c.profit)}
-                </span>
-              )}
-              {q.costCalc && (
-                <label className="ml-auto flex items-center gap-1.5">
-                  <input type="checkbox" checked={!!s.flat} onChange={(e) => updateSection(s.id, { flat: e.target.checked })} />
-                  이 공종은 원가계산 제외 (재료·노무·경비만)
-                </label>
-              )}
-            </div>
-          </section>
-        )
-      })}
-
-      <div>
-        <Button
-          variant="outline"
-          className="rounded-none"
-          onClick={() => update({ sections: [...q.sections, { id: newId('s'), name: '', desc: '', items: [emptyItem()] }] })}
-        >
-          <Plus /> 공종 추가
-        </Button>
-      </div>
-
-      <section className="flex flex-col gap-4 bg-background p-5 ring-1 ring-border">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" checked={q.costCalc} onChange={(e) => update({ costCalc: e.target.checked })} />
-          원가계산 적용 (공종마다 산재·고용보험료, 산업안전보건관리비, 일반관리비, 이윤을 붙임)
-        </label>
-        {q.costCalc && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {(
-              [
-                ['injury', '산재보험료 %'],
-                ['employment', '고용보험료 %'],
-                ['safety', '안전관리비 %'],
-                ['overhead', '일반관리비 %'],
-                ['profit', '이윤 %'],
-              ] as const
-            ).map(([k, label]) => (
-              <label key={k} className="flex flex-col gap-1 text-xs text-muted-foreground">
-                {label}
-                <NumInput value={q.rates[k]} onChange={(n) => update({ rates: { ...q.rates, [k]: n } })} />
-              </label>
-            ))}
+      {/* 확정되면 입력칸·버튼을 모두 막는다 */}
+      <fieldset disabled={locked} className="flex min-w-0 flex-col gap-5">
+        <section className="grid gap-4 bg-background p-5 ring-1 ring-border sm:grid-cols-3">
+          <Field label="견적번호" value={q.number} onChange={(v) => update({ number: v })} />
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            견적일자
+            <input
+              type="date"
+              value={q.date}
+              onChange={(e) => update({ date: e.target.value })}
+              className="h-9 border border-input bg-background px-2 text-sm"
+            />
+          </label>
+          <Field label="유효기간 (일)" value={String(q.validDays)} onChange={(v) => update({ validDays: Number(v.replace(/\D/g, '')) || 30 })} />
+          <div className="sm:col-span-3">
+            <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
           </div>
-        )}
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" checked={q.truncate} onChange={(e) => update({ truncate: e.target.checked })} />
-          공종 합계 천원 미만 절사
-        </label>
-        <Field
-          label="특기사항 (한 줄에 한 항목)"
-          multiline
-          rows={6}
-          value={q.notes}
-          onChange={(v) => update({ notes: v })}
-          hint="공사 기간, 결제 조건, 포함·제외 사항. 견적 유효기간 줄은 자동으로 붙습니다."
-        />
-      </section>
+        </section>
+
+        {q.sections.map((s, si) => {
+          const c = calc.sections[si]
+          return (
+            <section key={s.id} className="bg-background ring-1 ring-border">
+              <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
+                <span className="font-mono text-xs text-muted-foreground">공종 {si + 1}</span>
+                <TextIn value={s.name} onChange={(v) => updateSection(s.id, { name: v })} placeholder="공종명 (예: 배관·설비)" className="max-w-56 font-semibold" />
+                <TextIn value={s.desc} onChange={(v) => updateSection(s.id, { desc: v })} placeholder="한 줄 설명 (선택)" className="min-w-40 flex-1" />
+                <span className="ml-auto text-sm font-semibold tabular-nums">{won(c.total)}원</span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="공종 삭제"
+                  onClick={() => confirm(`'${s.name || '공종'}'을 지울까요?`) && update({ sections: q.sections.filter((x) => x.id !== s.id) })}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[960px] text-sm">
+                  <thead className="bg-secondary text-xs text-muted-foreground">
+                    <tr>
+                      <th className="w-24 px-2 py-2 text-left font-medium">구분</th>
+                      <th className="px-2 py-2 text-left font-medium">품명</th>
+                      <th className="px-2 py-2 text-left font-medium">규격</th>
+                      <th className="w-20 px-2 py-2 text-right font-medium">수량</th>
+                      <th className="w-16 px-2 py-2 text-left font-medium">단위</th>
+                      <th className="w-28 px-2 py-2 text-right font-medium">단가</th>
+                      <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
+                      <th className="px-2 py-2 text-left font-medium">비고</th>
+                      <th className="w-8" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.items.map((i) => (
+                      <tr key={i.id} className="border-t border-border">
+                        <td className="px-1 py-1">
+                          <select
+                            value={i.kind}
+                            onChange={(e) => updateItem(s.id, i.id, { kind: e.target.value as ItemKind })}
+                            className="h-8 w-full border border-input bg-background px-1 text-sm"
+                          >
+                            {ITEM_KINDS.map((k) => (
+                              <option key={k}>{k}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-1 py-1"><TextIn value={i.name} onChange={(v) => updateItem(s.id, i.id, { name: v })} /></td>
+                        <td className="px-1 py-1"><TextIn value={i.spec} onChange={(v) => updateItem(s.id, i.id, { spec: v })} /></td>
+                        <td className="px-1 py-1"><NumInput value={i.qty} onChange={(n) => updateItem(s.id, i.id, { qty: n })} /></td>
+                        <td className="px-1 py-1"><TextIn value={i.unit} onChange={(v) => updateItem(s.id, i.id, { unit: v })} /></td>
+                        <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
+                        <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
+                        <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
+                        <td className="px-1 py-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            title="줄 삭제"
+                            onClick={() => updateSection(s.id, { items: s.items.filter((x) => x.id !== i.id) })}
+                          >
+                            <X />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border p-3 text-xs text-muted-foreground">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => updateSection(s.id, { items: [...s.items, emptyItem(s.items.at(-1)?.kind)] })}
+                >
+                  <Plus /> 줄 추가
+                </Button>
+                <span className="tabular-nums">재료비 {won(c.mat)} · 노무비 {won(c.lab)} · 경비 {won(c.exp)}</span>
+                {q.costCalc && !s.flat && (
+                  <span className="tabular-nums">
+                    보험·안전 {won(c.injury + c.employment + c.safety)} · 일반관리비 {won(c.overhead)} · 이윤 {won(c.profit)}
+                  </span>
+                )}
+                {q.costCalc && (
+                  <label className="ml-auto flex items-center gap-1.5">
+                    <input type="checkbox" checked={!!s.flat} onChange={(e) => updateSection(s.id, { flat: e.target.checked })} />
+                    이 공종은 원가계산 제외 (재료·노무·경비만)
+                  </label>
+                )}
+              </div>
+            </section>
+          )
+        })}
+
+        <div>
+          <Button
+            variant="outline"
+            className="rounded-none"
+            onClick={() => update({ sections: [...q.sections, { id: newId('s'), name: '', desc: '', items: [emptyItem()] }] })}
+          >
+            <Plus /> 공종 추가
+          </Button>
+        </div>
+
+        <section className="flex flex-col gap-4 bg-background p-5 ring-1 ring-border">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={q.costCalc} onChange={(e) => update({ costCalc: e.target.checked })} />
+            원가계산 적용 (공종마다 산재·고용보험료, 산업안전보건관리비, 일반관리비, 이윤을 붙임)
+          </label>
+          {q.costCalc && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {(
+                [
+                  ['injury', '산재보험료 %'],
+                  ['employment', '고용보험료 %'],
+                  ['safety', '안전관리비 %'],
+                  ['overhead', '일반관리비 %'],
+                  ['profit', '이윤 %'],
+                ] as const
+              ).map(([k, label]) => (
+                <label key={k} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  {label}
+                  <NumInput value={q.rates[k]} onChange={(n) => update({ rates: { ...q.rates, [k]: n } })} />
+                </label>
+              ))}
+            </div>
+          )}
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={q.truncate} onChange={(e) => update({ truncate: e.target.checked })} />
+            공종 합계 천원 미만 절사
+          </label>
+          <Field
+            label="특기사항 (한 줄에 한 항목)"
+            multiline
+            rows={6}
+            value={q.notes}
+            onChange={(v) => update({ notes: v })}
+            hint="공사 기간, 결제 조건, 포함·제외 사항. 견적 유효기간 줄은 자동으로 붙습니다."
+          />
+        </section>
+
+      </fieldset>
 
       <div>
         <h2 className="mb-2 text-sm font-semibold text-muted-foreground">미리보기 (인쇄되는 모양)</h2>
@@ -727,7 +778,20 @@ function QuotePanel({
 
 // ---------- 인쇄 ----------
 
-function PrintDialog({ clientId, tab, unsaved, onClose }: { clientId: number; tab: Tab; unsaved: string[]; onClose: () => void }) {
+function PrintDialog({
+  clientId,
+  tab,
+  version,
+  unsaved,
+  onClose,
+}: {
+  clientId: number
+  tab: Tab
+  /** 인쇄할 버전 (최신본이면 최신 번호) */
+  version: number
+  unsaved: string[]
+  onClose: () => void
+}) {
   const [docs, setDocs] = useState<PrintDocs>('both')
   const options: { value: PrintDocs; label: string; hint: string }[] = [
     { value: 'both', label: '제안서 + 견적서 함께', hint: '제안서 뒤에 견적서를 새 쪽으로 붙여 인쇄' },
@@ -746,7 +810,7 @@ function PrintDialog({ clientId, tab, unsaved, onClose }: { clientId: number; ta
   }, [onClose])
 
   const print = () => {
-    window.open(`/api/admin/clients/${clientId}/print?docs=${docs}`, '_blank')
+    window.open(`/api/admin/clients/${clientId}/print?docs=${docs}${version ? `&version=${version}` : ''}`, '_blank')
     onClose()
   }
 
@@ -760,6 +824,7 @@ function PrintDialog({ clientId, tab, unsaved, onClose }: { clientId: number; ta
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-bold">제안서와 견적서를 함께 인쇄할까요?</h2>
+        {version > 0 && <p className="mt-1 text-sm text-muted-foreground">v{version} 을 인쇄합니다. 인쇄 창에서 &lsquo;PDF로 저장&rsquo;을 고르면 PDF 가 됩니다.</p>}
         <div className="mt-4 flex flex-col gap-2">
           {options.map((o) => (
             <label

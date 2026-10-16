@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getContent } from '@/lib/content/get'
 import { emptyQuote, normalizeQuote, type Quote } from '@/lib/clients/quote'
 import { defaultProposalHtml } from '@/lib/clients/proposal'
+import { hashPortalPassword } from '@/lib/clients/portal-password'
 import {
   finalizeClient,
   getClient,
@@ -13,6 +14,7 @@ import {
   updateClientInfo,
   updateProposal,
   updateQuote,
+  setPortalPasswordHash,
   LOCKED_MESSAGE,
   type ClientInfo,
 } from '@/lib/clients/table'
@@ -40,12 +42,30 @@ function cleanInfo(input: ClientInfo): ClientInfo {
   if (!name) throw new Error('업체명을 입력해 주세요.')
   return {
     name,
+    bizNumber: t(input.bizNumber, 40),
     contactPerson: t(input.contactPerson),
     phone: t(input.phone),
     email: t(input.email),
     siteAddress: t(input.siteAddress),
     memo: t(input.memo, 5000),
+    portalSlug: portalSlug(input.portalSlug),
+    portalLogin: t(input.portalLogin, 60).toLowerCase(),
   }
+}
+
+/** 업체용 링크 주소: 영문 소문자·숫자·하이픈만 (한글 주소는 메신저마다 깨져 쓰지 않음) */
+function portalSlug(v: unknown) {
+  const s = String(v ?? '').trim().toLowerCase()
+  if (!s) return ''
+  if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(s)) throw new Error('업체용 링크 주소는 영문 소문자·숫자·하이픈으로 2~40자로 입력해 주세요.')
+  return s
+}
+
+async function savePortalPassword(id: number, password: unknown) {
+  const pw = String(password ?? '')
+  if (!pw) return
+  if (pw.length < 4) throw new Error('업체용 링크 비밀번호는 4자 이상으로 입력해 주세요.')
+  await setPortalPasswordHash(id, await hashPortalPassword(pw))
 }
 
 /** 업체 추가. copyFrom 이 있으면 그 업체의 제안서·견적서를 복사해 시작하고, 없으면 홈페이지 내용으로 기본 제안서를 만든다 */
@@ -73,9 +93,10 @@ export async function createClient(input: ClientInfo, copyFrom?: number | null) 
   return { ok: true as const, id }
 }
 
-export async function saveClientInfo(id: number, input: ClientInfo) {
+export async function saveClientInfo(id: number, input: ClientInfo, portalPassword?: string) {
   await requireAdmin()
   await updateClientInfo(id, cleanInfo(input))
+  await savePortalPassword(id, portalPassword)
   revalidatePath('/admin/clients', 'layout')
   return { ok: true as const }
 }

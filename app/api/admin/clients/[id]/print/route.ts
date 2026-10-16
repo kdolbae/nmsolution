@@ -1,6 +1,7 @@
 import { getSessionFrom, isAdmin } from '@/lib/admin'
 import { getClient, getVersion } from '@/lib/clients/table'
 import { printHtml } from '@/lib/clients/print'
+import { bookFrameHtml, bookShellHtml } from '@/lib/clients/book'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     client.proposalHtml = v.proposalHtml
     client.quote = v.quote
     suffix = ` v${v.no}${client.finalized?.version === v.no ? ' 최종본' : ''}`
+  }
+  if (docs === 'book') {
+    // 제본용: 인쇄 창(210mm 폭 iframe) → 같은 주소에 frame=1 을 붙인 실제 쪽 문서
+    const title = `${client.name} 제안서·견적서 제본용${suffix}`
+    if (sp.get('frame') === '1') return new Response(bookFrameHtml(client, title), { headers: HEADERS })
+    const u = new URL(req.url)
+    u.searchParams.set('frame', '1')
+    return new Response(bookShellHtml(`${u.pathname}${u.search}`, title), { headers: HEADERS })
   }
   const html = printHtml(client, docs, suffix)
   return new Response(html, { headers: HEADERS })

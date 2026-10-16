@@ -43,7 +43,7 @@ export function quoteSegments(q: Quote): Segment[] {
       { text: q.truncate ? '공종 합계 천원 미만 절사' : '절사 안 함' },
     ]),
     seg('total', '금액 합계', [
-      ...q.sections.map((s, i) => row([s.name || `공종 ${i + 1}`, `${won(calc.sections[i].total)}원`])),
+      ...q.sections.map((s, i) => row([`${s.name || `공종 ${i + 1}`}${s.option ? ' (선택, 별도)' : ''}`, `${won(calc.sections[i].total)}원`])),
       row(['공급가액', `${won(calc.supply)}원`]),
       row(['부가세', `${won(calc.vat)}원`]),
       row(['합계', `${won(calc.grand)}원`]),
@@ -53,7 +53,7 @@ export function quoteSegments(q: Quote): Segment[] {
     const c = calc.sections[si]
     const on = q.costCalc && !s.flat
     out.push(
-      seg(`s:${s.id}`, `공종: ${s.name || `공종 ${si + 1}`}`, [
+      seg(`s:${s.id}`, `공종: ${s.name || `공종 ${si + 1}`}${s.option ? ' (선택 항목)' : ''}`, [
         ...(s.desc ? [{ text: s.desc }] : []),
         ...s.items.map((i): Line => ({ ...row([i.kind, i.name, i.spec, i.qty.toLocaleString('ko-KR', { maximumFractionDigits: 3 }), i.unit, won(i.price), won(itemAmount(i)), i.note]), item: true })),
         { text: `재료비 ${won(c.mat)} · 노무비 ${won(c.lab)} · 경비 ${won(c.exp)}` },

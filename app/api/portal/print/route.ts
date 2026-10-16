@@ -1,4 +1,5 @@
 import { printHtml } from '@/lib/clients/print'
+import { bookFrameHtml, bookShellHtml } from '@/lib/clients/book'
 import { approvedClientId, portalDocs } from '@/lib/portal/access'
 
 export const dynamic = 'force-dynamic'
@@ -9,8 +10,14 @@ export async function GET(req: Request) {
   if (!clientId) return new Response('로그인이 필요합니다.', { status: 401 })
   const client = await portalDocs(clientId)
   if (!client) return new Response('없는 업체', { status: 404 })
-  const docs = new URL(req.url).searchParams.get('docs') ?? 'both'
-  return new Response(printHtml(client, docs, client.label ? ` ${client.label}` : ' '), {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' },
-  })
+  const url = new URL(req.url)
+  const docs = url.searchParams.get('docs') ?? 'both'
+  const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' }
+  if (docs === 'book') {
+    const title = `${client.name} 제안서·견적서 제본용${client.label ? ` ${client.label}` : ''}`
+    if (url.searchParams.get('frame') === '1') return new Response(bookFrameHtml(client, title), { headers })
+    url.searchParams.set('frame', '1')
+    return new Response(bookShellHtml(`${url.pathname}${url.search}`, title), { headers })
+  }
+  return new Response(printHtml(client, docs, client.label ? ` ${client.label}` : ' '), { headers })
 }

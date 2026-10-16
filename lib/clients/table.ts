@@ -162,7 +162,7 @@ export function ensureClients(): Promise<void> {
           const q = normalizeQuote(cur.quote)
           const eq = q.sections.find((x) => x.name === '장비') ?? q.sections[q.sections.length - 1]
           if (eq && !eq.items.some((i) => i.name === '스카이잭 렌탈')) eq.items.push(...sinilRentalItems())
-          return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(q.number), quote: q, summary: '스카이잭 렌탈 6일 추가, 제안서 용마루 28m·박공 34m 문구' }
+          return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(q.number), quote: q, summary: '스카이잭 렌탈 6일·운송비 추가, 제안서 용마루 28m·박공 34m 문구' }
         })
       })
     })().catch((e) => {

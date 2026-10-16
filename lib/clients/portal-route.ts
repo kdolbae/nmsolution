@@ -3,7 +3,7 @@ import { PRETENDARD_CSS, QUOTE_CSS, renderQuote } from './quote'
 import { quoteSummaryHtml } from './quote-summary'
 import { esc, withBrandLogo } from './proposal'
 import { getClientBySlug } from './table'
-import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie } from './portal'
+import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie, validShareKey } from './portal'
 import { verifyPortalPassword } from './portal-password'
 
 /**
@@ -59,7 +59,10 @@ function notFound() {
 export async function portalGet(req: Request, slug: string): Promise<Response> {
   const client = await getClientBySlug(slug)
   if (!client) return notFound()
-  if (!(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) return loginPage(`${client.name} 공사 자료`, false)
+  // 임시 링크(?k=)면 로그인 없이 열고, 사진도 보이도록 남은 기간만큼 쿠키를 준다
+  const shareLeft = await validShareKey(slug, new URL(req.url).searchParams.get('k'), client.shareHash, client.shareExpires)
+  const shareToken = shareLeft ? await portalToken(slug) : null
+  if (!shareToken && !(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) return loginPage(`${client.name} 공사 자료`, false)
 
   const summary = quoteSummaryHtml(client.quote)
   const sheet = `<div class="quote-sheet">${renderQuote(client.quote, client)}</div>`
@@ -72,7 +75,27 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
     .replace('<!--NM:QUOTE-->', () => (hasSummarySlot ? sheet : summary + sheet))
   const head = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
   html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, () => `${head}</head>`) : head + html
-  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
+  html = keepInside(html)
+  html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${FIT_QUOTE}</body>`) : html + FIT_QUOTE
+  const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
+  if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
+  return new Response(html, { headers })
+}
+
+/** 휴대폰처럼 좁은 화면에서는 견적서(A4 양식)를 옆으로 밀지 않아도 되게 화면 폭에 맞춰 줄인다. 두 손가락으로 확대해 볼 수 있다 */
+const FIT_QUOTE = `<style>@media (max-width:720px){.quote-sheet{overflow:hidden!important;padding:12px 10px!important}.quote-sheet .nmq{min-width:640px}.quote-fit-hint{display:block!important}}</style>
+<p class="quote-fit-hint" style="display:none;margin:8px 0 0;font-size:13px;color:#6b7280">화면 폭에 맞춰 줄인 견적서임. 두 손가락으로 벌리면 크게 볼 수 있음.</p>
+<script>(function(){function fit(){document.querySelectorAll('.quote-sheet').forEach(function(w){var n=w.firstElementChild;if(!n)return;n.style.zoom='';var cs=getComputedStyle(w),avail=w.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),r=avail/n.scrollWidth;if(r<1)n.style.zoom=String(r);var h=document.querySelector('.quote-fit-hint');if(h&&h.parentNode!==w.parentNode)w.parentNode.insertBefore(h,w.nextSibling)})}
+window.addEventListener('resize',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})()</script>`
+
+/** 페이지 밖으로 나가는 링크를 없앤다. 페이지 안 이동(#…)만 남기고 나머지 a 는 글자만 남긴다 */
+function keepInside(html: string): string {
+  return html.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (m, attrs: string, inner: string) => {
+    const href = attrs.match(/\shref\s*=\s*["']([^"']*)["']/i)?.[1]
+    if (href !== undefined && href.startsWith('#')) return m.replace(/\starget\s*=\s*["'][^"']*["']/i, '')
+    const cls = attrs.match(/\sclass\s*=\s*["'][^"']*["']/i)?.[0] ?? ''
+    return `<span${cls}>${inner}</span>`
+  })
 }
 
 export async function portalPost(req: Request, slug: string): Promise<Response> {

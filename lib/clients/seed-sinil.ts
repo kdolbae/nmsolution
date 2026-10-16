@@ -6,6 +6,12 @@ import { DEFAULT_RATES, emptyItem, newId, type ItemKind, type Quote } from './qu
  * 견적서는 공종·품명만 있는 빈 틀이다. 물량·단가는 현장 확인 뒤 채운다.
  */
 export const SINIL_SEED_KEY = 'sinil-roof-2610-v2'
+export const SINIL_UPDATE_KEY = 'sinil-roof-2610-v3'
+/** 임시 링크(로그인 없이 열람) — 키 원문은 저장소에 두지 않고 해시만 둔다. 2026-10-23 자정(한국 시간)까지 */
+export const SINIL_SHARE = {
+  hash: '60ed41e91ad3e24c7cd1fc48bd22ad626832572dbe2065187b646fd87cf9705c',
+  expires: '2026-10-23T23:59:59+09:00',
+}
 
 /** 업체용 링크 비밀번호 해시 (2026-10-16 kevin 지정 값). 관리자 업체 정보에서 바꿀 수 있다 */
 export const SINIL_PORTAL_PASSWORD_HASH =
@@ -61,7 +67,7 @@ export function sinilQuote(date: string): Quote {
         name: '자재',
         desc: '반입 운반비 포함',
         items: items([
-          ['재료비', '지붕재 칼라강판', '기존과 같은 골형, 하부 보호층 부착', 378, '㎡', 17000, '양면 7m × 27m'],
+          ['재료비', '지붕재 칼라강판', '기존과 같은 골형, 하부 보호층 부착', 378, '㎡', 17000, '양면 약 7m × 27m'],
           ['재료비', '용마루', '칼라강판 절곡', 27, 'm', 15000, '지붕 길이'],
           ['재료비', '박공 후레싱', '칼라강판 절곡', 30, 'm', 15000, '양쪽 박공'],
           ['재료비', '물받이 높임판', '내식 강판 절곡, 폭 300', 54, 'm', 20000, '전·후면 27m × 2'],

@@ -4,7 +4,7 @@ import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
-import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, sinilQuote } from './seed-sinil'
+import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_SHARE, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 
 /**
@@ -43,7 +43,9 @@ export function ensureClients(): Promise<void> {
         ADD COLUMN IF NOT EXISTS biz_number text,
         ADD COLUMN IF NOT EXISTS portal_slug text,
         ADD COLUMN IF NOT EXISTS portal_login text,
-        ADD COLUMN IF NOT EXISTS portal_password_hash text`)
+        ADD COLUMN IF NOT EXISTS portal_password_hash text,
+        ADD COLUMN IF NOT EXISTS portal_share_hash text,
+        ADD COLUMN IF NOT EXISTS portal_share_expires timestamptz`)
       await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS clients_portal_slug_key ON clients (portal_slug) WHERE portal_slug IS NOT NULL`)
       await pool.query(`CREATE TABLE IF NOT EXISTS client_versions (
         id            bigint generated always as identity primary key,
@@ -111,6 +113,20 @@ export function ensureClients(): Promise<void> {
            VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
+      })
+      // 신일공업 2차: 문구 수정(총 투입 인원, 약 378㎡)과 임시 링크(7일)
+      await seedOnce(SINIL_UPDATE_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE portal_slug = $1`, [SINIL_CLIENT.portalSlug])
+        const row = found.rows[0]
+        if (!row) return
+        const id = Number(row.id)
+        await pool.query(`UPDATE clients SET portal_share_hash = $2, portal_share_expires = $3 WHERE id = $1`, [id, SINIL_SHARE.hash, SINIL_SHARE.expires])
+        if (row.finalized_at) return
+        await applyChange(id, 'system', 'system', (cur) => {
+          const q = normalizeQuote(cur.quote)
+          const quote = JSON.parse(JSON.stringify(q).split('양면 7m × 27m').join('양면 약 7m × 27m')) as Quote
+          return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(q.number), quote, summary: '총 투입 인원·약 378㎡ 문구 수정' }
+        })
       })
     })().catch((e) => {
       ready = null
@@ -221,6 +237,8 @@ type DbRow = {
   portal_slug: string | null
   portal_login: string | null
   portal_password_hash: string | null
+  portal_share_hash?: string | null
+  portal_share_expires?: Date | null
   contact_person: string | null
   phone: string | null
   email: string | null
@@ -270,10 +288,19 @@ export async function getClient(id: number): Promise<ClientRow | null> {
 }
 
 /** 업체용 링크 주소로 찾는다. 비밀번호 해시도 같이 돌려준다 */
-export async function getClientBySlug(slug: string): Promise<(ClientRow & { portalPasswordHash: string }) | null> {
+export async function getClientBySlug(
+  slug: string,
+): Promise<(ClientRow & { portalPasswordHash: string; shareHash: string; shareExpires: Date | null }) | null> {
   await ensureClients()
   const { rows } = await pool.query<DbRow>(`SELECT * FROM clients WHERE portal_slug = $1`, [slug])
-  return rows[0] ? { ...toClient(rows[0]), portalPasswordHash: rows[0].portal_password_hash ?? '' } : null
+  return rows[0]
+    ? {
+        ...toClient(rows[0]),
+        portalPasswordHash: rows[0].portal_password_hash ?? '',
+        shareHash: rows[0].portal_share_hash ?? '',
+        shareExpires: rows[0].portal_share_expires ?? null,
+      }
+    : null
 }
 
 export async function insertClient(info: ClientInfo, proposalHtml: string, quote: Quote, by: string): Promise<number> {

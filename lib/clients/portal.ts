@@ -24,6 +24,21 @@ export async function portalToken(slug: string): Promise<string | null> {
   return sha256Hex(`nm-portal:v1:${slug}:${secret}`)
 }
 
+/**
+ * 임시 링크(?k=…): 로그인 없이 기한까지 열린다. DB 에는 해시(portal_share_hash)와 기한(portal_share_expires)만 둔다.
+ * 맞으면 남은 기간만큼 업체 쿠키를 준다.
+ */
+export async function shareHash(slug: string, key: string): Promise<string> {
+  return sha256Hex(`nm-share:v1:${slug}:${key}`)
+}
+
+export async function validShareKey(slug: string, key: string | null, hash: string, expires: Date | null): Promise<number> {
+  if (!key || !hash || !expires) return 0
+  const left = Math.floor((expires.getTime() - Date.now()) / 1000)
+  if (left <= 0) return 0
+  return (await shareHash(slug, key)) === hash ? left : 0
+}
+
 export async function hasPortalAccess(slug: string, cookieValue: string | undefined): Promise<boolean> {
   const token = await portalToken(slug)
   return Boolean(token && cookieValue && cookieValue === token)

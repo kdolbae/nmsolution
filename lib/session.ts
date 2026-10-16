@@ -1,4 +1,5 @@
 import { cookies, headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { getSession, getSessionFrom } from '@/lib/admin'
 import { pool } from '@/lib/db'
 import { ensureSso } from '@/lib/est/table'
@@ -96,6 +97,16 @@ export function canEnterAdmin(s: AppSession | null | undefined): boolean {
 /** 기존 사이트·업체 관리 화면(관리자 전용)까지 쓸 수 있는지 */
 export function isSiteAdmin(s: AppSession | null | undefined): boolean {
   return !!s && s.role === 'admin'
+}
+
+/**
+ * 견적 화면(page·layout) 첫 줄. 레이아웃과 페이지는 동시에 렌더되므로
+ * 상위 레이아웃의 가드에 기대지 않고 화면마다 직접 확인함. 없으면 로그인으로 보냄
+ */
+export async function estPageSession(): Promise<AppSession & { estRole: EstRole }> {
+  const s = await getAppSession()
+  if (!s || !canEnterAdmin(s) || !s.estRole) redirect('/admin/login')
+  return s as AppSession & { estRole: EstRole }
 }
 
 /** 견적 서버 액션 첫 줄. 역할이 모자라면 throw */

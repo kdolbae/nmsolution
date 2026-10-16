@@ -71,6 +71,16 @@ export async function listEstUsers(): Promise<EstUser[]> {
   return rows.map((r) => ({ id: r.id, name: r.name, email: r.email, role: r.role, estRole: r.role === 'admin' ? 'ceo' : r.est_role }))
 }
 
+/** 마스터 → 사용자 탭: 협력업체가 아닌 계정 + SSO 연결 여부 */
+export async function listUsersForRoles(): Promise<(EstUser & { sso: boolean })[]> {
+  await ensureEst()
+  const { rows } = await pool.query(
+    `SELECT u.id, u.name, u.email, u.role, u.est_role, (s.user_id IS NOT NULL) AS sso FROM "user" u LEFT JOIN sso_identity s ON s.user_id = u.id
+     WHERE u.role IS DISTINCT FROM 'partner' ORDER BY u.name`,
+  )
+  return rows.map((r) => ({ id: r.id, name: r.name, email: r.email, role: r.role, estRole: r.est_role, sso: Boolean(r.sso) }))
+}
+
 // ---------- 분류·질문 ----------
 
 export type EstClass = { id: number; level: number; parentId: number | null; code: string; name: string; sortOrder: number; isActive: boolean; meta: Record<string, unknown> }
@@ -501,6 +511,24 @@ export async function pendingApprovalCount(estRole: string | null, userId: strin
     [roles, userId, estRole === 'ceo'],
   )
   return rows[0]?.c ?? 0
+}
+
+export type PendingApproval = { stepId: number; stepRole: string; estimateId: number; label: string; supply: number; projectId: number; number: string; title: string; submittedAt: string | null }
+
+/** 내 역할로 결재할 차례인 단계(견적 현황 결재 탭) */
+export async function listPendingApprovals(estRole: string | null, userId: string): Promise<PendingApproval[]> {
+  if (!estRole || estRole === 'writer') return []
+  await ensureEst()
+  const roles = estRole === 'ceo' ? ['reviewer', 'ceo'] : ['reviewer']
+  const { rows } = await pool.query(
+    `SELECT a.id, a.step_role, e.id AS e_id, e.label, e.supply, p.id AS p_id, p.number, p.title,
+       (SELECT w.decided_at FROM est_approval w WHERE w.estimate_id = a.estimate_id AND w.round = a.round AND w.step_role = 'writer' LIMIT 1) AS submitted_at
+     FROM est_approval a JOIN est_estimate e ON e.id = a.estimate_id JOIN est_project p ON p.id = e.project_id
+     WHERE a.status = 'pending' AND e.status = 'approving' AND a.step_role = ANY($1) AND p.deleted_at IS NULL
+     ORDER BY a.id`,
+    [roles],
+  )
+  return rows.map((r) => ({ stepId: n(r.id), stepRole: r.step_role, estimateId: n(r.e_id), label: r.label, supply: n(r.supply), projectId: n(r.p_id), number: r.number, title: r.title, submittedAt: iso(r.submitted_at) }))
 }
 
 export type CheckRun = { id: number; estimateId: number; results: { code: string; severity: string; message: string; lineId?: string }[]; passed: boolean; ranAt: string }

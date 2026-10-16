@@ -63,6 +63,8 @@ export type Quote = {
   validDays: number
   /** 견적서 수신란. biz = 업체명·사업자번호·현장, contact = 업체명·담당자·연락처·현장(예전 양식) */
   recipientFields?: 'biz' | 'contact'
+  /** 선택 항목 표의 이름. 없으면 '선택 항목' (예: '상황에 따라 추가되는 비용') */
+  optionLabel?: string
 }
 
 export type QuoteRecipient = {
@@ -398,11 +400,11 @@ ${rows.join('\n')}
 </tbody></table>
 ${
   optRows.length
-    ? `<h2 class="q-sub">선택 항목 (견적금액 별도)</h2>
+    ? `<h2 class="q-sub">${esc(q.optionLabel || '선택 항목')} (견적금액 별도)</h2>
 <table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
 <tbody>
 ${optRows.join('\n')}
-<tr class="q-grand"><td></td><td colspan="5">선택 항목 합계 (VAT 별도)</td><td class="n">${won(calc.options)}</td><td></td></tr>
+<tr class="q-grand"><td></td><td colspan="5">${esc(q.optionLabel || '선택 항목')} 합계 (VAT 별도)</td><td class="n">${won(calc.options)}</td><td></td></tr>
 </tbody></table>`
     : ''
 }

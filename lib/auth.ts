@@ -9,7 +9,7 @@ import { mailEnabled, mailLayout, sendMail } from '@/lib/mail'
  * 협력업체 관계자 가입 중임을 표시한다. 업체 코드를 확인한 서버 액션(app/actions/portal.ts)만 이 안에서 가입시킨다.
  * /api/auth/sign-up 을 직접 부르는 가입은 이 표시가 없으므로, 관리자가 이미 있으면 막힌다.
  */
-export const partnerSignup = new AsyncLocalStorage<{ clientId: number }>()
+export const partnerSignup = new AsyncLocalStorage<{ clientId: number; /** 관리자가 직접 등록: 인증 메일을 보내지 않는다 */ direct?: boolean }>()
 
 export const auth = betterAuth({
   database: pool,
@@ -48,7 +48,7 @@ export const auth = betterAuth({
     sendOnSignIn: true,
     autoSignInAfterVerification: false,
     sendVerificationEmail: async ({ user, url }) => {
-      if (user.emailVerified) return
+      if (user.emailVerified || partnerSignup.getStore()?.direct) return
       await sendMail({
         to: user.email,
         subject: '[엔엠솔루션] 이메일 인증',

@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Copy, KeyRound, Loader2, Pause, Play, RefreshCw, Trash2, Users } from 'lucide-react'
+import { Check, Copy, KeyRound, Link2, Loader2, Pause, Play, RefreshCw, Trash2, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { changeMemberStatus, deleteMember, regeneratePortalCode, togglePortal } from '@/app/actions/portal'
+import { addDirectPortalMember, changeMemberStatus, deleteMember, regeneratePortalCode, togglePortal } from '@/app/actions/portal'
 
 type Member = {
   id: number
@@ -17,6 +17,8 @@ type Member = {
   emailVerified: boolean
   status: 'pending' | 'approved' | 'suspended'
   createdAt: string
+  /** 직접 등록한 관계자만 있다 */
+  linkToken: string
 }
 
 const STATUS = {
@@ -105,6 +107,8 @@ export function ClientPortal({
         </Button>
       </div>
 
+      <DirectAdd clientId={clientId} onDone={() => router.refresh()} />
+
       {members.length > 0 ? (
         <ul className="divide-y divide-border border-t border-border">
           {members.map((m) => (
@@ -122,6 +126,7 @@ export function ClientPortal({
               </div>
               <div className="flex gap-2">
                 {busy === m.id && <Loader2 className="size-4 animate-spin self-center" />}
+                {m.linkToken && <CopyLink url={`${typeof location === 'undefined' ? '' : location.origin}/portal/k/${m.linkToken}`} name={m.name} />}
                 {m.status !== 'approved' && (
                   <Button size="sm" className="rounded-none" disabled={pending} onClick={() => run(m.id, () => changeMemberStatus(m.id, 'approved'))}>
                     <Play /> 승인
@@ -151,5 +156,89 @@ export function ClientPortal({
         <p className="border-t border-border pt-3 text-sm text-muted-foreground">아직 가입한 관계자가 없습니다.</p>
       )}
     </section>
+  )
+}
+
+/** 바로가기 링크 복사 (안내 문구 포함) */
+function CopyLink({ url, name }: { url: string; name: string }) {
+  const [done, setDone] = useState(false)
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="rounded-none"
+      title="링크를 열고 전화번호를 넣으면 바로 제안서·견적서를 봅니다"
+      onClick={async () => {
+        const text = `[엔엠솔루션] ${name}님, 공사제안서·견적서 바로가기입니다.\n${url}\n전화번호를 입력하면 열립니다.`
+        await navigator.clipboard.writeText(text).catch(() => {})
+        setDone(true)
+        setTimeout(() => setDone(false), 1500)
+      }}
+    >
+      {done ? <Check /> : <Link2 />} {done ? '복사됨' : '바로가기 링크'}
+    </Button>
+  )
+}
+
+/** 명함 등으로 받은 관계자를 직접 등록: 바로 승인, 비밀번호는 전화번호, 바로가기 링크 생성 */
+function DirectAdd({ clientId, onDone }: { clientId: number; onDone: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [f, setF] = useState({ name: '', title: '', phone: '', email: '' })
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [pending, start] = useTransition()
+  if (!open)
+    return (
+      <div>
+        <Button variant="outline" className="rounded-none" onClick={() => setOpen(true)}>
+          <UserPlus /> 담당자 직접 등록 (명함)
+        </Button>
+      </div>
+    )
+  const field = (k: keyof typeof f, label: string, type = 'text', placeholder = '') => (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      <input
+        type={type}
+        value={f[k]}
+        placeholder={placeholder}
+        onChange={(e) => setF({ ...f, [k]: e.target.value })}
+        className="h-9 border border-input bg-background px-2 text-sm text-foreground"
+      />
+    </label>
+  )
+  return (
+    <form
+      className="flex flex-col gap-3 border border-border p-4"
+      onSubmit={(e) => {
+        e.preventDefault()
+        setMsg(null)
+        start(async () => {
+          const res = await addDirectPortalMember(clientId, f)
+          if (!res.ok) return setMsg({ ok: false, text: res.error })
+          await navigator.clipboard.writeText(res.link).catch(() => {})
+          setMsg({ ok: true, text: `등록했습니다. 바로가기 링크를 복사했습니다: ${res.link}` })
+          setF({ name: '', title: '', phone: '', email: '' })
+          onDone()
+        })
+      }}
+    >
+      <p className="text-sm font-medium">담당자 직접 등록</p>
+      <p className="text-xs text-muted-foreground">바로 승인되고, 비밀번호는 전화번호 숫자입니다. 바로가기 링크를 열고 전화번호만 넣으면 제안서·견적서를 봅니다.</p>
+      <div className="grid gap-3 sm:grid-cols-4">
+        {field('name', '이름 *')}
+        {field('title', '직함')}
+        {field('phone', '전화번호 * (비밀번호)', 'tel', '010-0000-0000')}
+        {field('email', '이메일 (없으면 비워 두기)', 'email')}
+      </div>
+      {msg && <p className={cn('text-xs break-all', msg.ok ? 'text-emerald-700' : 'text-destructive')}>{msg.text}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" className="rounded-none" disabled={pending}>
+          {pending ? <Loader2 className="animate-spin" /> : <UserPlus />} 등록
+        </Button>
+        <Button type="button" variant="ghost" className="rounded-none" onClick={() => setOpen(false)}>
+          닫기
+        </Button>
+      </div>
+    </form>
   )
 }

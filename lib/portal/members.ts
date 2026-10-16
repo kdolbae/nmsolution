@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto'
+import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
 import { pool } from '@/lib/db'
 import { ensureUserRole } from '@/lib/auth-roles'
 import { ensureClients } from '@/lib/clients/table'
@@ -52,6 +52,8 @@ export function ensurePortal(): Promise<void> {
         approved_by text
       )`)
       await pool.query(`CREATE INDEX IF NOT EXISTS client_members_client_idx ON client_members (client_id)`)
+      // 관리자가 직접 등록한 관계자의 바로가기 링크(/portal/k/<link_token>). 비밀번호는 전화번호 숫자
+      await pool.query(`ALTER TABLE client_members ADD COLUMN IF NOT EXISTS link_token text UNIQUE`)
       const { rows } = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE portal_code IS NULL`)
       for (const r of rows) await assignCode(Number(r.id), false)
     })().catch((e) => {
@@ -110,6 +112,47 @@ export async function addMember(m: { clientId: number; userId: string; name: str
   )
 }
 
+/** 전화번호의 숫자만. 직접 등록한 관계자의 비밀번호로 쓴다 */
+export function phoneDigits(phone: string): string {
+  return String(phone ?? '').replace(/\D/g, '')
+}
+
+/** 관리자가 명함 등으로 직접 등록한 관계자: 바로 승인, 바로가기 링크 토큰을 붙인다 */
+export async function addDirectMember(m: { clientId: number; userId: string; name: string; title: string; phone: string; by: string }) {
+  await ensurePortal()
+  const token = randomBytes(18).toString('base64url')
+  await pool.query(`UPDATE "user" SET "emailVerified" = true WHERE id = $1 AND role = 'partner'`, [m.userId])
+  await pool.query(
+    `INSERT INTO client_members (client_id, user_id, name, title, phone, status, approved_at, approved_by, link_token)
+     VALUES ($1, $2, $3, $4, $5, 'approved', now(), $6, $7)`,
+    [m.clientId, m.userId, m.name, m.title, m.phone, m.by, token],
+  )
+  return token
+}
+
+export type LinkMember = { name: string; title: string; clientName: string; email: string; phone: string; status: MemberStatus }
+
+/** 바로가기 링크의 관계자 (없으면 null) */
+export async function findLinkMember(token: string): Promise<LinkMember | null> {
+  if (!/^[A-Za-z0-9_-]{20,40}$/.test(token)) return null
+  await ensurePortal()
+  const { rows } = await pool.query<{ name: string; title: string | null; client_name: string; email: string; phone: string | null; status: MemberStatus }>(
+    `SELECT m.name, m.title, c.name AS client_name, u.email, m.phone, m.status
+     FROM client_members m JOIN clients c ON c.id = m.client_id JOIN "user" u ON u.id = m.user_id
+     WHERE m.link_token = $1`,
+    [token],
+  )
+  const r = rows[0]
+  return r ? { name: r.name, title: r.title ?? '', clientName: r.client_name, email: r.email, phone: r.phone ?? '', status: r.status } : null
+}
+
+/** 입력한 전화번호가 그 관계자 번호와 같은지 (숫자만, 시간 차 없이 비교) */
+export function samePhone(input: string, stored: string): boolean {
+  const a = Buffer.from(phoneDigits(input))
+  const b = Buffer.from(phoneDigits(stored))
+  return a.length >= 8 && a.length === b.length && timingSafeEqual(a, b)
+}
+
 export type Membership = { memberId: number; clientId: number; clientName: string; name: string; status: MemberStatus }
 
 /** 로그인한 협력업체 계정이 어느 업체 관계자인지 */
@@ -134,6 +177,8 @@ export type MemberRow = {
   status: MemberStatus
   createdAt: Date
   approvedAt: Date | null
+  /** 직접 등록한 관계자만 있다 */
+  linkToken: string
 }
 
 export type PortalInfo = { code: string; open: boolean; members: MemberRow[] }
@@ -155,8 +200,9 @@ export async function getPortalInfo(clientId: number): Promise<PortalInfo | null
     status: MemberStatus
     created_at: Date
     approved_at: Date | null
+    link_token: string | null
   }>(
-    `SELECT m.id, m.name, m.title, m.phone, u.email, u."emailVerified" AS email_verified, m.status, m.created_at, m.approved_at
+    `SELECT m.id, m.name, m.title, m.phone, u.email, u."emailVerified" AS email_verified, m.status, m.created_at, m.approved_at, m.link_token
      FROM client_members m JOIN "user" u ON u.id = m.user_id
      WHERE m.client_id = $1 ORDER BY (m.status = 'pending') DESC, m.created_at`,
     [clientId],
@@ -174,6 +220,7 @@ export async function getPortalInfo(clientId: number): Promise<PortalInfo | null
       status: r.status,
       createdAt: r.created_at,
       approvedAt: r.approved_at,
+      linkToken: r.link_token ?? '',
     })),
   }
 }

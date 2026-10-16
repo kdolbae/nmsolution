@@ -7,13 +7,18 @@ import { adminEmails, requireAdmin } from '@/lib/admin'
 import { isAdminEmail } from '@/lib/auth-roles'
 import { mailEnabled, mailLayout, sendMail } from '@/lib/mail'
 import { siteUrl } from '@/lib/site'
+import { randomBytes } from 'node:crypto'
 import {
+  addDirectMember,
   addMember,
   deletePartnerUser,
   findClientByCode,
+  findLinkMember,
   formatCode,
+  phoneDigits,
   regenerateCode,
   removeMember,
+  samePhone,
   setMemberStatus,
   setPortalOpen,
   type MemberStatus,
@@ -134,4 +139,66 @@ export async function deleteMember(memberId: number, clientId: number) {
   await requireAdmin()
   await removeMember(memberId)
   revalidatePath(`/admin/clients/${clientId}`)
+}
+
+// ---------- 관리자가 직접 등록 · 바로가기 링크 ----------
+
+export type DirectMemberInput = { name: string; title: string; phone: string; email: string }
+
+/**
+ * 명함 등으로 받은 관계자를 관리자가 바로 등록한다(승인 상태, 인증 메일 없음).
+ * 비밀번호는 전화번호 숫자. 이메일이 없으면 로그인용 주소를 만들어 둔다. 바로가기 링크 주소를 돌려준다.
+ */
+export async function addDirectPortalMember(
+  clientId: number,
+  input: DirectMemberInput,
+): Promise<{ ok: true; link: string } | { ok: false; error: string }> {
+  const admin = await requireAdmin()
+  const t = (v: unknown, max = 100) => String(v ?? '').trim().slice(0, max)
+  const name = t(input.name, 50)
+  const title = t(input.title, 50)
+  const phone = t(input.phone, 30)
+  let email = t(input.email, 200).toLowerCase()
+  const password = phoneDigits(phone)
+  if (!name) return { ok: false, error: '이름을 입력해 주세요.' }
+  if (password.length < 9 || password.length > 15) return { ok: false, error: '전화번호를 확인해 주세요. 비밀번호로 씁니다.' }
+  if (!email) email = `m-${randomBytes(5).toString('hex')}@members.nm-solution.co.kr`
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: '이메일 주소를 확인해 주세요.' }
+  if (isAdminEmail(email)) return { ok: false, error: '이 이메일로는 등록할 수 없습니다.' }
+
+  let userId: string
+  try {
+    const h = await headers()
+    const res = await partnerSignup.run({ clientId, direct: true }, () =>
+      auth.api.signUpEmail({ body: { name, email, password }, headers: h }),
+    )
+    userId = res.user.id
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : ''
+    if (/exist/i.test(msg)) return { ok: false, error: '이미 가입된 이메일입니다.' }
+    console.error('[portal] 직접 등록 실패', e)
+    return { ok: false, error: '등록하지 못했습니다. 잠시 뒤 다시 해 주세요.' }
+  }
+  let token: string
+  try {
+    token = await addDirectMember({ clientId, userId, name, title, phone, by: admin.name || admin.email })
+  } catch (e) {
+    console.error('[portal] 직접 등록 실패', e)
+    await deletePartnerUser(userId).catch(() => {})
+    return { ok: false, error: '등록하지 못했습니다. 잠시 뒤 다시 해 주세요.' }
+  }
+  revalidatePath(`/admin/clients/${clientId}`)
+  return { ok: true, link: `${siteUrl()}/portal/k/${token}` }
+}
+
+/** 바로가기 링크: 전화번호가 맞으면 로그인할 이메일을 돌려준다(로그인은 화면에서 이 이메일 + 전화번호로) */
+export async function linkSignIn(token: string, phone: string): Promise<{ ok: true; email: string; password: string } | { ok: false; error: string }> {
+  if (await limited()) return { ok: false, error: TOO_MANY }
+  const m = await findLinkMember(String(token ?? ''))
+  if (!m || !samePhone(phone, m.phone)) {
+    await new Promise((r) => setTimeout(r, 800))
+    return { ok: false, error: '전화번호가 맞지 않습니다.' }
+  }
+  if (m.status !== 'approved') return { ok: false, error: '이용이 중지된 링크입니다. 엔엠솔루션(010-2369-3691)에 문의해 주세요.' }
+  return { ok: true, email: m.email, password: phoneDigits(m.phone) }
 }

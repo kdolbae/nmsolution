@@ -21,7 +21,7 @@ type Item = {
   finalizedVersion: number | null
 }
 
-const EMPTY = { name: '', bizNumber: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
+const EMPTY = { name: '', bizNumber: '', portalSlug: '', portalLogin: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
 
 export function ClientsList({ clients }: { clients: Item[] }) {
   const router = useRouter()

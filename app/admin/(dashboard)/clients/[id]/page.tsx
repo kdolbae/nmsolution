@@ -37,6 +37,9 @@ export default async function AdminClientPage({
           email: client.email,
           siteAddress: client.siteAddress,
           memo: client.memo,
+          portalSlug: client.portalSlug,
+          portalLogin: client.portalLogin,
+          portalPasswordSet: client.portalPasswordSet,
         }}
         proposalHtml={client.proposalHtml}
         quote={client.quote}

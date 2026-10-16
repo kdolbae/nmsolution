@@ -5,3 +5,9 @@ CREATE TABLE IF NOT EXISTS client_seeds (
   key        text primary key,
   created_at timestamptz not null default now()
 );
+
+-- 업체용 링크 (nm-solution.co.kr/<portal_slug>). 비밀번호는 scrypt 해시만 둔다.
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_slug text;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_login text;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_password_hash text;
+CREATE UNIQUE INDEX IF NOT EXISTS clients_portal_slug_key ON clients (portal_slug) WHERE portal_slug IS NOT NULL;

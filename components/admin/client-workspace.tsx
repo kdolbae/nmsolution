@@ -52,6 +52,9 @@ type ClientInfo = {
   email: string
   siteAddress: string
   memo: string
+  portalSlug: string
+  portalLogin: string
+  portalPasswordSet: boolean
 }
 
 type Tab = 'proposal' | 'quote'
@@ -224,14 +227,18 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
   const [form, setForm] = useState(client)
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
+  const [portalPassword, setPortalPassword] = useState('')
   const set = (k: keyof ClientInfo) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const save = () =>
     startTransition(async () => {
       setError('')
       try {
-        await saveClientInfo(client.id, form)
-        onSaved(form)
+        await saveClientInfo(client.id, form, portalPassword)
+        const next = { ...form, portalPasswordSet: form.portalPasswordSet || !!portalPassword }
+        setForm(next)
+        setPortalPassword('')
+        onSaved(next)
         setOpen(false)
       } catch (e) {
         setError(e instanceof Error ? e.message : '저장하지 못했습니다.')
@@ -254,6 +261,15 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
           <p className="mt-1 text-sm text-muted-foreground">
             {[client.contactPerson, client.phone, client.email, client.siteAddress].filter(Boolean).join(' · ') || '담당자·연락처 미입력'}
           </p>
+          {client.portalSlug && (
+            <p className="mt-1 text-sm">
+              업체용 링크{' '}
+              <a href={`/${client.portalSlug}`} target="_blank" rel="noreferrer" className="font-medium text-electric underline-offset-2 hover:underline">
+                nm-solution.co.kr/{client.portalSlug}
+              </a>
+              <span className="text-muted-foreground"> · 아이디 {client.portalLogin || '미정'}{client.portalPasswordSet ? '' : ' · 비밀번호 미정'}</span>
+            </p>
+          )}
         </div>
         <Button variant="outline" size="sm" className="rounded-none" onClick={() => setOpen((v) => !v)}>
           <Pencil /> 업체 정보
@@ -268,6 +284,20 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
             <Field label="연락처" value={form.phone} onChange={set('phone')} />
             <Field label="이메일" value={form.email} onChange={set('email')} />
             <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />
+            <Field
+              label="업체용 링크 주소 (영문)"
+              value={form.portalSlug}
+              onChange={set('portalSlug')}
+              placeholder="sinil"
+              hint="nm-solution.co.kr/주소 로 열림. 새 주소는 사이트 반영이 한 번 필요함"
+            />
+            <Field label="업체용 링크 아이디" value={form.portalLogin} onChange={set('portalLogin')} placeholder="sinil" />
+            <Field
+              label="업체용 링크 새 비밀번호"
+              value={portalPassword}
+              onChange={setPortalPassword}
+              hint={form.portalPasswordSet ? '비워 두면 지금 비밀번호를 그대로 씀' : '아직 비밀번호가 없음'}
+            />
             <div className="sm:col-span-2">
               <Field label="메모·조사 자료 (내부용, 인쇄 안 됨)" value={form.memo} onChange={set('memo')} multiline rows={8} />
             </div>
@@ -664,6 +694,7 @@ function QuotePanel({
         )}
         <div className="text-sm tabular-nums">
           공급가액 <b>{won(calc.supply)}</b> · 부가세 {won(calc.vat)} · 합계 <b className="text-electric">{won(calc.grand)}원</b>
+          {calc.options > 0 && <> · 선택 항목 별도 {won(calc.options)}</>}
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
       </div>
@@ -788,6 +819,10 @@ function QuotePanel({
                     이 공종은 원가계산 제외 (재료·노무·경비만)
                   </label>
                 )}
+                <label className={`flex items-center gap-1.5${q.costCalc ? '' : ' ml-auto'}`}>
+                  <input type="checkbox" checked={!!s.option} onChange={(e) => updateSection(s.id, { option: e.target.checked })} />
+                  선택 항목 (견적금액 별도)
+                </label>
               </div>
             </section>
           )

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftRight, Eye, History, Loader2, Lock, Printer } from 'lucide-react'
+import { ArrowLeftRight, Expand, Eye, History, Loader2, Lock, Printer } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { finalizeClientVersion } from '@/app/actions/clients'
@@ -209,11 +209,13 @@ export function VersionView({
   client,
   version,
   tab,
+  onPresent,
 }: {
   clientId: number
   client: QuoteRecipient
   version: { no: number; at: string; summary: string; proposalHtml: string; quote: Quote }
   tab: 'proposal' | 'quote'
+  onPresent: () => void
 }) {
   const proposal = useMemo(() => (version.proposalHtml ? withBrandFont(version.proposalHtml) : ''), [version.proposalHtml])
   const quote = useMemo(() => quoteDocument(version.quote, client), [version.quote, client])
@@ -224,7 +226,10 @@ export function VersionView({
         <span>
           <b>v{version.no}</b> ({fmtAt(version.at)}) 을 보는 중입니다. 지난 버전은 읽기 전용입니다.
         </span>
-        <Link href={`/admin/clients/${clientId}?tab=${tab}`} className={cn(buttonVariants({ size: 'sm' }), 'ml-auto rounded-none')}>
+        <Button variant="outline" size="sm" className="ml-auto rounded-none" onClick={onPresent}>
+          <Expand /> 전체화면
+        </Button>
+        <Link href={`/admin/clients/${clientId}?tab=${tab}`} className={cn(buttonVariants({ size: 'sm' }), 'rounded-none')}>
           최신본으로 돌아가기
         </Link>
       </div>

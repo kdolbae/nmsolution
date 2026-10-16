@@ -1,8 +1,8 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftRight } from 'lucide-react'
+import { ArrowLeftRight, Expand, Shrink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { diffLines, quoteSegments, sameLines, splitProposal, type Line, type Segment } from '@/lib/clients/compare'
@@ -148,6 +148,16 @@ export function ClientCompare({
   b: Side
 }) {
   const router = useRouter()
+  // 전체화면: 비교 화면 전체를 브라우저 전체화면으로 띄운다
+  const screen = useRef<HTMLDivElement>(null)
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    const onFs = () => setFull(document.fullscreenElement === screen.current)
+    document.addEventListener('fullscreenchange', onFs)
+    return () => document.removeEventListener('fullscreenchange', onFs)
+  }, [])
+  const toggleFull = () =>
+    document.fullscreenElement ? document.exitFullscreen().catch(() => {}) : screen.current?.requestFullscreen?.().catch(() => {})
   // 제안서는 DOMParser 로 나누므로 브라우저에서만 만든다
   const [proposal, setProposal] = useState<{ a: Segment[]; b: Segment[] } | null>(null)
   useEffect(() => setProposal({ a: splitProposal(a.proposalHtml), b: splitProposal(b.proposalHtml) }), [a.proposalHtml, b.proposalHtml])
@@ -187,9 +197,15 @@ export function ClientCompare({
 
   return (
     // 나란히 비교하려면 넓어야 하므로 관리자 본문 폭(max-w-5xl)을 벗어나 화면 폭을 쓴다 (사이드바 w-60 제외)
-    <div className="flex flex-col gap-5 lg:relative lg:left-1/2 lg:w-[calc(100vw-20rem)] lg:max-w-[1600px] lg:-translate-x-1/2">
+    <div ref={screen} className="lg:relative lg:left-1/2 lg:w-[calc(100vw-20rem)] lg:max-w-[1600px] lg:-translate-x-1/2 [&:fullscreen]:!left-0 [&:fullscreen]:!max-w-none [&:fullscreen]:!translate-x-0 [&:fullscreen]:overflow-y-auto [&:fullscreen]:bg-secondary [&:fullscreen]:p-6">
+      <div className="flex flex-col gap-5">
       <div className="bg-background p-5 ring-1 ring-border lg:p-6">
-        <h1 className="text-2xl font-bold tracking-tight">{clientName} · 버전 비교</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{clientName} · 버전 비교</h1>
+          <Button variant="outline" size="sm" className="rounded-none" onClick={toggleFull}>
+            {full ? <Shrink /> : <Expand />} {full ? '전체화면 끄기' : '전체화면'}
+          </Button>
+        </div>
         <div className="mt-4 grid items-end gap-3 lg:grid-cols-[1fr_auto_1fr]">
           <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
             이전
@@ -280,6 +296,7 @@ export function ClientCompare({
             </p>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

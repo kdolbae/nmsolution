@@ -44,6 +44,7 @@ export function quoteSegments(q: Quote): Segment[] {
     ]),
     seg('total', '금액 합계', [
       ...q.sections.map((s, i) => row([`${s.name || `공종 ${i + 1}`}${s.option ? ' (선택, 별도)' : ''}`, `${won(calc.sections[i].total)}원`])),
+      ...(calc.adjust ? [row(['공종 합계', `${won(calc.subtotal)}원`]), row([q.adjust?.label || '협의 조정', `${won(calc.adjust)}원`])] : []),
       row(['공급가액', `${won(calc.supply)}원`]),
       row(['부가세', `${won(calc.vat)}원`]),
       row(['합계', `${won(calc.grand)}원`]),

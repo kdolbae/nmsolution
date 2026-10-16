@@ -33,6 +33,7 @@ import {
   itemAmount,
   newId,
   quoteDocument,
+  supplyForGrand,
   won,
   type ItemKind,
   type Quote,
@@ -617,6 +618,41 @@ function NumInput({ value, onChange, className }: { value: number; onChange: (n:
   )
 }
 
+/** 협의 조정: 공종 합계 뒤 한 줄. VAT 포함 금액을 넣으면 그 금액이 되도록 조정액을 계산한다 */
+function AdjustEditor({ q, subtotal, onChange }: { q: Quote; subtotal: number; onChange: (a: Quote['adjust']) => void }) {
+  const a = q.adjust ?? { label: '협의 조정', amount: 0, note: '' }
+  const [target, setTarget] = useState(0)
+  const set = (p: Partial<NonNullable<Quote['adjust']>>) => {
+    const next = { ...a, ...p }
+    onChange(next.amount ? next : undefined)
+  }
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-4">
+      <span className="text-sm font-medium">협의 조정 (공종 합계 뒤 한 줄, 빼는 금액은 −)</span>
+      <div className="grid gap-2 sm:grid-cols-[10rem_10rem_1fr]">
+        <TextIn value={a.label} onChange={(v) => set({ label: v })} placeholder="협의 조정" />
+        <NumInput value={a.amount} onChange={(n) => set({ amount: Math.round(n) })} />
+        <TextIn value={a.note} onChange={(v) => set({ note: v })} placeholder="비고 (선택)" />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        VAT 포함 금액에 맞추기
+        <NumInput value={target} onChange={setTarget} className="h-8 w-36" />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="rounded-none"
+          disabled={!target}
+          onClick={() => set({ amount: supplyForGrand(target) - subtotal })}
+        >
+          맞추기
+        </Button>
+        <span>공종 합계 {won(subtotal)}원 기준</span>
+      </div>
+    </div>
+  )
+}
+
 function TextIn({ value, onChange, className, placeholder }: { value: string; onChange: (v: string) => void; className?: string; placeholder?: string }) {
   return (
     <input
@@ -885,6 +921,7 @@ function QuotePanel({
             <input type="checkbox" checked={q.truncate} onChange={(e) => update({ truncate: e.target.checked })} />
             공종 합계 천원 미만 절사
           </label>
+          <AdjustEditor q={q} subtotal={calc.subtotal} onChange={(adjust) => update({ adjust })} />
           <Field
             label="특기사항 (한 줄에 한 항목)"
             multiline

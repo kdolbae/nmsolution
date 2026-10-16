@@ -65,6 +65,18 @@ export type Quote = {
   recipientFields?: 'biz' | 'contact'
   /** 선택 항목 표의 이름. 없으면 '선택 항목' (예: '상황에 따라 추가되는 비용') */
   optionLabel?: string
+  /** 협의 조정: 공종 합계 뒤에 한 줄로 더하거나(+) 빼서(−) 공급가액을 정한다 (예: 협의 금액에 맞춘 할인) */
+  adjust?: QuoteAdjust
+}
+
+export type QuoteAdjust = { label: string; amount: number; note: string }
+
+/** VAT 포함 금액이 target 이 되는 공급가액 (부가세는 공급가액의 10% 반올림) */
+export function supplyForGrand(target: number): number {
+  let s = Math.round(target / 1.1)
+  while (s + Math.round(s / 10) > target) s--
+  while (s + 1 + Math.round((s + 1) / 10) <= target) s++
+  return s
 }
 
 export type QuoteRecipient = {
@@ -127,6 +139,10 @@ export function normalizeQuote(raw: unknown): Quote {
     rates: { ...DEFAULT_RATES, ...(q.rates ?? {}) },
     // 이 칸이 없던 견적서(금강변압기 등)는 예전 양식 그대로 인쇄한다
     recipientFields: q.recipientFields === 'biz' ? 'biz' : 'contact',
+    adjust:
+      q.adjust && Number(q.adjust.amount)
+        ? { label: String(q.adjust.label || '협의 조정'), amount: Math.round(Number(q.adjust.amount)), note: String(q.adjust.note ?? '') }
+        : undefined,
     sections: Array.isArray(q.sections)
       ? q.sections.map((s) => ({
           id: s.id || newId('s'),
@@ -191,10 +207,12 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
 
 export function calcQuote(q: Quote) {
   const sections = q.sections.map((s) => calcSection(s, q))
-  const supply = sections.reduce((a, s, i) => (q.sections[i].option ? a : a + s.total), 0)
+  const subtotal = sections.reduce((a, s, i) => (q.sections[i].option ? a : a + s.total), 0)
   const options = sections.reduce((a, s, i) => (q.sections[i].option ? a + s.total : a), 0)
+  const adjust = Math.round(Number(q.adjust?.amount) || 0)
+  const supply = subtotal + adjust
   const vat = Math.round(supply / 10)
-  return { sections, supply, vat, grand: supply + vat, options }
+  return { sections, subtotal, adjust, supply, vat, grand: supply + vat, options }
 }
 
 // ---------- 표기 ----------
@@ -359,7 +377,13 @@ ${(
     return `<tr><td>${label}</td>${vals.map((v) => `<td class="n">${won(v)}</td>`).join('')}<td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`
   })
   .join('')}
-<tr class="q-sum"><td>공급가액</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.supply)}</td></tr>
+${
+  calc.adjust
+    ? `<tr><td>공종 합계</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.subtotal)}</td></tr>
+<tr><td>${esc(q.adjust!.label)}</td>${mainIdx.map(() => '<td class="n"></td>').join('')}<td class="n">${won(calc.adjust)}</td></tr>
+<tr class="q-sum"><td>공급가액</td>${mainIdx.map(() => '<td class="n"></td>').join('')}<td class="n">${won(calc.supply)}</td></tr>`
+    : `<tr class="q-sum"><td>공급가액</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.supply)}</td></tr>`
+}
 </tbody></table>`
       : ''
 
@@ -394,6 +418,12 @@ ${costTable}
 <table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
 <tbody>
 ${rows.join('\n')}
+${
+  calc.adjust
+    ? `<tr class="q-sub"><td></td><td colspan="5">공종 합계</td><td class="n">${won(calc.subtotal)}</td><td></td></tr>
+<tr class="q-sub"><td></td><td colspan="5">${esc(q.adjust!.label)}</td><td class="n">${won(calc.adjust)}</td><td class="q-note">${esc(q.adjust!.note)}</td></tr>`
+    : ''
+}
 <tr class="q-sum"><td></td><td colspan="5">공급가액</td><td class="n">${won(calc.supply)}</td><td></td></tr>
 <tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td><td></td></tr>
 <tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>

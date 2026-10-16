@@ -7,8 +7,8 @@ import { quoteSummaryHtml } from './quote-summary'
  * 제본용 인쇄 (양면 인쇄 + 코일 제본).
  *
  * - 1쪽 표지(오른쪽 면), 2·3쪽 목차와 개요가 첫 펼침면.
- * - 제안서의 섹션(소제목) 하나를 펼침면 하나(왼쪽 + 오른쪽 쪽)에 담는다. 한 쪽에 다 들어가면 내용을 두 쪽으로 나눠 펼침면을 채우고,
- *   넘치면 다음 펼침면으로 이어서 짝수 쪽으로 맞춘다(남는 쪽은 메모 쪽).
+ * - 제안서 본문은 소제목마다 새 쪽을 열지 않고 이어서 채운다(2026-10-16 kevin: 여백 없이 꽉 차게).
+ *   소제목 머리는 다음 내용과 붙여 두고, 남은 자리가 조금 모자라는 그림은 조금 줄여 넣는다.
  * - 견적서는 늘 왼쪽 쪽에서 시작해 펼쳐 볼 수 있게 한다.
  * - 마지막은 뒤표지, 전체 쪽수는 짝수.
  *
@@ -41,6 +41,15 @@ html,body{margin:0;padding:0;background:#d9dde3;-webkit-print-color-adjust:exact
 .pg-body .hero{margin:0 0 18px}
 .pg-body .nmq .q-page{max-width:none;margin:0;padding:0;box-shadow:none;border:0;min-height:0}
 .pg-body img,.pg-body svg{break-inside:avoid}
+/* 쪽을 꽉 채우도록 글자·간격을 인쇄 크기로 줄인다 */
+.pg-body .nm-flow{font-size:10pt;line-height:1.55}
+.pg-body .nm-flow h2{font-size:17pt!important;margin:2px 0 6px!important}
+.pg-body .nm-flow h3{font-size:12pt;margin:10px 0 6px}
+.pg-body .nm-flow .sec-head{margin-bottom:8px}
+.pg-body .nm-flow .sec-head p{font-size:10pt}
+.pg-body .nm-flow + .nm-flow{margin-top:9mm!important;padding-top:6mm!important;border-top:.3mm solid #dde3ea!important}
+.pg-body .nm-flow .steps,.pg-body .nm-flow .step{gap:12px!important}
+.pg-body .nm-flow .step{padding:10px 0!important}
 /* 표지·목차·메모·뒤표지 */
 .nmb{font-family:Pretendard,'Noto Sans KR',sans-serif;color:#1d2430;letter-spacing:-.01em}
 .nmb-cover{height:100%;display:flex;flex-direction:column}
@@ -68,7 +77,9 @@ html,body{margin:0;padding:0;background:#d9dde3;-webkit-print-color-adjust:exact
 .pg.back .pg-body{height:297mm}
 .nm-video-still{display:block!important;width:100%;height:auto;margin:0 auto}
 .pg-body .table-wrap{overflow:visible!important}
-.pg-body .gallery{grid-template-columns:1fr!important}
+.pg-body .gallery{grid-template-columns:1fr 1fr!important;gap:10px!important}
+.pg-body .nm-flow .step{grid-template-columns:minmax(0,5fr) minmax(0,7fr)!important;gap:14px!important;align-items:start}
+.pg-body .nm-flow .stepimg figcaption{font-size:9pt}
 .pg-body .qsum .qcard .v{white-space:nowrap;font-size:20px!important}
 .pg-body .qsum .qcard .s{font-size:11px}
 .nmb-back{height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:0 16mm 22mm;box-sizing:border-box;color:#cfd8e4;font-size:10pt;line-height:1.8}
@@ -106,7 +117,7 @@ const BOOK_SCRIPT = String.raw`
   function padToLeft(){ if(pages.length%2===0) memoPage(); } // 다음 쪽 번호가 짝수(왼쪽)가 되게
 
   // 2. 단위(섹션) → 조각(item). 조각은 자기를 감싸던 상자들(chain)을 기억해 쪽마다 같은 상자를 다시 만든다
-  var SPLIT=/(^|\s)(gallery|steps|step|diag|thumbs|vs|grid2|grid3|grid4|panel|trade-list)(\s|$)/;
+  var SPLIT=/(^|\s)(gallery|steps|diag|thumbs|vs|grid2|grid3|grid4|panel|trade-list)(\s|$)/;
   function shellOf(node){
     var tag=node.tagName;
     if(tag==='DETAILS'){var d=el('div',node.className);return {root:d,ins:d}}
@@ -128,8 +139,9 @@ const BOOK_SCRIPT = String.raw`
   function item(n,chain,glue){return {node:n,chain:chain,glue:glue||isHead(n)}}
   function expand(n,chain){
     // 알려진 묶음(사진 모음·단계·표)은 미리 풀어 둔다
-    if(n.tagName==='TABLE'&&rowsOf(n).length>1)return childrenItems(n,chain);
-    if(n.classList&&n.classList.contains('table-wrap')&&n.children.length===1&&n.firstElementChild.tagName==='TABLE'){
+    // 짧은 표(8줄 이하)는 쪼개지 않는다
+    if(n.tagName==='TABLE'&&rowsOf(n).length>8)return childrenItems(n,chain);
+    if(n.classList&&n.classList.contains('table-wrap')&&n.children.length===1&&n.firstElementChild.tagName==='TABLE'&&rowsOf(n.firstElementChild).length>8){
       return expandAll(childrenItems(n,chain).map(function(i){return i}));
     }
     if(n.className&&SPLIT.test(n.className)&&n.children.length>=1)return expandAll(childrenItems(n,chain));
@@ -190,6 +202,58 @@ const BOOK_SCRIPT = String.raw`
     return gs.map(function(g){var b=0;g.forEach(function(it){if(it.el){var r=it.el.getBoundingClientRect();b=Math.max(b,r.bottom)}});return b});
   }
   var toc=[];
+  // 본문은 소제목마다 새 쪽을 열지 않고 이어서 채운다(빈 여백을 줄이려고). 소제목 머리는 다음 내용과 붙여 둔다
+  function flow(units,Z){
+    var ctx=null;
+    function startUnit(u){
+      var outer=u.wrap();outer.root.classList.add('nm-flow');if(Z<1)outer.root.style.zoom=String(Z);
+      if(!ctx){var pg=newPage('',u.run);ctx={pg:pg,body:pg.firstChild,inner:null,stack:[],empty:true}}
+      else if(!ctx.empty&&used(ctx)>ctx.body.clientHeight*.86){ctx=freshPage(u)} // 쪽 끝에 머리만 걸리지 않게
+      ctx.body.appendChild(outer.root);ctx.inner=outer.ins;ctx.stack=[];ctx.unit=u;ctx.outer=outer.root;
+    }
+    function used(c){var l=c.body.lastElementChild;return l?l.getBoundingClientRect().bottom-c.body.getBoundingClientRect().top:0}
+    function freshPage(u){var pg=newPage('',u.run),c={pg:pg,body:pg.firstChild,inner:null,stack:[],empty:true,unit:u};return c}
+    function cont(){ // 같은 소제목을 다음 쪽에서 이어 간다
+      var u=ctx.unit,c=freshPage(u),outer=u.wrap();outer.root.classList.add('nm-flow');if(Z<1)outer.root.style.zoom=String(Z);c.body.appendChild(outer.root);c.inner=outer.ins;c.outer=outer.root;ctx=c;
+    }
+    function shrinkPut(g){ // 남은 자리에 그림을 조금 줄여서라도 넣는다
+      var last=g[g.length-1].node,pic=/^(IMG|SVG|FIGURE)$/.test(last.tagName)||(last.querySelector&&last.querySelector('img,svg'));
+      if(!pic)return false;
+      var made=[],saved=ctx.stack.slice();g.forEach(function(it){put(ctx,it,made)});
+      var el2=g[g.length-1].el,need=ctx.body.scrollHeight-ctx.body.clientHeight,h=el2.getBoundingClientRect().height;
+      var z=(h-need-2)/h;
+      if(z>=.72){el2.style.zoom=String(z);if(!over(ctx)){ctx.empty=false;return true}}
+      made.reverse().forEach(function(m){m.remove()});ctx.stack=saved;return false;
+    }
+    units.forEach(function(u){
+      var gs=groups(expandAll(u.items.map(function(n){return item(n,[],false)})));
+      if(!gs.length)return;
+      startUnit(u);
+      var startPage=pages.length;
+      for(var i=0;i<gs.length;i++){
+        var g=gs[i];
+        if(tryPut(ctx,g))continue;
+        if(shrinkPut(g))continue;
+        var wasEmpty=ctx.empty&&ctx.outer===ctx.body.firstChild;
+        if(!wasEmpty){
+          // 소제목 첫 묶음조차 못 넣었으면 빈 머리 상자를 걷어 내고 새 쪽에서 시작
+          if(ctx.outer&&!ctx.outer.textContent.trim()&&!ctx.outer.querySelector('img,svg')){ctx.outer.remove();ctx=freshPage(u);var o=u.wrap();o.root.classList.add('nm-flow');if(Z<1)o.root.style.zoom=String(Z);ctx.body.appendChild(o.root);ctx.inner=o.ins;ctx.outer=o.root;ctx.unit=u;startPage=pages.length}
+          else cont();
+          if(tryPut(ctx,g))continue;
+        }
+        var last=g[g.length-1],kids=last.node.children?[].filter.call(last.node.children,function(c){return c.tagName!=='SCRIPT'}):[];
+        if(kids.length>1&&!/^(IMG|SVG|FIGURE|VIDEO|TR)$/.test(last.node.tagName)){
+          var sub=childrenItems(last.node,last.chain);if(sub.length&&g.length>1)sub[0].glue=true;
+          var rest=groups(g.slice(0,-1).concat(sub));gs.splice.apply(gs,[i,1].concat(rest));i--;continue;
+        }
+        var made=[];g.forEach(function(it){put(ctx,it,made)});ctx.empty=false;fit(ctx);
+      }
+      // 소제목이 시작된 쪽 (머리가 앞 쪽 끝에 붙었으면 그 쪽)
+      var at=pages.indexOf(ctx.pg),first=startPage-1;
+      for(var k=0;k<pages.length;k++){if(pages[k].contains(ctx.outer)&&k<at)at=k}
+      toc.push({group:u.run,title:u.title,page:Math.min(first,at)+1});
+    });
+  }
   function layout(unit){
     padToLeft();
     var items=expandAll(unit.items.map(function(n){return item(n,[],false)}));
@@ -230,11 +294,8 @@ const BOOK_SCRIPT = String.raw`
     if(/^(SCRIPT|STYLE|HEADER|NAV|FOOTER|LINK)$/.test(c.tagName)||c.classList.contains('lightbox')||c.classList.contains('topbar'))return;
     intro.push(c);
   });
-  // 첫 펼침면: 왼쪽 목차, 오른쪽 개요
-  if(intro.length){
-    var introUnit={title:'개요',run:'',items:intro,wrap:function(){var d=el('div','');return {root:d,ins:d}}};
-    var gs=groups(expandAll(intro.map(function(n){return item(n,[],false)})));place(introUnit,gs);
-  } else memoPage();
+  var units=[];
+  if(intro.length)units.push({title:'',run:'',items:intro,intro:true,wrap:function(){var d=el('div','');return {root:d,ins:d}}});
   // 견적 소제목은 견적서 바로 앞으로 옮긴다
   var qsecs=secs.filter(function(s){return s.querySelector('[data-nm-qslot]')||s.id==='quote'||s.id==='price'});
   secs=secs.filter(function(s){return qsecs.indexOf(s)<0}).concat(qsecs);
@@ -242,13 +303,31 @@ const BOOK_SCRIPT = String.raw`
     var u=sectionUnit(s);
     // 내용 없이 제목만 남은 섹션은 뺀다(견적서 자리 등)
     var real=u.items.filter(function(c){return !c.classList.contains('sec-head')&&!c.hasAttribute('data-nm-qslot')&&(c.textContent.trim().length+c.querySelectorAll('img,svg,video,table').length)>0});
-    if(real.length)layout(u);
+    if(real.length)units.push(u);
   });
+  // 본문이 왼쪽 쪽에서 조금만 넘쳐 끝나면(견적서 앞에 메모 쪽이 생김) 글자를 조금씩 줄여 다시 채운다
+  var flowStart=pages.length;
+  for(var Z=1;;Z=Math.round((Z-.03)*100)/100){
+    toc=[];flow(units,Z);
+    var lastPg=pages[pages.length-1],lb=lastPg.firstChild,le=lb.lastElementChild;
+    var fill=le?(le.getBoundingClientRect().bottom-lb.getBoundingClientRect().top)/lb.clientHeight:1;
+    if(pages.length%2===1||fill>.45||Z<=.88)break;
+    while(pages.length>flowStart)pages.pop().remove();
+  }
+  toc=toc.filter(function(t){return t.title});
   var q=document.getElementById('nm-quote');
   if(q&&q.firstElementChild){
     var page=q.querySelector('.q-page')||q.firstElementChild;
-    layout({title:'견적서',run:'QUOTATION',items:[].slice.call(page.children),
-      wrap:function(){var a=el('div','nmq'),b=el('div','q-page');a.appendChild(b);return {root:a,ins:b}}});
+    // 견적서 마지막 쪽이 조금만 넘치면 글자를 조금 줄여 쪽 수를 줄여 본다(줄지 않으면 원래 크기)
+    var qz=1,qStart=pages.length,base=-1;
+    var qu={title:'견적서',run:'QUOTATION',items:[].slice.call(page.children),
+      wrap:function(){var a=el('div','nmq'),b=el('div','q-page');if(qz<1)a.style.zoom=String(qz);a.appendChild(b);return {root:a,ins:b}}};
+    for(;;){
+      layout(qu);var n=pages.length-qStart;
+      if(base<0)base=n;else if(n<base)break;
+      if(qz<=.9){while(pages.length>qStart)pages.pop().remove();toc.pop();qz=1;layout(qu);break}
+      while(pages.length>qStart)pages.pop().remove();toc.pop();qz=Math.round((qz-.03)*100)/100;
+    }
   }
   if(pages.length%2===0)memoPage();
   var back=newPage('back');back.firstChild.innerHTML=document.getElementById('nm-back').innerHTML;
@@ -260,7 +339,7 @@ const BOOK_SCRIPT = String.raw`
     html+='<div class="e"><span class="t">'+t.title.replace(/</g,'&lt;')+'</span><span class="p">'+t.page+'</span></div>';
   });
   if(lastG!==null)html+='</div>';
-  html+='<div class="note">양면 인쇄 후 왼쪽을 묶는 제본 기준. 소제목 하나가 펼친 두 쪽(왼쪽·오른쪽)에 들어가도록 나눴고, 견적서는 왼쪽 쪽에서 시작함.</div></div>';
+  html+='<div class="note">양면 인쇄 후 왼쪽을 묶는 제본 기준. 견적서는 왼쪽 쪽에서 시작해 펼쳐 볼 수 있음.</div></div>';
   tocPg.firstChild.innerHTML=html;
   var tb=tocPg.firstChild;if(tb.scrollHeight>tb.clientHeight+1)tb.firstChild.style.zoom=String(Math.max(tb.clientHeight/tb.scrollHeight,.6));
   pages.forEach(function(pg,i){

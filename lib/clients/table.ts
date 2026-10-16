@@ -4,7 +4,7 @@ import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
-import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_SHARE, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
+import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 
 /**
@@ -150,6 +150,19 @@ export function ensureClients(): Promise<void> {
           const prev = normalizeQuote(cur.quote)
           const quote = { ...sinilQuote(prev.date), number: prev.number, date: prev.date }
           return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(prev.number), quote, summary: '프레임 비용 포함 후 감액 표, 팀장급 6일, 지붕재 7.5m × 28m' }
+        })
+      })
+      // 신일공업 제안서 문구만 갱신(용마루 28m·박공 34m). 견적은 관리자가 고친 저장본 유지
+      await seedOnce(SINIL_PAGE_V6_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE portal_slug = $1`, [SINIL_CLIENT.portalSlug])
+        const row = found.rows[0]
+        if (!row || row.finalized_at) return
+        await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), SINIL_CLIENT.memo])
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const q = normalizeQuote(cur.quote)
+          const eq = q.sections.find((x) => x.name === '장비') ?? q.sections[q.sections.length - 1]
+          if (eq && !eq.items.some((i) => i.name === '스카이잭 렌탈')) eq.items.push(...sinilRentalItems())
+          return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(q.number), quote: q, summary: '스카이잭 렌탈 6일 추가, 제안서 용마루 28m·박공 34m 문구' }
         })
       })
     })().catch((e) => {

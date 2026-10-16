@@ -4,7 +4,7 @@ import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
-import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_SHARE, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
+import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_SHARE, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 
 /**
@@ -126,6 +126,18 @@ export function ensureClients(): Promise<void> {
           const q = normalizeQuote(cur.quote)
           const quote = JSON.parse(JSON.stringify(q).split('양면 7m × 27m').join('양면 약 7m × 27m')) as Quote
           return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(q.number), quote, summary: '총 투입 인원·약 378㎡ 문구 수정' }
+        })
+      })
+      // 신일공업 3차: 인력 25인·일, 물받이 높임판을 선택 항목으로, 각파이프 24본, 사진·공정 설명 정리
+      await seedOnce(SINIL_REV3_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE portal_slug = $1`, [SINIL_CLIENT.portalSlug])
+        const row = found.rows[0]
+        if (!row || row.finalized_at) return
+        await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), SINIL_CLIENT.memo])
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const prev = normalizeQuote(cur.quote)
+          const quote = { ...sinilQuote(prev.date), number: prev.number, date: prev.date }
+          return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(prev.number), quote, summary: '인력 25인·일, 물받이 높임판 선택 항목으로, 각파이프 24본' }
         })
       })
     })().catch((e) => {

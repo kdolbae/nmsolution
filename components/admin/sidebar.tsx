@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Building2, Inbox, BarChart3, Search, KeyRound, Activity } from 'lucide-react'
+import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Building2, Inbox, BarChart3, Search, KeyRound, Activity, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
@@ -42,13 +42,26 @@ export function AdminSidebar({ userName }: { userName: string }) {
     router.refresh()
   }
 
-  return (
-    <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r border-border bg-background lg:flex">
-      <div className="flex items-center justify-between border-b border-border px-5 py-5">
-        <LogoImage className="h-7" />
-        <span className="text-kicker text-electric">Admin</span>
-      </div>
+  const [open, setOpen] = useState(false)
 
+  // 메뉴에서 페이지를 고르면 모바일 서랍을 닫는다
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [open])
+
+  const body = (
+    <>
       <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="관리자 메뉴">
         {LINKS.map((l) => {
           if (l.external)
@@ -111,6 +124,55 @@ export function AdminSidebar({ userName }: { userName: string }) {
           로그아웃
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r border-border bg-background lg:flex">
+        <div className="flex items-center justify-between border-b border-border px-5 py-5">
+          <LogoImage className="h-7" />
+          <span className="text-kicker text-electric">Admin</span>
+        </div>
+        {body}
+      </aside>
+
+      {/* 모바일: 상단 바 + 햄버거 버튼으로 여는 서랍 메뉴 */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          <LogoImage className="h-6" />
+          <span className="text-kicker text-electric">Admin</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="메뉴 열기"
+          aria-expanded={open}
+          className="-mr-2 inline-flex size-10 items-center justify-center text-foreground"
+        >
+          <Menu className="size-6" strokeWidth={1.75} />
+        </button>
+      </header>
+
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="관리자 메뉴">
+          <button type="button" aria-label="메뉴 닫기" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-background shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <LogoImage className="h-6" />
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="메뉴 닫기"
+                className="-mr-2 inline-flex size-10 items-center justify-center text-foreground"
+              >
+                <X className="size-5" strokeWidth={1.75} />
+              </button>
+            </div>
+            {body}
+          </aside>
+        </div>
+      )}
+    </>
   )
 }

@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isAdmin(session.user)) redirect('/portal')
 
   return (
-    <div className="flex min-h-svh bg-secondary text-foreground">
+    <div className="flex min-h-svh flex-col bg-secondary text-foreground lg:flex-row">
       <AdminSidebar userName={session.user.name} />
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 lg:px-10 lg:py-12">{children}</div>

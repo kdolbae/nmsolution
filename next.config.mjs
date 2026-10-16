@@ -6,6 +6,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // 견적 현장 사진 올리기(서버 액션). 화면에서 긴 변 2000px JPEG 로 줄여 보내고, 줄이지 못한 사진만 크게 옴
+  experimental: {
+    serverActions: { bodySizeLimit: '4mb' },
+  },
   // 업체 제출 서류(인쇄용 PDF·엑셀)는 공개 폴더가 아니라 private/ 에 두고 내려받기 경로에만 싣는다 (lib/clients/files.ts)
   outputFileTracingIncludes: {
     '/api/admin/clients/**': ['./private/client-files/**/*'],

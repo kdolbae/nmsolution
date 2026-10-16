@@ -12,6 +12,11 @@ export function quoteSummaryHtml(q: Quote): string {
       ? `<div class="qcard opt"><div class="l">${esc(q.optionLabel || '선택 항목')} · ${esc(optNames.join(', '))}</div><div class="v">+₩${won(calc.options)}</div><div class="s">부가세 별도 · 적용 시 견적금액에 더함</div></div>`
       : ''
   }
+  ${
+    calc.deduct > 0
+      ? `<div class="qcard opt"><div class="l">${esc(q.deductLabel || '필요 없을 경우 감액')}</div><div class="v">-₩${won(calc.deduct)}</div><div class="s">부가세 별도 · 감액 후 합계 ₩${won(calc.lessGrand)} (부가세 포함)</div></div>`
+      : ''
+  }
   <div class="qcard"><div class="l">견적번호 · 견적일</div><div class="v" style="font-size:20px">${esc(q.number)}</div><div class="s">${esc(q.date)} · 유효기간 ${q.validDays}일</div></div>
 </div>`
 }

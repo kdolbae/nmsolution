@@ -720,6 +720,7 @@ function QuotePanel({
           {calc.discount > 0 && <>공정 합계 {won(calc.works)} · 할인 -{won(calc.discount)} · </>}
           공급가액 <b>{won(calc.supply)}</b> · 부가세 {won(calc.vat)} · 합계 <b className="text-electric">{won(calc.grand)}원</b>
           {calc.options > 0 && <> · 선택 항목 별도 {won(calc.options)}</>}
+          {calc.deduct > 0 && <> · 감액 시 공급가액 {won(calc.lessSupply)} (-{won(calc.deduct)})</>}
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
       </div>
@@ -784,6 +785,7 @@ function QuotePanel({
                       <th className="w-28 px-2 py-2 text-right font-medium">단가</th>
                       <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
                       <th className="px-2 py-2 text-left font-medium">비고</th>
+                      <th className="w-12 px-1 py-2 text-center font-medium" title="견적금액에 넣되, 필요 없으면 빼는 줄 (견적서 끝 감액 표)">감액</th>
                       <th className="w-8" />
                     </tr>
                   </thead>
@@ -808,6 +810,9 @@ function QuotePanel({
                         <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
                         <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
                         <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
+                        <td className="px-1 py-1 text-center">
+                          <input type="checkbox" checked={!!i.deduct} onChange={(e) => updateItem(s.id, i.id, { deduct: e.target.checked })} />
+                        </td>
                         <td className="px-1 py-1">
                           <Button
                             variant="ghost"

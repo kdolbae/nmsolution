@@ -44,6 +44,10 @@ export const auth = betterAuth({
           ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
             ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
             : []),
+          // 미리보기(브랜치) 주소. VERCEL_URL 은 배포마다 바뀌는 고유 주소라
+          // `...-git-<브랜치>-...vercel.app` 별칭과 다르다. 이것이 없으면
+          // 미리보기에서 로그인이 출처 검사에 걸려 막힌다.
+          ...(process.env.VERCEL_BRANCH_URL ? [`https://${process.env.VERCEL_BRANCH_URL}`] : []),
         ]
       : []),
   ],

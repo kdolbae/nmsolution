@@ -97,6 +97,11 @@ export function PortalDocs({
               <Printer /> 함께 인쇄
             </a>
           )}
+          {docs.length > 1 && (
+            <a href="/api/portal/print?docs=book" target="_blank" rel="noopener" className={cn(buttonVariants({ variant: 'outline' }), 'rounded-none')}>
+              <Printer /> 제본용 인쇄
+            </a>
+          )}
         </div>
       </div>
 

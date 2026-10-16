@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" font-family="Pretendard, 'Noto Sans KR', sans-serif">
+  <rect width="760" height="380" fill="#f5f7fa"/>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#2f80c8"/></marker>
+  </defs>
+  <!-- 벽체 -->
+  <rect x="420" y="214" width="30" height="166" fill="#d9dee5"/>
+  <!-- 기존 지붕 -->
+  <path d="M40 92 L470 210" stroke="#a3abb6" stroke-width="9" stroke-linecap="round"/>
+  <!-- 새 지붕 (약 10cm 위) -->
+  <path d="M40 62 L486 184" stroke="#0f2a44" stroke-width="9" stroke-linecap="round"/>
+  <!-- 높이 차 표시 -->
+  <path d="M150 92 L150 122 M144 92 l12 0 M144 122 l12 0" stroke="#e8742a" stroke-width="2.5" fill="none" transform="translate(0,0)"/>
+  <text x="118" y="152" font-size="15" font-weight="700" fill="#e8742a">약 10cm</text>
+  <!-- 물받이 (그대로 사용) -->
+  <path d="M452 222 L452 320 L612 320 L612 238" stroke="#7d8692" stroke-width="7" fill="none" stroke-linejoin="round"/>
+  <path d="M455 316 L609 316" stroke="#cfe3f5" stroke-width="10"/>
+  <!-- 앞 끝단 연장 (높임판) -->
+  <rect x="607" y="176" width="11" height="64" fill="#e8742a"/>
+  <path d="M640 176 L640 238 M634 176 l12 0 M634 238 l12 0" stroke="#e8742a" stroke-width="2.5"/>
+  <text x="654" y="200" font-size="15" font-weight="700" fill="#e8742a">10~15cm</text>
+  <text x="654" y="220" font-size="15" font-weight="700" fill="#e8742a">연장</text>
+  <!-- 빗물 -->
+  <path d="M492 190 Q548 196 566 292" stroke="#2f80c8" stroke-width="3" fill="none" stroke-dasharray="7 5" marker-end="url(#ah)"/>
+  <!-- 설명 -->
+  <text x="40" y="34" font-size="17" font-weight="800" fill="#0f2a44">물받이 단면 (개념도)</text>
+  <text x="250" y="96" font-size="14" font-weight="700" fill="#0f2a44">새 칼라강판</text>
+  <text x="250" y="182" font-size="14" fill="#7d8692">기존 지붕</text>
+  <text x="470" y="352" font-size="14" fill="#5b6572">물받이 본체는 그대로 사용</text>
+  <text x="40" y="352" font-size="13" fill="#5b6572">지붕이 높아진 만큼 물받이 앞 끝단을 올려</text>
+  <text x="40" y="370" font-size="13" fill="#5b6572">빗물이 넘치지 않고 물받이로 떨어지게 함.</text>
+</svg>

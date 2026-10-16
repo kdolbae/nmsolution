@@ -30,6 +30,8 @@ export type QuoteSection = {
   items: QuoteItem[]
   /** 원가계산 제외: 이 공종은 보험료·안전관리비·일반관리비·이윤 없이 재료·노무·경비만 더한다 */
   flat?: boolean
+  /** 선택 항목: 견적금액(공급가액)에 넣지 않고 견적서 아래 '선택 항목'으로 따로 보여 준다 */
+  option?: boolean
 }
 
 export type QuoteRates = {
@@ -59,6 +61,8 @@ export type Quote = {
   /** 특기사항. 한 줄에 한 항목 */
   notes: string
   validDays: number
+  /** 견적서 수신란. biz = 업체명·사업자번호·현장, contact = 업체명·담당자·연락처·현장(예전 양식) */
+  recipientFields?: 'biz' | 'contact'
 }
 
 export type QuoteRecipient = {
@@ -66,6 +70,7 @@ export type QuoteRecipient = {
   contactPerson?: string | null
   phone?: string | null
   siteAddress?: string | null
+  bizNumber?: string | null
 }
 
 export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safety: 3.11, overhead: 5, profit: 15 }
@@ -105,6 +110,7 @@ export function emptyQuote(): Quote {
     truncate: true,
     notes: '공사 기간: 협의\n결제 조건: 협의',
     validDays: 30,
+    recipientFields: 'biz',
   }
 }
 
@@ -117,12 +123,15 @@ export function normalizeQuote(raw: unknown): Quote {
     ...base,
     ...q,
     rates: { ...DEFAULT_RATES, ...(q.rates ?? {}) },
+    // 이 칸이 없던 견적서(금강변압기 등)는 예전 양식 그대로 인쇄한다
+    recipientFields: q.recipientFields === 'biz' ? 'biz' : 'contact',
     sections: Array.isArray(q.sections)
       ? q.sections.map((s) => ({
           id: s.id || newId('s'),
           name: s.name ?? '',
           desc: s.desc ?? '',
           flat: Boolean(s.flat),
+          option: Boolean(s.option),
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
                 ...emptyItem(),
@@ -180,9 +189,10 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
 
 export function calcQuote(q: Quote) {
   const sections = q.sections.map((s) => calcSection(s, q))
-  const supply = sections.reduce((a, s) => a + s.total, 0)
+  const supply = sections.reduce((a, s, i) => (q.sections[i].option ? a : a + s.total), 0)
+  const options = sections.reduce((a, s, i) => (q.sections[i].option ? a + s.total : a), 0)
   const vat = Math.round(supply / 10)
-  return { sections, supply, vat, grand: supply + vat }
+  return { sections, supply, vat, grand: supply + vat, options }
 }
 
 // ---------- 표기 ----------
@@ -282,34 +292,39 @@ export const QUOTE_CSS = `
 /** 견적서 본문 HTML (QUOTE_CSS 와 함께 쓴다) */
 export function renderQuote(q: Quote, to: QuoteRecipient): string {
   const calc = calcQuote(q)
-  const multi = q.sections.length > 1
+  const mainIdx = q.sections.map((s, i) => (s.option ? -1 : i)).filter((i) => i >= 0)
+  const optIdx = q.sections.map((s, i) => (s.option ? i : -1)).filter((i) => i >= 0)
+  const multi = mainIdx.length > 1
   const rows: string[] = []
+  const optRows: string[] = []
   let no = 0
+  let optNo = 0
   q.sections.forEach((s, si) => {
     const c = calc.sections[si]
-    if (multi || s.name) {
-      rows.push(`<tr class="q-sec"><td colspan="8">${esc(s.name)}${s.desc ? `<small>${esc(s.desc)}</small>` : ''}</td></tr>`)
+    const out = s.option ? optRows : rows
+    if (s.option || multi || s.name) {
+      out.push(`<tr class="q-sec"><td colspan="8">${esc(s.name)}${s.desc ? `<small>${esc(s.desc)}</small>` : ''}</td></tr>`)
     }
     for (const i of s.items) {
-      no++
-      rows.push(
-        `<tr><td class="c">${no}</td><td>${esc(i.name)}</td><td class="q-spec">${esc(i.spec)}</td><td class="n">${fmtQty(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="n">${won(i.price)}</td><td class="n">${won(itemAmount(i))}</td><td class="q-note">${esc(i.note)}</td></tr>`,
+      const n = s.option ? ++optNo : ++no
+      out.push(
+        `<tr><td class="c">${n}</td><td>${esc(i.name)}</td><td class="q-spec">${esc(i.spec)}</td><td class="n">${fmtQty(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="n">${won(i.price)}</td><td class="n">${won(itemAmount(i))}</td><td class="q-note">${esc(i.note)}</td></tr>`,
       )
     }
     const sub = (label: string, v: number, note = '') =>
       `<tr class="q-sub"><td></td><td colspan="5">${label}</td><td class="n">${won(v)}</td><td class="q-note">${note}</td></tr>`
     if (q.costCalc && !s.flat) {
       const r = q.rates
-      rows.push(sub('재료비 계', c.mat), sub('노무비 계', c.lab), sub('경비 계', c.exp))
-      rows.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
-      rows.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
-      rows.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
-      rows.push(sub('일반관리비', c.overhead, `순공사원가 × ${r.overhead}%`))
-      rows.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))
+      out.push(sub('재료비 계', c.mat), sub('노무비 계', c.lab), sub('경비 계', c.exp))
+      out.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
+      out.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
+      out.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
+      out.push(sub('일반관리비', c.overhead, `순공사원가 × ${r.overhead}%`))
+      out.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))
     }
-    if (c.adjust) rows.push(sub('단수정리', c.adjust, '천원 미만 절사'))
-    if (multi || q.costCalc) {
-      rows.push(
+    if (c.adjust) out.push(sub('단수정리', c.adjust, '천원 미만 절사'))
+    if (s.option ? optIdx.length > 1 : multi || q.costCalc) {
+      out.push(
         `<tr class="q-subtotal"><td></td><td colspan="5">${esc(s.name || '공종')} 소계</td><td class="n">${won(c.total)}</td><td></td></tr>`,
       )
     }
@@ -324,7 +339,7 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
   const costTable =
     q.costCalc && multi
       ? `<h2 class="q-sub">공사원가 요약</h2>
-<table class="grid"><thead><tr><th>비목</th>${q.sections.map((s) => `<th class="n">${esc(s.name)}</th>`).join('')}<th class="n">합계</th></tr></thead><tbody>
+<table class="grid"><thead><tr><th>비목</th>${mainIdx.map((i) => `<th class="n">${esc(q.sections[i].name)}</th>`).join('')}<th class="n">합계</th></tr></thead><tbody>
 ${(
   [
     ['재료비', 'mat'],
@@ -338,11 +353,11 @@ ${(
   ] as const
 )
   .map(([label, key]) => {
-    const vals = calc.sections.map((c) => (key ? c[key] : c.injury + c.employment))
+    const vals = mainIdx.map((i) => calc.sections[i]).map((c) => (key ? c[key] : c.injury + c.employment))
     return `<tr><td>${label}</td>${vals.map((v) => `<td class="n">${won(v)}</td>`).join('')}<td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`
   })
   .join('')}
-<tr class="q-sum"><td>공급가액</td>${calc.sections.map((c) => `<td class="n">${won(c.total)}</td>`).join('')}<td class="n">${won(calc.supply)}</td></tr>
+<tr class="q-sum"><td>공급가액</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.supply)}</td></tr>
 </tbody></table>`
       : ''
 
@@ -354,8 +369,12 @@ ${(
 <div class="q-parties">
   <div class="q-party"><h3>수신</h3><table class="kv"><tbody>
     <tr><th>업체명</th><td><b>${esc(to.name)}</b> 귀중</td></tr>
-    <tr><th>담당자</th><td>${esc(to.contactPerson)}</td></tr>
-    <tr><th>연락처</th><td>${esc(to.phone)}</td></tr>
+    ${
+      q.recipientFields === 'biz'
+        ? `<tr><th>사업자번호</th><td>${esc(to.bizNumber)}</td></tr>`
+        : `<tr><th>담당자</th><td>${esc(to.contactPerson)}</td></tr>
+    <tr><th>연락처</th><td>${esc(to.phone)}</td></tr>`
+    }
     <tr><th>현장</th><td>${esc(to.siteAddress)}</td></tr>
     ${q.title ? `<tr><th>공사명</th><td>${esc(q.title)}</td></tr>` : ''}
   </tbody></table></div>
@@ -377,6 +396,16 @@ ${rows.join('\n')}
 <tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td><td></td></tr>
 <tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>
 </tbody></table>
+${
+  optRows.length
+    ? `<h2 class="q-sub">선택 항목 (견적금액 별도)</h2>
+<table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
+<tbody>
+${optRows.join('\n')}
+<tr class="q-grand"><td></td><td colspan="5">선택 항목 합계 (VAT 별도)</td><td class="n">${won(calc.options)}</td><td></td></tr>
+</tbody></table>`
+    : ''
+}
 <h2 class="q-sub">특기사항</h2>
 <ol class="q-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ol>
 <div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">엔엠솔루션 대표 김성배 (인)</p></div>

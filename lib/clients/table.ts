@@ -1,9 +1,11 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/lib/db'
-import { calcQuote, normalizeQuote, type Quote } from './quote'
+import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
+import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, sinilQuote } from './seed-sinil'
+import { SINIL_PAGE_HTML } from './sinil-page'
 
 /**
  * 업체 관리(제안서·견적서) 표. sql/007_clients.sql, sql/008_client_versions.sql 과 같은 모양.
@@ -37,7 +39,12 @@ export function ensureClients(): Promise<void> {
       await pool.query(`ALTER TABLE clients
         ADD COLUMN IF NOT EXISTS finalized_version int,
         ADD COLUMN IF NOT EXISTS finalized_at timestamptz,
-        ADD COLUMN IF NOT EXISTS finalized_by text`)
+        ADD COLUMN IF NOT EXISTS finalized_by text,
+        ADD COLUMN IF NOT EXISTS biz_number text,
+        ADD COLUMN IF NOT EXISTS portal_slug text,
+        ADD COLUMN IF NOT EXISTS portal_login text,
+        ADD COLUMN IF NOT EXISTS portal_password_hash text`)
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS clients_portal_slug_key ON clients (portal_slug) WHERE portal_slug IS NOT NULL`)
       await pool.query(`CREATE TABLE IF NOT EXISTS client_versions (
         id            bigint generated always as identity primary key,
         client_id     bigint not null references clients(id) on delete cascade,
@@ -76,12 +83,57 @@ export function ensureClients(): Promise<void> {
           }).catch(() => null)
         }
       }
+      // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
+      await seedOnce(SINIL_SEED_KEY, async () => {
+        const c = SINIL_CLIENT
+        const quote = sinilQuote(today())
+        const proposal = SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE name = $1`, [c.name])
+        if (found.rows[0]) {
+          const id = Number(found.rows[0].id)
+          await pool.query(
+            `UPDATE clients SET portal_slug = COALESCE(portal_slug, $2), portal_login = COALESCE(NULLIF(portal_login, ''), $3),
+               portal_password_hash = COALESCE(portal_password_hash, $4), memo = $5 WHERE id = $1`,
+            [id, c.portalSlug, c.portalLogin, SINIL_PORTAL_PASSWORD_HASH, c.memo],
+          )
+          if (!found.rows[0].finalized_at) {
+            await applyChange(id, 'system', 'system', () => ({ proposalHtml: proposal, quote, summary: '작업계획 페이지·지붕 교체 견적으로 정리' }))
+          }
+          return
+        }
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login, portal_password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin, SINIL_PORTAL_PASSWORD_HASH],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+      })
     })().catch((e) => {
       ready = null
       throw e
     })
   }
   return ready
+}
+
+/**
+ * 코드로 넣는 업체를 한 번만 넣는다. 넣은 뒤 관리자가 지우거나 이름을 바꿔도 다시 생기지 않는다.
+ * 넣다가 실패하면 표시도 되돌려 다음 조회 때 다시 시도한다.
+ */
+async function seedOnce(key: string, run: () => Promise<void>) {
+  await pool.query(`CREATE TABLE IF NOT EXISTS client_seeds (key text primary key, created_at timestamptz not null default now())`)
+  const { rowCount } = await pool.query(`INSERT INTO client_seeds (key) VALUES ($1) ON CONFLICT DO NOTHING`, [key])
+  if (!rowCount) return
+  try {
+    await run()
+  } catch (e) {
+    await pool.query(`DELETE FROM client_seeds WHERE key = $1`, [key]).catch(() => {})
+    throw e
+  }
 }
 
 type Current = { proposalHtml: string; quote: unknown }
@@ -137,11 +189,17 @@ async function applyChange(
 
 export type ClientInfo = {
   name: string
+  /** 사업자등록번호. 견적서 수신란에 인쇄된다 */
+  bizNumber: string
   contactPerson: string
   phone: string
   email: string
   siteAddress: string
   memo: string
+  /** 업체용 링크 주소 (nm-solution.co.kr/<주소>). 영문 소문자·숫자·하이픈 */
+  portalSlug: string
+  /** 업체용 링크 아이디 */
+  portalLogin: string
 }
 
 export type ClientRow = ClientInfo & {
@@ -152,11 +210,17 @@ export type ClientRow = ClientInfo & {
   updatedAt: Date
   /** 최종본으로 확정한 버전. 확정 전이면 null */
   finalized: { version: number; at: Date; by: string } | null
+  /** 업체용 링크 비밀번호가 정해져 있는지 */
+  portalPasswordSet: boolean
 }
 
 type DbRow = {
   id: string
   name: string
+  biz_number: string | null
+  portal_slug: string | null
+  portal_login: string | null
+  portal_password_hash: string | null
   contact_person: string | null
   phone: string | null
   email: string | null
@@ -175,6 +239,10 @@ function toClient(r: DbRow): ClientRow {
   return {
     id: Number(r.id),
     name: r.name,
+    bizNumber: r.biz_number ?? '',
+    portalSlug: r.portal_slug ?? '',
+    portalLogin: r.portal_login ?? '',
+    portalPasswordSet: Boolean(r.portal_password_hash),
     contactPerson: r.contact_person ?? '',
     phone: r.phone ?? '',
     email: r.email ?? '',
@@ -201,12 +269,19 @@ export async function getClient(id: number): Promise<ClientRow | null> {
   return rows[0] ? toClient(rows[0]) : null
 }
 
+/** 업체용 링크 주소로 찾는다. 비밀번호 해시도 같이 돌려준다 */
+export async function getClientBySlug(slug: string): Promise<(ClientRow & { portalPasswordHash: string }) | null> {
+  await ensureClients()
+  const { rows } = await pool.query<DbRow>(`SELECT * FROM clients WHERE portal_slug = $1`, [slug])
+  return rows[0] ? { ...toClient(rows[0]), portalPasswordHash: rows[0].portal_password_hash ?? '' } : null
+}
+
 export async function insertClient(info: ClientInfo, proposalHtml: string, quote: Quote, by: string): Promise<number> {
   await ensureClients()
   const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO clients (name, contact_person, phone, email, site_address, memo, proposal_html, quote)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-    [info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, proposalHtml, JSON.stringify(quote)],
+    `INSERT INTO clients (name, contact_person, phone, email, site_address, memo, proposal_html, quote, biz_number, portal_slug, portal_login)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULLIF($10, ''), $11) RETURNING id`,
+    [info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, proposalHtml, JSON.stringify(quote), info.bizNumber, info.portalSlug, info.portalLogin],
   )
   const id = Number(rows[0].id)
   await pool.query(
@@ -220,10 +295,16 @@ export async function insertClient(info: ClientInfo, proposalHtml: string, quote
 export async function updateClientInfo(id: number, info: ClientInfo) {
   await ensureClients()
   await pool.query(
-    `UPDATE clients SET name = $2, contact_person = $3, phone = $4, email = $5, site_address = $6, memo = $7, updated_at = now()
+    `UPDATE clients SET name = $2, contact_person = $3, phone = $4, email = $5, site_address = $6, memo = $7, biz_number = $8,
+       portal_slug = NULLIF($9, ''), portal_login = $10, updated_at = now()
      WHERE id = $1`,
-    [id, info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo],
+    [id, info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, info.bizNumber, info.portalSlug, info.portalLogin],
   )
+}
+
+export async function setPortalPasswordHash(id: number, hash: string) {
+  await ensureClients()
+  await pool.query(`UPDATE clients SET portal_password_hash = $2, updated_at = now() WHERE id = $1`, [id, hash])
 }
 
 export async function updateProposal(id: number, html: string, by: string, summary = '제안서 수정') {

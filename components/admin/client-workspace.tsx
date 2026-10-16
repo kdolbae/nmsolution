@@ -46,15 +46,19 @@ import { LockBanner, VersionHistory, VersionView, type Finalized, type VersionRo
 type ClientInfo = {
   id: number
   name: string
+  bizNumber: string
   contactPerson: string
   phone: string
   email: string
   siteAddress: string
   memo: string
+  portalSlug: string
+  portalLogin: string
+  portalPasswordSet: boolean
 }
 
 type Tab = 'proposal' | 'quote'
-type PrintDocs = 'both' | 'proposal' | 'quote'
+type PrintDocs = 'both' | 'book' | 'proposal' | 'quote'
 
 export function ClientWorkspace({
   client: initialClient,
@@ -62,6 +66,7 @@ export function ClientWorkspace({
   quote: initialQuote,
   initialTab,
   files = [],
+  videos = [],
   versions,
   finalized,
   view,
@@ -72,6 +77,8 @@ export function ClientWorkspace({
   initialTab: Tab
   /** 인쇄용 제출 서류(lib/clients/files.ts) */
   files?: { file: string; label: string }[]
+  /** 현장 영상(lib/clients/media.ts, R2) */
+  videos?: { url: string; label: string }[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
@@ -118,6 +125,23 @@ export function ClientWorkspace({
               >
                 <Download /> {f.label}
               </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {videos.length > 0 && (
+        <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+          <div>
+            <h2 className="text-sm font-semibold">현장 영상</h2>
+            <p className="text-xs text-muted-foreground">드론 촬영 원본에서 필요한 구간만 잘라 올린 영상입니다.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {videos.map((v) => (
+              <figure key={v.url} className="flex flex-col gap-2">
+                <video src={v.url} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
+                <figcaption className="text-sm">{v.label}</figcaption>
+              </figure>
             ))}
           </div>
         </section>
@@ -223,14 +247,18 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
   const [form, setForm] = useState(client)
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
+  const [portalPassword, setPortalPassword] = useState('')
   const set = (k: keyof ClientInfo) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const save = () =>
     startTransition(async () => {
       setError('')
       try {
-        await saveClientInfo(client.id, form)
-        onSaved(form)
+        await saveClientInfo(client.id, form, portalPassword)
+        const next = { ...form, portalPasswordSet: form.portalPasswordSet || !!portalPassword }
+        setForm(next)
+        setPortalPassword('')
+        onSaved(next)
         setOpen(false)
       } catch (e) {
         setError(e instanceof Error ? e.message : '저장하지 못했습니다.')
@@ -253,6 +281,15 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
           <p className="mt-1 text-sm text-muted-foreground">
             {[client.contactPerson, client.phone, client.email, client.siteAddress].filter(Boolean).join(' · ') || '담당자·연락처 미입력'}
           </p>
+          {client.portalSlug && (
+            <p className="mt-1 text-sm">
+              업체용 링크{' '}
+              <a href={`/${client.portalSlug}`} target="_blank" rel="noreferrer" className="font-medium text-electric underline-offset-2 hover:underline">
+                nm-solution.co.kr/{client.portalSlug}
+              </a>
+              <span className="text-muted-foreground"> · 아이디 {client.portalLogin || '미정'}{client.portalPasswordSet ? '' : ' · 비밀번호 미정'}</span>
+            </p>
+          )}
         </div>
         <Button variant="outline" size="sm" className="rounded-none" onClick={() => setOpen((v) => !v)}>
           <Pencil /> 업체 정보
@@ -262,11 +299,28 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
         <div className="mt-5 flex flex-col gap-4 border-t border-border pt-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="업체명 *" value={form.name} onChange={set('name')} />
+            <Field label="사업자등록번호" value={form.bizNumber} onChange={set('bizNumber')} placeholder="000-00-00000" />
             <Field label="담당자" value={form.contactPerson} onChange={set('contactPerson')} />
             <Field label="연락처" value={form.phone} onChange={set('phone')} />
             <Field label="이메일" value={form.email} onChange={set('email')} />
             <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />
-            <Field label="메모 (인쇄 안 됨)" value={form.memo} onChange={set('memo')} />
+            <Field
+              label="업체용 링크 주소 (영문)"
+              value={form.portalSlug}
+              onChange={set('portalSlug')}
+              placeholder="sinil"
+              hint="nm-solution.co.kr/주소 로 열림. 새 주소는 사이트 반영이 한 번 필요함"
+            />
+            <Field label="업체용 링크 아이디" value={form.portalLogin} onChange={set('portalLogin')} placeholder="sinil" />
+            <Field
+              label="업체용 링크 새 비밀번호"
+              value={portalPassword}
+              onChange={setPortalPassword}
+              hint={form.portalPasswordSet ? '비워 두면 지금 비밀번호를 그대로 씀' : '아직 비밀번호가 없음'}
+            />
+            <div className="sm:col-span-2">
+              <Field label="메모·조사 자료 (내부용, 인쇄 안 됨)" value={form.memo} onChange={set('memo')} multiline rows={8} />
+            </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
@@ -660,6 +714,7 @@ function QuotePanel({
         )}
         <div className="text-sm tabular-nums">
           공급가액 <b>{won(calc.supply)}</b> · 부가세 {won(calc.vat)} · 합계 <b className="text-electric">{won(calc.grand)}원</b>
+          {calc.options > 0 && <> · 선택 항목 별도 {won(calc.options)}</>}
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
       </div>
@@ -678,6 +733,17 @@ function QuotePanel({
             />
           </label>
           <Field label="유효기간 (일)" value={String(q.validDays)} onChange={(v) => update({ validDays: Number(v.replace(/\D/g, '')) || 30 })} />
+          <label className="flex flex-col gap-2 text-sm font-medium sm:col-span-3">
+            견적서 수신란
+            <select
+              value={q.recipientFields ?? 'contact'}
+              onChange={(e) => update({ recipientFields: e.target.value === 'biz' ? 'biz' : 'contact' })}
+              className="h-9 border border-input bg-background px-2 text-sm"
+            >
+              <option value="biz">업체명 · 사업자번호 · 현장</option>
+              <option value="contact">업체명 · 담당자 · 연락처 · 현장</option>
+            </select>
+          </label>
           <div className="sm:col-span-3">
             <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
           </div>
@@ -773,6 +839,10 @@ function QuotePanel({
                     이 공종은 원가계산 제외 (재료·노무·경비만)
                   </label>
                 )}
+                <label className={`flex items-center gap-1.5${q.costCalc ? '' : ' ml-auto'}`}>
+                  <input type="checkbox" checked={!!s.option} onChange={(e) => updateSection(s.id, { option: e.target.checked })} />
+                  선택 항목 (견적금액 별도)
+                </label>
               </div>
             </section>
           )
@@ -865,6 +935,7 @@ function PrintDialog({
       label: tab === 'proposal' ? '견적서만' : '제안서만',
       hint: '다른 탭 문서만',
     },
+    { value: 'book', label: '제본용 (양면 · 펼침면)', hint: '표지·목차, 소제목마다 펼친 두 쪽, 견적서는 왼쪽 쪽부터. 양면·여백 없음·배경 그래픽 켜고 인쇄' },
   ]
 
   useEffect(() => {

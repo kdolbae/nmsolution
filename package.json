@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "seed:projects": "tsx scripts/seed-projects.ts",
-    "db:setup": "psql \"$DATABASE_URL\" -f sql/001_quote_requests.sql -f sql/002_seed_projects.sql"
+    "db:setup": "psql \"$DATABASE_URL\" -f sql/001_quote_requests.sql -f sql/002_seed_projects.sql",
+    "test": "vitest run",
+    "est:sql": "tsx scripts/est-sql.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -35,6 +37,7 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.20.6",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "vitest": "^3.2.7"
   }
 }

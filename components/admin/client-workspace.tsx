@@ -7,11 +7,13 @@ import {
   Check,
   Code,
   Download,
+  Expand,
   FileText,
   Calculator,
   ImagePlus,
   Loader2,
   Lock,
+  MonitorPlay,
   Pencil,
   Plus,
   Printer,
@@ -38,6 +40,7 @@ import {
   type QuoteSection,
 } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
+import { PresentOverlay, type PresentDoc } from '@/components/admin/present'
 import { LockBanner, VersionHistory, VersionView, type Finalized, type VersionRow } from '@/components/admin/client-versions'
 
 type ClientInfo = {
@@ -81,6 +84,9 @@ export function ClientWorkspace({
   const [proposalDirty, setProposalDirty] = useState(false)
   const [quoteDirty, setQuoteDirty] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
+  const [present, setPresent] = useState<Tab | null>(null)
+  // 프레젠테이션에 띄울 지금 화면의 제안서·견적서 (견적서는 저장 전 수정도 포함)
+  const live = useRef({ proposal: proposalHtml, quote: '' })
 
   const locked = !!finalized
   const latest = versions[0]?.no ?? 0
@@ -144,22 +150,56 @@ export function ClientWorkspace({
             </button>
           ))}
         </div>
-        <Button variant="outline" className="mb-2 rounded-none" onClick={() => setPrintOpen(true)}>
-          <Printer /> 인쇄
-        </Button>
+        <div className="mb-2 flex gap-2">
+          <Button variant="outline" className="rounded-none" onClick={() => setPresent(tab)} title="제안서·견적서를 화면 전체로 띄웁니다">
+            <MonitorPlay /> 프레젠테이션
+          </Button>
+          <Button variant="outline" className="rounded-none" onClick={() => setPrintOpen(true)}>
+            <Printer /> 인쇄
+          </Button>
+        </div>
       </div>
 
       {view ? (
-        <VersionView clientId={client.id} client={client} version={view} tab={tab} />
+        <VersionView clientId={client.id} client={client} version={view} tab={tab} onPresent={() => setPresent(tab)} />
       ) : (
         <>
           <div hidden={tab !== 'proposal'}>
-            <ProposalPanel clientId={client.id} initialHtml={proposalHtml} onDirty={setProposalDirty} locked={locked} />
+            <ProposalPanel
+              clientId={client.id}
+              initialHtml={proposalHtml}
+              onDirty={setProposalDirty}
+              locked={locked}
+              onContent={(html) => (live.current.proposal = html)}
+              onPresent={() => setPresent('proposal')}
+            />
           </div>
           <div hidden={tab !== 'quote'}>
-            <QuotePanel client={client} initialQuote={initialQuote} onDirty={setQuoteDirty} visible={tab === 'quote'} locked={locked} />
+            <QuotePanel
+              client={client}
+              initialQuote={initialQuote}
+              onDirty={setQuoteDirty}
+              visible={tab === 'quote'}
+              locked={locked}
+              onContent={(html) => (live.current.quote = html)}
+              onPresent={() => setPresent('quote')}
+            />
           </div>
         </>
+      )}
+
+      {present && (
+        <PresentOverlay
+          title={view ? `${client.name} · v${view.no}` : client.name}
+          initial={present}
+          docs={
+            [
+              { key: 'proposal', label: '제안서', html: withBrandFont(view ? view.proposalHtml : live.current.proposal) },
+              { key: 'quote', label: '견적서', html: view ? quoteDocument(view.quote, client) : live.current.quote || quoteDocument(initialQuote, client) },
+            ].filter((d) => (d.key === 'proposal' ? !!(view ? view.proposalHtml : live.current.proposal) : true)) as PresentDoc[]
+          }
+          onClose={() => setPresent(null)}
+        />
       )}
 
       {printOpen && (
@@ -268,14 +308,21 @@ function ProposalPanel({
   initialHtml,
   onDirty,
   locked,
+  onContent,
+  onPresent,
 }: {
   clientId: number
   initialHtml: string
   onDirty: (v: boolean) => void
   locked: boolean
+  onContent: (html: string) => void
+  onPresent: () => void
 }) {
   const router = useRouter()
   const [html, setHtml] = useState(initialHtml)
+  useEffect(() => {
+    onContent(html)
+  }, [html, onContent])
   const [editing, setEditing] = useState(false)
   const [source, setSource] = useState<string | null>(null)
   const [message, setMessage] = useState('')
@@ -472,6 +519,11 @@ function ProposalPanel({
             </Button>
           </>
         )}
+        {!editing && html && (
+          <Button variant="outline" className="ml-auto rounded-none" onClick={onPresent}>
+            <Expand /> 전체화면
+          </Button>
+        )}
         {message && <span className="text-sm text-electric">{message}</span>}
       </div>
       {html ? (
@@ -528,12 +580,16 @@ function QuotePanel({
   onDirty,
   visible,
   locked,
+  onContent,
+  onPresent,
 }: {
   client: ClientInfo
   initialQuote: Quote
   onDirty: (v: boolean) => void
   visible: boolean
   locked: boolean
+  onContent: (html: string) => void
+  onPresent: () => void
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -542,6 +598,9 @@ function QuotePanel({
   const [pending, startTransition] = useTransition()
   const calc = useMemo(() => calcQuote(q), [q])
   const preview = useMemo(() => quoteDocument(q, client), [q, client])
+  useEffect(() => {
+    onContent(preview)
+  }, [preview, onContent])
   const previewFrame = useRef<HTMLIFrameElement>(null)
 
   const setDirty = (v: boolean) => {
@@ -769,7 +828,12 @@ function QuotePanel({
       </fieldset>
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">미리보기 (인쇄되는 모양)</h2>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">미리보기 (인쇄되는 모양)</h2>
+          <Button variant="outline" size="sm" className="rounded-none" onClick={onPresent}>
+            <Expand /> 전체화면
+          </Button>
+        </div>
         <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
       </div>
     </div>

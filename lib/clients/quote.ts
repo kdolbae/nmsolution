@@ -21,6 +21,8 @@ export type QuoteItem = {
   qty: number
   price: number
   note: string
+  /** 감액 대상: 견적금액에 포함하되, 필요 없어지면 뺄 수 있는 줄. 견적서 끝에 감액 표로 따로 보여 준다 */
+  deduct?: boolean
 }
 
 export type QuoteSection = {
@@ -65,6 +67,8 @@ export type Quote = {
   recipientFields?: 'biz' | 'contact'
   /** 선택 항목 표의 이름. 없으면 '선택 항목' (예: '상황에 따라 추가되는 비용') */
   optionLabel?: string
+  /** 감액 표의 이름. 없으면 '필요 없을 경우 감액' */
+  deductLabel?: string
 }
 
 export type QuoteRecipient = {
@@ -141,6 +145,7 @@ export function normalizeQuote(raw: unknown): Quote {
                 id: i.id || newId('i'),
                 qty: Number(i.qty) || 0,
                 price: Number(i.price) || 0,
+                deduct: Boolean(i.deduct),
               }))
             : [],
         }))
@@ -194,7 +199,32 @@ export function calcQuote(q: Quote) {
   const supply = sections.reduce((a, s, i) => (q.sections[i].option ? a : a + s.total), 0)
   const options = sections.reduce((a, s, i) => (q.sections[i].option ? a + s.total : a), 0)
   const vat = Math.round(supply / 10)
-  return { sections, supply, vat, grand: supply + vat, options }
+  // 감액: 감액 대상 줄을 뺀 견적과의 차이 (보험료·관리비·이윤·단수정리까지 함께 빠진다)
+  const has = q.sections.some((s) => !s.option && s.items.some((i) => i.deduct))
+  const lessSupply = has
+    ? q.sections.reduce(
+        (a, s) => (s.option ? a : a + calcSection({ ...s, items: s.items.filter((i) => !i.deduct) }, q).total),
+        0,
+      )
+    : supply
+  const deduct = supply - lessSupply
+  const deductItems = q.sections.reduce(
+    (a, s) => (s.option ? a : a + s.items.filter((i) => i.deduct).reduce((b, i) => b + itemAmount(i), 0)),
+    0,
+  )
+  const lessVat = Math.round(lessSupply / 10)
+  return {
+    sections,
+    supply,
+    vat,
+    grand: supply + vat,
+    options,
+    deduct,
+    deductItems,
+    lessSupply,
+    lessVat,
+    lessGrand: lessSupply + lessVat,
+  }
 }
 
 // ---------- 표기 ----------
@@ -287,6 +317,8 @@ export const QUOTE_CSS = `
 .nmq .q-sign{margin-top:22px;text-align:center}
 .nmq .q-sign p{margin:0 0 4px}
 .nmq .q-sign .who{font-size:12pt;font-weight:600;margin-top:8px}
+.nmq .q-dm{color:var(--accent);font-weight:700}
+.nmq .q-dnote{margin:6px 0 0;font-size:8.5pt;color:var(--muted)}
 .nmq .q-foot{margin-top:22px;padding-top:8px;border-top:1px solid var(--line);font-size:8pt;color:var(--muted);text-align:center;line-height:1.4}
 @media print{.nmq tr,.nmq .q-total,.nmq .q-sign{break-inside:avoid}.nmq thead{display:table-header-group}}
 `
@@ -310,7 +342,7 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
     for (const i of s.items) {
       const n = s.option ? ++optNo : ++no
       out.push(
-        `<tr><td class="c">${n}</td><td>${esc(i.name)}</td><td class="q-spec">${esc(i.spec)}</td><td class="n">${fmtQty(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="n">${won(i.price)}</td><td class="n">${won(itemAmount(i))}</td><td class="q-note">${esc(i.note)}</td></tr>`,
+        `<tr><td class="c">${n}</td><td>${esc(i.name)}${i.deduct && !s.option ? ' <span class="q-dm">※</span>' : ''}</td><td class="q-spec">${esc(i.spec)}</td><td class="n">${fmtQty(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="n">${won(i.price)}</td><td class="n">${won(itemAmount(i))}</td><td class="q-note">${esc(i.note)}</td></tr>`,
       )
     }
     const sub = (label: string, v: number, note = '') =>
@@ -398,6 +430,7 @@ ${rows.join('\n')}
 <tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td><td></td></tr>
 <tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>
 </tbody></table>
+${calc.deduct > 0 ? `<p class="q-dnote">※ 표시 항목은 필요 없을 경우 감액함 (아래 '${esc(q.deductLabel || '필요 없을 경우 감액')}' 참고)</p>` : ''}
 ${
   optRows.length
     ? `<h2 class="q-sub">${esc(q.optionLabel || '선택 항목')} (견적금액 별도)</h2>
@@ -405,6 +438,31 @@ ${
 <tbody>
 ${optRows.join('\n')}
 <tr class="q-grand"><td></td><td colspan="5">${esc(q.optionLabel || '선택 항목')} 합계 (VAT 별도)</td><td class="n">${won(calc.options)}</td><td></td></tr>
+</tbody></table>`
+    : ''
+}
+${
+  calc.deduct > 0
+    ? `<h2 class="q-sub">${esc(q.deductLabel || '필요 없을 경우 감액')}</h2>
+<table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
+<tbody>
+${q.sections
+  .filter((s) => !s.option)
+  .flatMap((s) => s.items.filter((i) => i.deduct))
+  .map(
+    (i, k) =>
+      `<tr><td class="c">${k + 1}</td><td>${esc(i.name)}</td><td class="q-spec">${esc(i.spec)}</td><td class="n">${fmtQty(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="n">${won(i.price)}</td><td class="n">-${won(itemAmount(i))}</td><td class="q-note">${esc(i.note)}</td></tr>`,
+  )
+  .join('\n')}
+${
+  q.costCalc && calc.deduct !== calc.deductItems
+    ? `<tr class="q-sub"><td></td><td colspan="5">보험료·안전관리비·일반관리비·이윤 해당분</td><td class="n">-${won(calc.deduct - calc.deductItems)}</td><td></td></tr>`
+    : ''
+}
+<tr class="q-subtotal"><td></td><td colspan="5">감액 합계 (VAT 별도)</td><td class="n">-${won(calc.deduct)}</td><td></td></tr>
+<tr class="q-sum"><td></td><td colspan="5">감액 후 공급가액</td><td class="n">${won(calc.lessSupply)}</td><td></td></tr>
+<tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.lessVat)}</td><td></td></tr>
+<tr class="q-grand"><td></td><td colspan="5">감액 후 합계</td><td class="n">${won(calc.lessGrand)}</td><td></td></tr>
 </tbody></table>`
     : ''
 }

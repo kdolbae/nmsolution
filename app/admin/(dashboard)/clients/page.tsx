@@ -30,6 +30,7 @@ export default async function AdminClientsPage() {
             supply: calcQuote(c.quote).supply,
             quoteNumber: c.quote.number,
             updatedAt: c.updatedAt.toISOString(),
+            finalizedVersion: c.finalized?.version ?? null,
           }))}
         />
       )}

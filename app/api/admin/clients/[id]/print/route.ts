@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth'
-import { getClient } from '@/lib/clients/table'
+import { getClient, getVersion } from '@/lib/clients/table'
 import { PRETENDARD_CSS, QUOTE_CSS, renderQuote } from '@/lib/clients/quote'
 import { esc, withBrandFont } from '@/lib/clients/proposal'
 
@@ -18,7 +18,7 @@ const PRINT_TAGS = `<style>@page{size:A4;margin:18mm 16mm}
 <script>window.addEventListener('load',function(){document.querySelectorAll('details').forEach(function(d){d.open=true});setTimeout(function(){window.print()},400)})</script>`
 
 /**
- * 업체 제안서·견적서 인쇄. docs=both(함께) | proposal | quote.
+ * 업체 제안서·견적서 인쇄. docs=both(함께) | proposal | quote. version=N 이면 그 버전을 인쇄한다(없으면 최신).
  * 제안서는 저장된 HTML 그대로(인쇄 CSS 는 제안서 자신의 것), 견적서는 A4 양식으로 뒤에 새 쪽으로 붙인다.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +28,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const client = await getClient(Number((await params).id))
   if (!client) return new Response('없는 업체', { status: 404 })
 
-  const docs = new URL(req.url).searchParams.get('docs') ?? 'both'
+  const sp = new URL(req.url).searchParams
+  const docs = sp.get('docs') ?? 'both'
+  let suffix = ''
+  if (sp.get('version')) {
+    const v = await getVersion(client.id, Number(sp.get('version')))
+    if (!v) return new Response('없는 버전', { status: 404 })
+    client.proposalHtml = v.proposalHtml
+    client.quote = v.quote
+    suffix = ` v${v.no}${client.finalized?.version === v.no ? ' 최종본' : ''}`
+  }
   const quote = `<div class="nm-quote-page">${renderQuote(client.quote, client)}</div>`
   const quoteHead = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
 
@@ -43,6 +52,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (docs === 'both') {
       html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${quote}</body>`) : html + quote
     }
+  }
+  if (suffix) {
+    // PDF 로 저장할 때 파일 이름이 된다
+    const label = docs === 'quote' || !client.proposalHtml ? '견적서' : docs === 'proposal' ? '제안서' : '제안서·견적서'
+    const title = `<title>${esc(`${client.name} ${label}${suffix}`)}</title>`
+    html = /<title>[\s\S]*?<\/title>/i.test(html) ? html.replace(/<title>[\s\S]*?<\/title>/i, () => title) : title + html
   }
   return new Response(html, { headers: HEADERS })
 }

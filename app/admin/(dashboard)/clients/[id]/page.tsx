@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { ClientWorkspace } from '@/components/admin/client-workspace'
 import { clientFiles } from '@/lib/clients/files'
-import { getClient } from '@/lib/clients/table'
+import { getClient, getVersion, listVersions } from '@/lib/clients/table'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,11 +12,14 @@ export default async function AdminClientPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; v?: string }>
 }) {
-  const [{ id }, { tab }] = await Promise.all([params, searchParams])
+  const [{ id }, { tab, v }] = await Promise.all([params, searchParams])
   const client = await getClient(Number(id))
   if (!client) notFound()
+  const versions = await listVersions(client.id)
+  // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
+  const picked = v && Number(v) !== versions[0]?.no ? await getVersion(client.id, Number(v)) : null
 
   return (
     <>
@@ -37,6 +40,17 @@ export default async function AdminClientPage({
         proposalHtml={client.proposalHtml}
         quote={client.quote}
         files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
+        versions={versions.map((x) => ({ ...x, at: x.at.toISOString() }))}
+        finalized={client.finalized && { ...client.finalized, at: client.finalized.at.toISOString() }}
+        view={
+          picked && {
+            no: picked.no,
+            at: picked.at.toISOString(),
+            summary: picked.summary,
+            proposalHtml: picked.proposalHtml,
+            quote: picked.quote,
+          }
+        }
       />
     </>
   )

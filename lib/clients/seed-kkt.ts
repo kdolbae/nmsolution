@@ -1,7 +1,7 @@
 import type { Quote } from './quote'
 
 /**
- * 금강변압기 견적서(A안)를 업체 관리의 첫 업체로 넣을 때 쓰는 값.
+ * 금강변압기 견적서(최종 A안)를 업체 관리의 첫 업체로 넣을 때 쓰는 값.
  * app/kkt/page-html.ts 의 QUOTE_HTML(A안 공종별 내역서)에서 옮겼다. 공급가액 55,253,000원 (2026-10-16 베이스 공종 3,010,000원으로 변경).
  */
 export const KKT_CLIENT = {
@@ -12,7 +12,7 @@ export const KKT_CLIENT = {
 export const KKT_QUOTE: Quote = {
   "number": "NMS-2610-KKT-01",
   "date": "2026-10-12",
-  "title": "진공건조로 2분할체 회전·안착 및 접합부 용접 공사 (A안)",
+  "title": "진공건조로 2분할체 회전·안착 및 접합부 용접 공사",
   "sections": [
     {
       "id": "s1",
@@ -326,7 +326,7 @@ export const KKT_QUOTE: Quote = {
     "profit": 15
   },
   "truncate": true,
-  "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n크레인 사양·배치가 바뀌어도 추가비용은 없음.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.02, 작업일 11일 (일요일 휴무)\n결제 조건: 선수금 30%, 안착 완료 시 중도금 30%, 용접 완료 후 잔금 40%\nA안(기본안) 기준 견적. B안(조방 개조 + 전체 90° 회전) 공급가액 67,670,000원 (부가세 별도)",
+  "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n크레인 사양·배치가 바뀌어도 추가비용은 없음.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.02, 작업일 11일 (일요일 휴무)\n결제 조건: 선수금 30%, 안착 완료 시 중도금 30%, 용접 완료 후 잔금 40%",
   "validDays": 30
 }
 
@@ -337,15 +337,41 @@ const KKT_BASE_ITEMS = KKT_QUOTE.sections.find((s) => s.name === '베이스 작�
  * 이미 저장된 금강변압기 견적서·제안서를 위 값으로 고친다. 옛 베이스(H빔 9,991kg × 700원)가 남아 있을 때만
  * 바꾸므로 여러 번 돌려도 같다. 바꿀 것이 없으면 null.
  */
-export function upgradeKkt(quote: Quote, proposalHtml: string): { quote: Quote; proposalHtml: string } | null {
-  let changed = false
+export const KKT_B_NOTE = 'A안(기본안) 기준 견적. B안'
+
+/**
+ * 운영 DB 에 저장된 금강변압기 견적서·제안서를 최신 결정에 맞춘다. 바뀐 것이 없으면 null.
+ * - 2026-10-16 베이스 공종 3,010,000원 (재료·운반·시공자 3명 × 1일, 원가계산 제외)
+ * - 2026-10-16 A안만 최종 견적: 공사명의 "(A안)", 특기사항의 B안 줄, 제안서의 B안 내용 삭제
+ *   (제안서는 B안이 남아 있으면 A안 전용 공개 페이지로 다시 만든다. 이전 내용은 버전 기록에 남는다)
+ */
+export function upgradeKkt(
+  quote: Quote,
+  proposalHtml: string,
+  freshProposal: () => string,
+): { quote: Quote; proposalHtml: string; summary: string } | null {
+  const done: string[] = []
   const sections = quote.sections.map((s) => {
     const old = s.items.some((i) => i.name === 'H빔 (회수조건)' && i.qty === 9991)
     if (s.name !== '베이스 작업' || !old) return s
-    changed = true
+    done.push('베이스 공종 3,010,000원')
     return { ...s, flat: true, items: KKT_BASE_ITEMS.map((i) => ({ ...i })) }
   })
-  const html = proposalHtml.replaceAll('제관 2, 용접 1, 조공 1, 화재감시 1', '시공자 3명')
-  if (html !== proposalHtml) changed = true
-  return changed ? { quote: { ...quote, sections }, proposalHtml: html } : null
+  let { title, notes } = quote
+  if (/\s*\(A안\)$/.test(title) || notes.includes(KKT_B_NOTE)) {
+    title = title.replace(/\s*\(A안\)$/, '')
+    notes = notes
+      .split('\n')
+      .filter((l) => !l.startsWith(KKT_B_NOTE))
+      .join('\n')
+    done.push('견적서 B안 문구 삭제')
+  }
+  let html = proposalHtml.replaceAll('제관 2, 용접 1, 조공 1, 화재감시 1', '시공자 3명')
+  if (html !== proposalHtml) done.push('베이스 인원 시공자 3명')
+  if (html.includes('id="plan-b"') || html.includes('B안')) {
+    html = freshProposal()
+    done.push('제안서 B안 삭제')
+  }
+  if (!done.length) return null
+  return { quote: { ...quote, title, notes, sections }, proposalHtml: html, summary: `자동 정리: ${done.join(', ')}` }
 }

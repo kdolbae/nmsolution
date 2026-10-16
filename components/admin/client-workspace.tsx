@@ -66,6 +66,7 @@ export function ClientWorkspace({
   quote: initialQuote,
   initialTab,
   files = [],
+  videos = [],
   versions,
   finalized,
   view,
@@ -76,6 +77,8 @@ export function ClientWorkspace({
   initialTab: Tab
   /** 인쇄용 제출 서류(lib/clients/files.ts) */
   files?: { file: string; label: string }[]
+  /** 현장 영상(lib/clients/media.ts, R2) */
+  videos?: { url: string; label: string }[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
@@ -122,6 +125,23 @@ export function ClientWorkspace({
               >
                 <Download /> {f.label}
               </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {videos.length > 0 && (
+        <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+          <div>
+            <h2 className="text-sm font-semibold">현장 영상</h2>
+            <p className="text-xs text-muted-foreground">드론 촬영 원본에서 필요한 구간만 잘라 올린 영상입니다.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {videos.map((v) => (
+              <figure key={v.url} className="flex flex-col gap-2">
+                <video src={v.url} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
+                <figcaption className="text-sm">{v.label}</figcaption>
+              </figure>
             ))}
           </div>
         </section>

@@ -6,6 +6,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // 업체 제출 서류(인쇄용 PDF·엑셀)는 공개 폴더가 아니라 private/ 에 두고 내려받기 경로에만 싣는다 (lib/clients/files.ts)
+  outputFileTracingIncludes: {
+    '/api/admin/clients/**': ['./private/client-files/**/*'],
+  },
   // 검색광고 상황판은 나노마스터 관리 화면의 같은 상황판으로 옮겼다 (lib/board-sync.ts)
   async redirects() {
     return [{ source: '/admin/ads', destination: 'https://nanomaster.co.kr/admin/ads?brand=nmsolution', permanent: false }]

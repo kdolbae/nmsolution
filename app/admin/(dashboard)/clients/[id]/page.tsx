@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { ClientWorkspace } from '@/components/admin/client-workspace'
+import { clientFiles } from '@/lib/clients/files'
 import { getClient } from '@/lib/clients/table'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +36,7 @@ export default async function AdminClientPage({
         }}
         proposalHtml={client.proposalHtml}
         quote={client.quote}
+        files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
       />
     </>
   )

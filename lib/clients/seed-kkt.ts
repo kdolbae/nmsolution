@@ -2,7 +2,7 @@ import type { Quote } from './quote'
 
 /**
  * 금강변압기 견적서(A안)를 업체 관리의 첫 업체로 넣을 때 쓰는 값.
- * app/kkt/page-html.ts 의 QUOTE_HTML(A안 공종별 내역서)에서 옮겼다. 공급가액 71,692,000원.
+ * app/kkt/page-html.ts 의 QUOTE_HTML(A안 공종별 내역서)에서 옮겼다. 공급가액 55,253,000원 (2026-10-16 베이스 공종 3,010,000원으로 변경).
  */
 export const KKT_CLIENT = {
   name: '주식회사 금강변압기',
@@ -288,16 +288,16 @@ export const KKT_QUOTE: Quote = {
           "kind": "재료비",
           "name": "H빔 (회수조건)",
           "spec": "H-250×250×9×14, 10m 4·5m 16·0.6m 30EA",
-          "unit": "kg",
-          "qty": 9991,
-          "price": 700,
-          "note": "공사 후 회수"
+          "unit": "식",
+          "qty": 1,
+          "price": 1800000,
+          "note": "공사 후 회수 조건"
         },
         {
           "id": "i27",
-          "kind": "재료비",
-          "name": "H빔 반입 운임",
-          "spec": "",
+          "kind": "운반비",
+          "name": "H빔 운반",
+          "spec": "반입·회수",
           "unit": "식",
           "qty": 1,
           "price": 160000,
@@ -305,115 +305,16 @@ export const KKT_QUOTE: Quote = {
         },
         {
           "id": "i28",
-          "kind": "재료비",
-          "name": "회수 반출 운임",
-          "spec": "",
-          "unit": "식",
-          "qty": 1,
-          "price": 160000,
-          "note": "반입 운임과 같게 적용"
-        },
-        {
-          "id": "i29",
-          "kind": "재료비",
-          "name": "용접 소모품",
-          "spec": "용접봉·가스·디스크",
-          "unit": "식",
-          "qty": 1,
-          "price": 1000000,
-          "note": ""
-        },
-        {
-          "id": "i30",
-          "kind": "재료비",
-          "name": "레벨 조정재",
-          "spec": "라이너·심 플레이트",
-          "unit": "식",
-          "qty": 1,
-          "price": 420000,
-          "note": "베이스 수평 ±2mm"
-        },
-        {
-          "id": "i31",
           "kind": "노무비",
-          "name": "제관사",
-          "spec": "절단·취부",
+          "name": "시공자",
+          "spec": "베이스 제작·설치",
           "unit": "인·일",
-          "qty": 6,
+          "qty": 3,
           "price": 350000,
-          "note": "2명 × 3일"
-        },
-        {
-          "id": "i32",
-          "kind": "노무비",
-          "name": "용접사",
-          "spec": "베이스 조립 용접",
-          "unit": "인·일",
-          "qty": 3,
-          "price": 500000,
-          "note": "1명 × 3일"
-        },
-        {
-          "id": "i33",
-          "kind": "노무비",
-          "name": "조공",
-          "spec": "자재 정리·보조",
-          "unit": "인·일",
-          "qty": 3,
-          "price": 200000,
-          "note": "1명 × 3일"
-        },
-        {
-          "id": "i34",
-          "kind": "노무비",
-          "name": "화재감시자",
-          "spec": "용접·절단 화기작업 전담",
-          "unit": "인·일",
-          "qty": 3,
-          "price": 250000,
-          "note": "1명 × 3일"
-        },
-        {
-          "id": "i35",
-          "kind": "장비",
-          "name": "지게차",
-          "spec": "자재 하역·조립",
-          "unit": "일",
-          "qty": 2,
-          "price": 300000,
-          "note": ""
-        },
-        {
-          "id": "i36",
-          "kind": "장비",
-          "name": "지게차",
-          "spec": "회수 시 해체·상차",
-          "unit": "일",
-          "qty": 1,
-          "price": 300000,
-          "note": ""
-        },
-        {
-          "id": "i37",
-          "kind": "장비",
-          "name": "CO2 용접기 대여",
-          "spec": "500A급",
-          "unit": "대·일",
-          "qty": 3,
-          "price": 400000,
-          "note": "1대 × 3일"
-        },
-        {
-          "id": "i38",
-          "kind": "경비",
-          "name": "경비",
-          "spec": "식대·교통비·부대 잡비",
-          "unit": "식",
-          "qty": 1,
-          "price": 750000,
-          "note": "제관 6 + 용접 3 + 조공 3 + 화재감시 3 (가스절단기는 용접 공종에 계상)"
+          "note": "3명 × 1일"
         }
-      ]
+      ],
+      "flat": true
     }
   ],
   "costCalc": true,
@@ -427,4 +328,24 @@ export const KKT_QUOTE: Quote = {
   "truncate": true,
   "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n크레인 사양·배치가 바뀌어도 추가비용은 없음.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.02, 작업일 11일 (일요일 휴무)\n결제 조건: 선수금 30%, 안착 완료 시 중도금 30%, 용접 완료 후 잔금 40%\nA안(기본안) 기준 견적. B안(조방 개조 + 전체 90° 회전) 공급가액 67,670,000원 (부가세 별도)",
   "validDays": 30
+}
+
+/** 2026-10-16 kevin: 베이스 작업은 재료비·운반비·노무비(3명 × 1일)만, 원가계산 제외 */
+const KKT_BASE_ITEMS = KKT_QUOTE.sections.find((s) => s.name === '베이스 작업')!.items
+
+/**
+ * 이미 저장된 금강변압기 견적서·제안서를 위 값으로 고친다. 옛 베이스(H빔 9,991kg × 700원)가 남아 있을 때만
+ * 바꾸므로 여러 번 돌려도 같다. 바꿀 것이 없으면 null.
+ */
+export function upgradeKkt(quote: Quote, proposalHtml: string): { quote: Quote; proposalHtml: string } | null {
+  let changed = false
+  const sections = quote.sections.map((s) => {
+    const old = s.items.some((i) => i.name === 'H빔 (회수조건)' && i.qty === 9991)
+    if (s.name !== '베이스 작업' || !old) return s
+    changed = true
+    return { ...s, flat: true, items: KKT_BASE_ITEMS.map((i) => ({ ...i })) }
+  })
+  const html = proposalHtml.replaceAll('제관 2, 용접 1, 조공 1, 화재감시 1', '시공자 3명')
+  if (html !== proposalHtml) changed = true
+  return changed ? { quote: { ...quote, sections }, proposalHtml: html } : null
 }

@@ -9,7 +9,7 @@
 import { logoSvg } from '@/lib/brand-logo'
 
 /** 구분. 재료비·노무비 외에는 모두 원가계산에서 경비로 묶인다 */
-export const ITEM_KINDS = ['재료비', '노무비', '장비', '안전시설', '경비'] as const
+export const ITEM_KINDS = ['재료비', '노무비', '장비', '안전시설', '운반비', '경비'] as const
 export type ItemKind = (typeof ITEM_KINDS)[number]
 
 export type QuoteItem = {
@@ -28,6 +28,8 @@ export type QuoteSection = {
   name: string
   desc: string
   items: QuoteItem[]
+  /** 원가계산 제외: 이 공종은 보험료·안전관리비·일반관리비·이윤 없이 재료·노무·경비만 더한다 */
+  flat?: boolean
 }
 
 export type QuoteRates = {
@@ -120,6 +122,7 @@ export function normalizeQuote(raw: unknown): Quote {
           id: s.id || newId('s'),
           name: s.name ?? '',
           desc: s.desc ?? '',
+          flat: Boolean(s.flat),
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
                 ...emptyItem(),
@@ -163,7 +166,7 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
   for (const i of s.items) sum[costGroup(i.kind)] += itemAmount(i)
   const { mat, lab, exp } = sum
   const r = q.rates
-  const on = q.costCalc
+  const on = q.costCalc && !s.flat
   const injury = on ? Math.round((lab * r.injury) / 100) : 0
   const employment = on ? Math.round((lab * r.employment) / 100) : 0
   const safety = on ? Math.round(((mat + lab) * r.safety) / 100) : 0
@@ -295,7 +298,7 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
     }
     const sub = (label: string, v: number, note = '') =>
       `<tr class="q-sub"><td></td><td colspan="5">${label}</td><td class="n">${won(v)}</td><td class="q-note">${note}</td></tr>`
-    if (q.costCalc) {
+    if (q.costCalc && !s.flat) {
       const r = q.rates
       rows.push(sub('재료비 계', c.mat), sub('노무비 계', c.lab), sub('경비 계', c.exp))
       rows.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))

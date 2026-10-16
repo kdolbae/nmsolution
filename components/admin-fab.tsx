@@ -25,7 +25,7 @@ export function AdminFab() {
       .getSession()
       .then((res) => {
         if (!alive) return
-        if (res.data?.user) setIsAdmin(true)
+        if ((res.data?.user as { role?: string } | undefined)?.role === 'admin') setIsAdmin(true)
         else document.cookie = `${ADMIN_MARK_COOKIE}=; Path=/; Max-Age=0`
       })
       .catch(() => {})
@@ -34,7 +34,7 @@ export function AdminFab() {
     }
   }, [])
 
-  if (!isAdmin || pathname.startsWith('/admin')) return null
+  if (!isAdmin || pathname.startsWith('/admin') || pathname.startsWith('/portal')) return null
 
   return (
     <div className="fixed bottom-24 left-4 z-50 flex flex-col items-start gap-2 md:bottom-6 md:left-5 lg:bottom-8 lg:left-8">

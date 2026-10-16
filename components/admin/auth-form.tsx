@@ -8,10 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Logo } from '@/components/brand'
 
-export function AdminAuthForm({ mode }: { mode: 'sign-in' | 'setup' }) {
+export function AdminAuthForm({ mode, adminEmail = '' }: { mode: 'sign-in' | 'setup'; adminEmail?: string }) {
   const router = useRouter()
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(adminEmail)
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -22,9 +22,11 @@ export function AdminAuthForm({ mode }: { mode: 'sign-in' | 'setup' }) {
     setError(null)
     setLoading(true)
 
-    const { error } = isSetup
+    let { error } = isSetup
       ? await authClient.signUp.email({ email, password, name: name || '관리자' })
       : await authClient.signIn.email({ email, password })
+    // 이메일 인증을 켠 상태에서는 가입만 되고 로그인은 따로 해야 한다
+    if (!error && isSetup) ({ error } = await authClient.signIn.email({ email, password }))
 
     setLoading(false)
 
@@ -47,7 +49,7 @@ export function AdminAuthForm({ mode }: { mode: 'sign-in' | 'setup' }) {
           <h1 className="text-2xl font-bold tracking-tight">{isSetup ? '관리자 계정 만들기' : '관리자 로그인'}</h1>
           <p className="text-sm text-muted-foreground">
             {isSetup
-              ? '최초 1회만 진행됩니다. 이 계정으로 사이트 내용을 편집합니다.'
+              ? `최초 1회만 진행됩니다. 관리자 계정은 ${adminEmail || '지정된 이메일'} 로만 만들 수 있습니다.`
               : '사이트 내용을 편집하려면 로그인하세요.'}
           </p>
         </div>

@@ -13,6 +13,8 @@ export function SiteTracker() {
       markInternal()
       return
     }
+    // 협력업체 포털은 방문 통계에 넣지 않는다
+    if (pathname.startsWith('/portal')) return
     pageview()
     const t0 = Date.now()
     let maxScroll = 0

@@ -1,6 +1,6 @@
 'use server'
 
-import { getSession } from '@/lib/admin'
+import { getAdminSession } from '@/lib/admin'
 import { pool } from '@/lib/db'
 import { boardSyncEnabled, sendToBoard, type BoardEvent, type BoardInquiry } from '@/lib/board-sync'
 import { ensureSiteEvents } from '@/lib/site-events-table'
@@ -15,8 +15,8 @@ const BATCH = 500
  * 이미 간 줄은 그쪽에서 한 번만 남으므로 여러 번 눌러도 된다. 문의는 건수·시각·번호 해시만 간다.
  */
 export async function syncBoardHistory(): Promise<SyncResult> {
-  const session = await getSession()
-  if (!session?.user) return { ok: false, error: '로그인이 필요합니다.' }
+  const session = await getAdminSession()
+  if (!session) return { ok: false, error: '로그인이 필요합니다.' }
   if (!boardSyncEnabled()) return { ok: false, error: '서버에 NM_BOARD_KEY 가 없어 보낼 수 없습니다.' }
   try {
     await Promise.all([ensureSiteEvents(), ensureQuoteRequests()])

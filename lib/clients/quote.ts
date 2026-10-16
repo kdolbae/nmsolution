@@ -85,7 +85,7 @@ export type QuoteRecipient = {
   siteAddress?: string | null
 }
 
-export const DEFAULT_DISCOUNT_LABEL = '특별할인 (NEGO)'
+export const DEFAULT_DISCOUNT_LABEL = '가격 조정 (NEGO)'
 
 export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safety: 3.11, overhead: 5, profit: 15 }
 

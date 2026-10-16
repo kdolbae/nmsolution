@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db'
 import { normalizeQuote, type Quote } from './quote'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_QUOTE } from './seed-kkt'
+import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
 
 /**
  * 업체 관리(제안서·견적서) 표. sql/007_clients.sql 과 같은 모양.
@@ -34,6 +34,21 @@ export function ensureClients(): Promise<void> {
            SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM clients)`,
           [KKT_CLIENT.name, KKT_CLIENT.siteAddress, kktProposalHtml(PAGE_HTML), JSON.stringify(KKT_QUOTE)],
         )
+      }
+      // 저장된 금강변압기 견적서에 옛 베이스 공종이 남아 있으면 고친다 (seed-kkt.ts upgradeKkt)
+      const kkt = await pool.query<{ id: string; quote: unknown; proposal_html: string | null }>(
+        `SELECT id, quote, proposal_html FROM clients WHERE name = $1`,
+        [KKT_CLIENT.name],
+      )
+      for (const r of kkt.rows) {
+        const up = upgradeKkt(normalizeQuote(r.quote), r.proposal_html ?? '')
+        if (up) {
+          await pool.query(`UPDATE clients SET quote = $2, proposal_html = $3, updated_at = now() WHERE id = $1`, [
+            r.id,
+            JSON.stringify(up.quote),
+            up.proposalHtml,
+          ])
+        }
       }
     })().catch((e) => {
       ready = null

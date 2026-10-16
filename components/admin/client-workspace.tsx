@@ -6,6 +6,7 @@ import {
   Bold,
   Check,
   Code,
+  Download,
   FileText,
   Calculator,
   ImagePlus,
@@ -19,7 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import { Field } from '@/components/admin/form'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
 import {
@@ -55,11 +56,14 @@ export function ClientWorkspace({
   proposalHtml,
   quote: initialQuote,
   initialTab,
+  files = [],
 }: {
   client: ClientInfo
   proposalHtml: string
   quote: Quote
   initialTab: Tab
+  /** 인쇄용 제출 서류(lib/clients/files.ts) */
+  files?: { file: string; label: string }[]
 }) {
   const [client, setClient] = useState(initialClient)
   const [tab, setTab] = useState<Tab>(initialTab)
@@ -75,6 +79,27 @@ export function ClientWorkspace({
   return (
     <div className="flex flex-col gap-5">
       <ClientHeader client={client} onSaved={setClient} />
+
+      {files.length > 0 && (
+        <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+          <div>
+            <h2 className="text-sm font-semibold">제출 서류 (인쇄본)</h2>
+            <p className="text-xs text-muted-foreground">발주처에 낸 양식 그대로의 PDF·엑셀입니다. 누르면 바로 내려받습니다.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {files.map((f) => (
+              <a
+                key={f.file}
+                href={`/api/admin/clients/${client.id}/files/${f.file}`}
+                download
+                className={cn(buttonVariants({ variant: 'outline' }), 'rounded-none')}
+              >
+                <Download /> {f.label}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border">
         <div className="flex gap-1" role="tablist" aria-label="문서">
@@ -629,10 +654,16 @@ function QuotePanel({
                 <Plus /> 줄 추가
               </Button>
               <span className="tabular-nums">재료비 {won(c.mat)} · 노무비 {won(c.lab)} · 경비 {won(c.exp)}</span>
-              {q.costCalc && (
+              {q.costCalc && !s.flat && (
                 <span className="tabular-nums">
                   보험·안전 {won(c.injury + c.employment + c.safety)} · 일반관리비 {won(c.overhead)} · 이윤 {won(c.profit)}
                 </span>
+              )}
+              {q.costCalc && (
+                <label className="ml-auto flex items-center gap-1.5">
+                  <input type="checkbox" checked={!!s.flat} onChange={(e) => updateSection(s.id, { flat: e.target.checked })} />
+                  이 공종은 원가계산 제외 (재료·노무·경비만)
+                </label>
               )}
             </div>
           </section>

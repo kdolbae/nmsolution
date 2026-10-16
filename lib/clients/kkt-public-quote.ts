@@ -1,4 +1,4 @@
-import { calcQuote, itemAmount, won, type Quote, type QuoteSection, type SectionCalc } from './quote'
+import { calcQuote, itemAmount, sectionMode, won, type Quote, type QuoteSection, type SectionCalc } from './quote'
 
 /**
  * /kkt(금강변압기) 공개 페이지의 견적 칸. 비밀번호를 넣으면 app/kkt/quote/route.ts 가 이 HTML 을 돌려준다.
@@ -22,8 +22,10 @@ function tradeHtml(s: QuoteSection, c: SectionCalc, q: Quote) {
     })
     .join('')
   const r = q.rates
-  const full = q.costCalc && !s.flat && !s.overheadOnly
-  const oh = q.costCalc && !s.flat
+  const mode = q.costCalc ? sectionMode(s) : 'none'
+  const full = mode === 'full'
+  const oh = mode !== 'none'
+  const pr = mode === 'full' || mode === 'margin'
   const row = (label: string, v: number, note: string, cls = '') =>
     `<tr${cls ? ` class="${cls}"` : ''}><td colspan="6">${label}</td><td class="n">${won(v)}</td><td class="note">${note}</td></tr>`
   const off = '미적용'
@@ -36,7 +38,7 @@ function tradeHtml(s: QuoteSection, c: SectionCalc, q: Quote) {
     row('산업안전보건관리비', c.safety, full ? `(재료비 + 노무비) × ${r.safety}%` : off),
     row('순공사원가', c.net, '', 'sum'),
     row('일반관리비', c.overhead, oh ? `순공사원가 × ${r.overhead}%` : off),
-    row('이윤', c.profit, full ? `(노무비 + 경비 + 일반관리비) × ${r.profit}%` : off),
+    row('이윤', c.profit, pr ? `(노무비 + 경비 + 일반관리비) × ${r.profit}%` : off),
     row('단수정리', c.adjust, '천원 미만 절사'),
   ].join('')
   return `<details class="trade">

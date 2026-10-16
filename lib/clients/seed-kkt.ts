@@ -25,7 +25,7 @@ export const KKT_QUOTE: Quote = {
           "id": "i26",
           "kind": "재료비",
           "name": "H빔 (회수조건)",
-          "spec": "H-250×250×9×14, 10m 4·5m 16·0.6m 30EA",
+          "spec": "H-250×250×9×14, 10m 2EA·5m 2EA (총 30m)",
           "unit": "식",
           "qty": 1,
           "price": 1800000,
@@ -38,7 +38,7 @@ export const KKT_QUOTE: Quote = {
           "spec": "반입·회수",
           "unit": "식",
           "qty": 1,
-          "price": 160000,
+          "price": 167000,
           "note": ""
         },
         {
@@ -48,11 +48,11 @@ export const KKT_QUOTE: Quote = {
           "spec": "베이스 제작·설치",
           "unit": "인·일",
           "qty": 4,
-          "price": 350000,
+          "price": 260000,
           "note": "4명 × 1일"
         }
       ],
-      "flat": true
+      "noInsurance": true
     },
     {
       "id": "s1",
@@ -381,10 +381,36 @@ export const KKT_GRAND = 70_000_000
 /** 2026-10-16 kevin: 크레인 2대 대신 200TON 1대(호이스트 30t 보조)로 할 수도 있고, 견적 금액 안에서 처리 */
 const KKT_PAY_NEW = '결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양 작업 완료 후 10%'
 const KKT_CRANE_ITEM_NOTES: Record<string, string> = { '100TON': '안착일 1일. 현장 상황에 따라 200TON 1대(호이스트 30t 보조)로 대체 가능, 견적 금액 안에서 처리', '60TON': '안착일 1일. 200TON 1대로 대체 시 이 줄 포함, 추가비용 없음' }
+const KKT_STATS: [string, string][] = [
+    [
+      "<div class=\"l\">대상물 합계 (38t + 48t)</div>",
+      "<div class=\"l\">대상물 합계 (38t + 48t) · 최대 단일 인양 48t</div>"
+    ],
+    [
+      "<div class=\"l\">이동식 크레인 (1일)</div>",
+      "<div class=\"l\">이동식 크레인 1일 (계획)<br><b style=\"color:var(--orange)\">현장 여건에 따라 200t 1대로 상향 가능</b></div>"
+    ],
+    [
+      "<div class=\"v\">600<small>mm</small></div><div class=\"l\">밀착 이동 후 접합 용접</div>",
+      "<div class=\"v\">약 30<small>m 이상</small></div><div class=\"l\">총 용접 연장 (접합부 둘레 20m + 보강 빔·날개)</div>"
+    ]
+  ]
 const KKT_CRANE_OLD = '크레인 사양·배치가 바뀌어도 추가비용은 없음.'
 export const KKT_CRANE_NOTE =
   '인양 작업 크레인은 100TON·60TON 2대 기준이며, 현장 상황에 따라 상위 크레인 1대(200TON, 호이스트 30t 보조 조건)로 작업할 수 있음. 이 경우에도 본 견적 금액 안에서 처리하며 추가비용은 없음.'
 const KKT_FULL_LIFT = KKT_QUOTE.sections.find((s) => s.name === '전체 인양 작업')!
+
+/**
+ * 2026-10-16 kevin: 베이스 작업도 일반관리비·이윤을 넣되 공정 금액 3,360,000원은 그대로.
+ * H빔 10m 2EA·5m 2EA(총 30m) 1,800,000원, 운반 167,000원, 시공자 4명 × 260,000원.
+ */
+function newBase(s: QuoteSection): QuoteSection {
+  const seed = KKT_QUOTE.sections.find((x) => x.name === '베이스 작업')!
+  return { ...s, flat: false, overheadOnly: false, noInsurance: true, items: seed.items.map((i) => ({ ...i })) }
+}
+
+const isOldBase = (s: QuoteSection) =>
+  s.name === '베이스 작업' && s.items.some((i) => i.name === 'H빔 (회수조건)' && i.spec.includes('0.6m 30EA'))
 
 /** 3개 공종(도비·용접·베이스) 견적을 4개 공정으로 바꾼다. 이미 바뀌었으면 null */
 function toFourStages(sections: QuoteSection[]): QuoteSection[] | null {
@@ -392,10 +418,7 @@ function toFourStages(sections: QuoteSection[]): QuoteSection[] | null {
   const renamed = sections.map((s) => {
     if (s.name === '도비 작업') return { ...s, name: '인양 작업' }
     if (s.name === '용접 작업') return { ...s, name: '사상·용접 작업' }
-    if (s.name === '베이스 작업') {
-      const items = s.items.map((i) => (i.name === '시공자' && i.qty === 3 ? { ...i, qty: 4, note: '4명 × 1일' } : i))
-      return { ...s, items }
-    }
+    if (s.name === '베이스 작업') return newBase(s)
     return s
   })
   renamed.push({ ...KKT_FULL_LIFT, items: KKT_FULL_LIFT.items.map((i) => ({ ...i })) })
@@ -434,11 +457,20 @@ export function upgradeKkt(
   })
   let next = sections
   let discount = quote.discount
-  const four = toFourStages(sections)
+  let baseFixed = false
+  const four0 = toFourStages(sections)
+  const four = (four0 ?? sections).some(isOldBase)
+    ? (four0 ?? sections).map((s) => {
+        if (!isOldBase(s)) return s
+        baseFixed = true
+        return newBase(s)
+      })
+    : four0
   if (four) {
     next = four
     discount = discountForGrand({ ...quote, sections: four }, KKT_GRAND) ?? 0
     done.push('4개 공정(전체 인양 추가)·가격 조정으로 합계 70,000,000원')
+    if (baseFixed) done.push('베이스 작업 일반관리비·이윤 포함(금액 동일)')
   }
   let { title, notes } = quote
   if (/\s*\(A안\)$/.test(title) || notes.includes(KKT_B_NOTE)) {
@@ -473,7 +505,16 @@ export function upgradeKkt(
     done.push('특기사항 200TON 크레인 1대 대체 안내')
   }
   let html = proposalHtml.replaceAll('제관 2, 용접 1, 조공 1, 화재감시 1', '시공자 3명')
+
   if (html !== proposalHtml) done.push('베이스 인원 시공자 3명')
+  // 2026-10-16 kevin: 상단 카드에 최대 인양 무게, 200t 상향 가능, 총 용접 연장(600mm 대신)
+  const statsBefore = html
+  for (const [from, to] of KKT_STATS) html = html.replace(from, to)
+  if (html !== statsBefore) done.push('제안서 상단 카드(크레인 상향·용접 연장)')
+  // 2026-10-16 kevin: 베이스 시공자 4명
+  const crewBefore = html
+  html = html.replaceAll('시공자 3명', '시공자 4명')
+  if (html !== crewBefore) done.push('베이스 인원 시공자 4명')
   if (html.includes('id="plan-b"') || html.includes('B안')) {
     html = freshProposal()
     done.push('제안서 B안 삭제')

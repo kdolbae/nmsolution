@@ -781,6 +781,7 @@ function QuotePanel({
                       className="h-7 border border-input bg-background px-1 text-xs text-foreground"
                     >
                       <option value="full">전부 적용</option>
+                      <option value="margin">일반관리비·이윤만</option>
                       <option value="overhead">일반관리비만</option>
                       <option value="none">제외 (재료·노무·경비만)</option>
                     </select>

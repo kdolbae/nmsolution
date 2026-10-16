@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/admin/form'
 import { ClientsList } from '@/components/admin/clients-list'
 import { listClients } from '@/lib/clients/table'
 import { calcQuote } from '@/lib/clients/quote'
+import { pendingCounts } from '@/lib/portal/members'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +13,7 @@ export default async function AdminClientsPage() {
     error = true
     return []
   })
+  const waiting = await pendingCounts().catch(() => new Map<number, number>())
 
   return (
     <>
@@ -31,6 +33,7 @@ export default async function AdminClientsPage() {
             quoteNumber: c.quote.number,
             updatedAt: c.updatedAt.toISOString(),
             finalizedVersion: c.finalized?.version ?? null,
+            waiting: waiting.get(c.id) ?? 0,
           }))}
         />
       )}

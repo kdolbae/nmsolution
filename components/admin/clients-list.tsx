@@ -19,6 +19,8 @@ type Item = {
   updatedAt: string
   /** 최종본으로 확정한 버전 */
   finalizedVersion: number | null
+  /** 협력업체 포털 가입 승인 대기 인원 */
+  waiting: number
 }
 
 const EMPTY = { name: '', bizNumber: '', portalSlug: '', portalLogin: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
@@ -103,6 +105,9 @@ export function ClientsList({ clients }: { clients: Item[] }) {
                   <span className="truncate text-base font-bold hover:text-electric">{c.name}</span>
                   {c.finalizedVersion && (
                     <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">최종본 v{c.finalizedVersion}</span>
+                  )}
+                  {c.waiting > 0 && (
+                    <span className="shrink-0 bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">관계자 승인 대기 {c.waiting}</span>
                   )}
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 /**
  * 업체별 현장 영상. 파일은 Cloudflare R2 버킷 nm-solution-media 에 두고, 관리자 업체 화면에서 바로 재생한다.
- * 키는 <업체 폴더>/<파일>.mp4 이며 공개 주소(R2_MEDIA_BASE) 아래에서 읽는다.
+ * 키는 <업체 폴더>/<파일>.mp4. 버킷은 r2.dev 공개 주소로 열려 있어 주소를 아는 사람은 누구나 볼 수 있다(비공개 자료는 올리지 않는다).
  * 원본 드론 영상은 kevin PC 에 있고, 구간만 잘라 1080p 로 올렸다 (2026-10-16).
  */
 
@@ -11,7 +11,7 @@ export type ClientVideo = {
   label: string
 }
 
-export const R2_MEDIA_BASE = 'R2_MEDIA_BASE_PLACEHOLDER'
+export const R2_MEDIA_BASE = 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev'
 
 const VIDEOS: Record<string, ClientVideo[]> = {
   '신일공업(주)': [

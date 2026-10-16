@@ -30,6 +30,19 @@ export type QuoteSection = {
   items: QuoteItem[]
   /** 원가계산 제외: 이 공종은 보험료·안전관리비·일반관리비·이윤 없이 재료·노무·경비만 더한다 */
   flat?: boolean
+  /** 일반관리비만: 보험료·안전관리비·이윤 없이 재료·노무·경비에 일반관리비만 붙인다 (flat 이 우선) */
+  overheadOnly?: boolean
+}
+
+/** 공종의 원가계산 방식. 화면의 선택 칸과 flat·overheadOnly 를 잇는다 */
+export type SectionCalcMode = 'full' | 'overhead' | 'none'
+
+export function sectionMode(s: Pick<QuoteSection, 'flat' | 'overheadOnly'>): SectionCalcMode {
+  return s.flat ? 'none' : s.overheadOnly ? 'overhead' : 'full'
+}
+
+export function modeFields(m: SectionCalcMode): Pick<QuoteSection, 'flat' | 'overheadOnly'> {
+  return { flat: m === 'none', overheadOnly: m === 'overhead' }
 }
 
 export type QuoteRates = {
@@ -56,6 +69,10 @@ export type Quote = {
   rates: QuoteRates
   /** 공종 합계의 천원 미만 절사 */
   truncate: boolean
+  /** 공정 합계에서 빼는 할인 금액 (부가세 별도). 0 이면 표시하지 않는다 */
+  discount: number
+  /** 할인 줄 이름 */
+  discountLabel: string
   /** 특기사항. 한 줄에 한 항목 */
   notes: string
   validDays: number
@@ -67,6 +84,8 @@ export type QuoteRecipient = {
   phone?: string | null
   siteAddress?: string | null
 }
+
+export const DEFAULT_DISCOUNT_LABEL = '특별할인 (NEGO)'
 
 export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safety: 3.11, overhead: 5, profit: 15 }
 
@@ -103,6 +122,8 @@ export function emptyQuote(): Quote {
     costCalc: false,
     rates: { ...DEFAULT_RATES },
     truncate: true,
+    discount: 0,
+    discountLabel: DEFAULT_DISCOUNT_LABEL,
     notes: '공사 기간: 협의\n결제 조건: 협의',
     validDays: 30,
   }
@@ -117,12 +138,15 @@ export function normalizeQuote(raw: unknown): Quote {
     ...base,
     ...q,
     rates: { ...DEFAULT_RATES, ...(q.rates ?? {}) },
+    discount: Math.max(0, Math.round(Number(q.discount) || 0)),
+    discountLabel: q.discountLabel?.trim() || DEFAULT_DISCOUNT_LABEL,
     sections: Array.isArray(q.sections)
       ? q.sections.map((s) => ({
           id: s.id || newId('s'),
           name: s.name ?? '',
           desc: s.desc ?? '',
           flat: Boolean(s.flat),
+          overheadOnly: Boolean(s.overheadOnly),
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
                 ...emptyItem(),
@@ -166,12 +190,13 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
   for (const i of s.items) sum[costGroup(i.kind)] += itemAmount(i)
   const { mat, lab, exp } = sum
   const r = q.rates
-  const on = q.costCalc && !s.flat
+  const on = q.costCalc && !s.flat && !s.overheadOnly
+  const ohOn = q.costCalc && !s.flat
   const injury = on ? Math.round((lab * r.injury) / 100) : 0
   const employment = on ? Math.round((lab * r.employment) / 100) : 0
   const safety = on ? Math.round(((mat + lab) * r.safety) / 100) : 0
   const net = mat + lab + exp + injury + employment + safety
-  const overhead = on ? Math.round((net * r.overhead) / 100) : 0
+  const overhead = ohOn ? Math.round((net * r.overhead) / 100) : 0
   const profit = on ? Math.round(((lab + exp + injury + employment + safety + overhead) * r.profit) / 100) : 0
   const raw = net + overhead + profit
   const total = q.truncate ? Math.floor(raw / 1000) * 1000 : raw
@@ -180,9 +205,23 @@ export function calcSection(s: QuoteSection, q: Pick<Quote, 'costCalc' | 'rates'
 
 export function calcQuote(q: Quote) {
   const sections = q.sections.map((s) => calcSection(s, q))
-  const supply = sections.reduce((a, s) => a + s.total, 0)
+  /** 공정 합계 (할인 전, 부가세 별도) */
+  const works = sections.reduce((a, s) => a + s.total, 0)
+  const discount = Math.min(Math.max(0, Math.round(Number(q.discount) || 0)), works)
+  const supply = works - discount
   const vat = Math.round(supply / 10)
-  return { sections, supply, vat, grand: supply + vat }
+  return { sections, works, discount, supply, vat, grand: supply + vat }
+}
+
+/** 부가세 포함 합계를 target 으로 맞추는 할인 금액. 맞출 수 없으면(공정 합계보다 크면) null */
+export function discountForGrand(q: Quote, target: number): number | null {
+  const { works } = calcQuote({ ...q, discount: 0 })
+  const base = Math.floor(target / 1.1)
+  for (const s of [base, base + 1, base - 1]) {
+    if (s >= 0 && s <= works && s + Math.round(s / 10) === target) return works - s
+  }
+  const s = Math.round(target / 1.1)
+  return s <= works ? works - s : null
 }
 
 // ---------- 표기 ----------
@@ -270,6 +309,10 @@ export const QUOTE_CSS = `
 .nmq tr.q-subtotal td{font-weight:600;border-bottom:1px solid #b9c3cf}
 .nmq tr.q-sum td{font-weight:600}
 .nmq tr.q-grand td{font-weight:700;font-size:11pt;color:var(--navy);border-top:2pt solid var(--navy);border-bottom:2pt solid var(--navy)}
+.nmq tr.q-disc td{font-weight:600;color:var(--accent)}
+.nmq table.q-summary td.n,.nmq table.q-summary td:nth-child(2){white-space:nowrap}
+.nmq .q-total .v small{display:block;margin:2px 0 0}
+.nmq p.q-hint{font-size:8.5pt;color:var(--muted);margin:4px 0 0}
 .nmq ol.q-notes{margin:0;padding-left:1.4em}
 .nmq ol.q-notes li{margin:2px 0}
 .nmq .q-sign{margin-top:22px;text-align:center}
@@ -301,11 +344,13 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
     if (q.costCalc && !s.flat) {
       const r = q.rates
       rows.push(sub('재료비 계', c.mat), sub('노무비 계', c.lab), sub('경비 계', c.exp))
-      rows.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
-      rows.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
-      rows.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
-      rows.push(sub('일반관리비', c.overhead, `순공사원가 × ${r.overhead}%`))
-      rows.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))
+      if (!s.overheadOnly) {
+        rows.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
+        rows.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
+        rows.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
+      }
+      rows.push(sub('일반관리비', c.overhead, `${s.overheadOnly ? '(재료비 + 노무비 + 경비)' : '순공사원가'} × ${r.overhead}%`))
+      if (!s.overheadOnly) rows.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))
     }
     if (c.adjust) rows.push(sub('단수정리', c.adjust, '천원 미만 절사'))
     if (multi || q.costCalc) {
@@ -342,9 +387,29 @@ ${(
     return `<tr><td>${label}</td>${vals.map((v) => `<td class="n">${won(v)}</td>`).join('')}<td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`
   })
   .join('')}
-<tr class="q-sum"><td>공급가액</td>${calc.sections.map((c) => `<td class="n">${won(c.total)}</td>`).join('')}<td class="n">${won(calc.supply)}</td></tr>
+<tr class="q-sum"><td>공정 합계</td>${calc.sections.map((c) => `<td class="n">${won(c.total)}</td>`).join('')}<td class="n">${won(calc.works)}</td></tr>
 </tbody></table>`
       : ''
+
+  // 공정별 금액과 최종 금액은 내역과 떼어 총괄표 한 곳에 모은다
+  const summary = `<h2 class="q-sub">견적 총괄표</h2>
+<table class="grid q-summary"><thead><tr><th class="c">번호</th><th>공정</th><th>내용</th><th class="n">금액</th></tr></thead><tbody>
+${q.sections
+  .map(
+    (s, si) =>
+      `<tr><td class="c">${si + 1}</td><td><b>${esc(s.name || '공종')}</b></td><td class="q-spec">${esc(s.desc)}</td><td class="n">${won(calc.sections[si].total)}</td></tr>`,
+  )
+  .join('\n')}
+${
+  calc.discount
+    ? `<tr class="q-sum"><td></td><td colspan="2">공정 합계</td><td class="n">${won(calc.works)}</td></tr>
+<tr class="q-disc"><td></td><td colspan="2">${esc(q.discountLabel)}</td><td class="n">-${won(calc.discount)}</td></tr>`
+    : ''
+}
+<tr class="q-sum"><td></td><td colspan="2">공급가액</td><td class="n">${won(calc.supply)}</td></tr>
+<tr class="q-sum"><td></td><td colspan="2">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td></tr>
+<tr class="q-grand"><td></td><td colspan="2">합계 (부가세 포함)</td><td class="n">${won(calc.grand)}</td></tr>
+</tbody></table>`
 
   return `<div class="nmq"><div class="q-page">
 <div class="q-head">
@@ -367,16 +432,15 @@ ${(
     <tr><th>연락처</th><td>${SUPPLIER.phoneMain} · ${SUPPLIER.phoneMobile}</td></tr>
   </tbody></table></div>
 </div>
-<div class="q-total"><span class="l">견적금액</span><span class="v">일금 ${koreanAmount(calc.supply)}원정 (₩${won(calc.supply)})<small>VAT 별도</small></span></div>
+<div class="q-total"><span class="l">견적금액</span><span class="v">일금 ${koreanAmount(calc.grand)}원정 (₩${won(calc.grand)})<small>VAT 포함 · 공급가액 ${won(calc.supply)} + 부가세 ${won(calc.vat)}</small></span></div>
+${summary}
 ${costTable}
-<h2 class="q-sub">견적 내역</h2>
+<h2 class="q-sub">공정별 세부 내역</h2>
 <table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
 <tbody>
 ${rows.join('\n')}
-<tr class="q-sum"><td></td><td colspan="5">공급가액</td><td class="n">${won(calc.supply)}</td><td></td></tr>
-<tr class="q-sum"><td></td><td colspan="5">부가가치세 (10%)</td><td class="n">${won(calc.vat)}</td><td></td></tr>
-<tr class="q-grand"><td></td><td colspan="5">합계</td><td class="n">${won(calc.grand)}</td><td></td></tr>
 </tbody></table>
+<p class="q-hint">공정별 금액은 부가세 별도이며, 할인과 최종 금액은 위 견적 총괄표에 있습니다.</p>
 <h2 class="q-sub">특기사항</h2>
 <ol class="q-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ol>
 <div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">엔엠솔루션 대표 김성배 (인)</p></div>

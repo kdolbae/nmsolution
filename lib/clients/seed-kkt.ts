@@ -1,8 +1,10 @@
-import type { Quote } from './quote'
+import { discountForGrand, type Quote, type QuoteSection } from './quote'
 
 /**
  * 금강변압기 견적서(최종 A안)를 업체 관리의 첫 업체로 넣을 때 쓰는 값.
- * app/kkt/page-html.ts 의 QUOTE_HTML(A안 공종별 내역서)에서 옮겼다. 공급가액 55,253,000원 (2026-10-16 베이스 공종 3,010,000원으로 변경).
+ * 처음엔 /kkt 공개 페이지의 견적 내역에서 옮겼고, 지금은 공개 페이지 견적(kkt-public-quote.ts)도 이 값으로 만든다.
+ * 2026-10-16 kevin: 4개 공정(베이스·인양·사상용접·전체 인양) 공정 합계 65,368,000원, 특별할인(NEGO) 1,731,636원,
+ * 공급가액 63,636,364원 + 부가세 6,363,636원 = 합계 70,000,000원.
  */
 export const KKT_CLIENT = {
   name: '주식회사 금강변압기',
@@ -15,8 +17,46 @@ export const KKT_QUOTE: Quote = {
   "title": "진공건조로 2분할체 회전·안착 및 접합부 용접 공사",
   "sections": [
     {
+      "id": "s3",
+      "name": "베이스 작업",
+      "desc": "사다리형 일체 임시 베이스 제작·설치 및 공사 후 회수, H-250×250",
+      "items": [
+        {
+          "id": "i26",
+          "kind": "재료비",
+          "name": "H빔 (회수조건)",
+          "spec": "H-250×250×9×14, 10m 4·5m 16·0.6m 30EA",
+          "unit": "식",
+          "qty": 1,
+          "price": 1800000,
+          "note": "공사 후 회수 조건"
+        },
+        {
+          "id": "i27",
+          "kind": "운반비",
+          "name": "H빔 운반",
+          "spec": "반입·회수",
+          "unit": "식",
+          "qty": 1,
+          "price": 160000,
+          "note": ""
+        },
+        {
+          "id": "i28",
+          "kind": "노무비",
+          "name": "시공자",
+          "spec": "베이스 제작·설치",
+          "unit": "인·일",
+          "qty": 4,
+          "price": 350000,
+          "note": "4명 × 1일"
+        }
+      ],
+      "flat": true
+    },
+    {
       "id": "s1",
-      "name": "도비 작업",
+      "name": "인양 작업",
       "desc": "진공건조로 2기 회전·베이스 안착(1일), 용접면 밀착 이동(2일), 작업구역 안전펜스",
       "items": [
         {
@@ -163,7 +203,7 @@ export const KKT_QUOTE: Quote = {
     },
     {
       "id": "s2",
-      "name": "용접 작업",
+      "name": "사상·용접 작업",
       "desc": "접합면 사상(2일) 및 접합부 CO2 용접(3일)",
       "items": [
         {
@@ -279,42 +319,42 @@ export const KKT_QUOTE: Quote = {
       ]
     },
     {
-      "id": "s3",
-      "name": "베이스 작업",
-      "desc": "사다리형 일체 임시 베이스 제작·설치 및 공사 후 회수, H-250×250",
+      "id": "s4",
+      "name": "전체 인양 작업",
+      "desc": "진공건조로 전체 인양 (250TON 크레인, 1일)",
+      "overheadOnly": true,
       "items": [
         {
-          "id": "i26",
-          "kind": "재료비",
-          "name": "H빔 (회수조건)",
-          "spec": "H-250×250×9×14, 10m 4·5m 16·0.6m 30EA",
-          "unit": "식",
+          "id": "i29",
+          "kind": "장비",
+          "name": "크레인",
+          "spec": "250TON",
+          "unit": "대·일",
           "qty": 1,
-          "price": 1800000,
-          "note": "공사 후 회수 조건"
+          "price": 5500000,
+          "note": "전체 인양 1일"
         },
         {
-          "id": "i27",
-          "kind": "운반비",
-          "name": "H빔 운반",
-          "spec": "반입·회수",
+          "id": "i30",
+          "kind": "장비",
+          "name": "인양 부대장비",
+          "spec": "줄걸이구·샤클·인양 보조장비",
           "unit": "식",
           "qty": 1,
-          "price": 160000,
+          "price": 2000000,
           "note": ""
         },
         {
-          "id": "i28",
+          "id": "i31",
           "kind": "노무비",
-          "name": "시공자",
-          "spec": "베이스 제작·설치",
+          "name": "도비 전문기공",
+          "spec": "전체 인양",
           "unit": "인·일",
-          "qty": 3,
-          "price": 350000,
-          "note": "3명 × 1일"
+          "qty": 6,
+          "price": 300000,
+          "note": "6명 × 1일"
         }
-      ],
-      "flat": true
+      ]
     }
   ],
   "costCalc": true,
@@ -326,12 +366,39 @@ export const KKT_QUOTE: Quote = {
     "profit": 15
   },
   "truncate": true,
+  "discount": 1731636,
+  "discountLabel": "특별할인 (NEGO)",
   "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n크레인 사양·배치가 바뀌어도 추가비용은 없음.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.02, 작업일 11일 (일요일 휴무)\n결제 조건: 선수금 30%, 안착 완료 시 중도금 30%, 용접 완료 후 잔금 40%",
   "validDays": 30
 }
 
-/** 2026-10-16 kevin: 베이스 작업은 재료비·운반비·노무비(3명 × 1일)만, 원가계산 제외 */
+/** 2026-10-16 kevin: 베이스 작업은 재료비·운반비·노무비(시공자 × 1일)만, 원가계산 제외 */
 const KKT_BASE_ITEMS = KKT_QUOTE.sections.find((s) => s.name === '베이스 작업')!.items
+
+/** 2026-10-16 kevin: 견적 순서는 베이스 → 인양 → 사상·용접 → 전체 인양, 부가세 포함 최종 7천만 원 */
+export const KKT_ORDER = ['베이스 작업', '인양 작업', '사상·용접 작업', '전체 인양 작업']
+export const KKT_GRAND = 70_000_000
+const KKT_FULL_LIFT = KKT_QUOTE.sections.find((s) => s.name === '전체 인양 작업')!
+
+/** 3개 공종(도비·용접·베이스) 견적을 4개 공정으로 바꾼다. 이미 바뀌었으면 null */
+function toFourStages(sections: QuoteSection[]): QuoteSection[] | null {
+  if (sections.some((s) => s.name === '전체 인양 작업') || !sections.some((s) => s.name === '도비 작업')) return null
+  const renamed = sections.map((s) => {
+    if (s.name === '도비 작업') return { ...s, name: '인양 작업' }
+    if (s.name === '용접 작업') return { ...s, name: '사상·용접 작업' }
+    if (s.name === '베이스 작업') {
+      const items = s.items.map((i) => (i.name === '시공자' && i.qty === 3 ? { ...i, qty: 4, note: '4명 × 1일' } : i))
+      return { ...s, items }
+    }
+    return s
+  })
+  renamed.push({ ...KKT_FULL_LIFT, items: KKT_FULL_LIFT.items.map((i) => ({ ...i })) })
+  const rank = (s: QuoteSection) => {
+    const r = KKT_ORDER.indexOf(s.name)
+    return r < 0 ? KKT_ORDER.length : r
+  }
+  return renamed.map((s, i) => ({ s, i })).sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).map((x) => x.s)
+}
 
 /**
  * 이미 저장된 금강변압기 견적서·제안서를 위 값으로 고친다. 옛 베이스(H빔 9,991kg × 700원)가 남아 있을 때만
@@ -342,6 +409,7 @@ export const KKT_B_NOTE = 'A안(기본안) 기준 견적. B안'
 /**
  * 운영 DB 에 저장된 금강변압기 견적서·제안서를 최신 결정에 맞춘다. 바뀐 것이 없으면 null.
  * - 2026-10-16 베이스 공종 3,010,000원 (재료·운반·시공자 3명 × 1일, 원가계산 제외)
+ * - 2026-10-16 4개 공정(베이스·인양·사상용접·전체 인양), 특별할인(NEGO)으로 부가세 포함 70,000,000원
  * - 2026-10-16 A안만 최종 견적: 공사명의 "(A안)", 특기사항의 B안 줄, 제안서의 B안 내용 삭제
  *   (제안서는 B안이 남아 있으면 A안 전용 공개 페이지로 다시 만든다. 이전 내용은 버전 기록에 남는다)
  */
@@ -357,6 +425,14 @@ export function upgradeKkt(
     done.push('베이스 공종 3,010,000원')
     return { ...s, flat: true, items: KKT_BASE_ITEMS.map((i) => ({ ...i })) }
   })
+  let next = sections
+  let discount = quote.discount
+  const four = toFourStages(sections)
+  if (four) {
+    next = four
+    discount = discountForGrand({ ...quote, sections: four }, KKT_GRAND) ?? 0
+    done.push('4개 공정(전체 인양 추가)·특별할인으로 합계 70,000,000원')
+  }
   let { title, notes } = quote
   if (/\s*\(A안\)$/.test(title) || notes.includes(KKT_B_NOTE)) {
     title = title.replace(/\s*\(A안\)$/, '')
@@ -373,5 +449,5 @@ export function upgradeKkt(
     done.push('제안서 B안 삭제')
   }
   if (!done.length) return null
-  return { quote: { ...quote, title, notes, sections }, proposalHtml: html, summary: `자동 정리: ${done.join(', ')}` }
+  return { quote: { ...quote, title, notes, sections: next, discount }, proposalHtml: html, summary: `자동 정리: ${done.join(', ')}` }
 }

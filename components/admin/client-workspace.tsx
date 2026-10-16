@@ -29,13 +29,17 @@ import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } 
 import {
   ITEM_KINDS,
   calcQuote,
+  discountForGrand,
   emptyItem,
+  modeFields,
+  sectionMode,
   itemAmount,
   newId,
   quoteDocument,
   won,
   type ItemKind,
   type Quote,
+  type SectionCalcMode,
   type QuoteItem,
   type QuoteSection,
 } from '@/lib/clients/quote'
@@ -659,6 +663,7 @@ function QuotePanel({
           </Button>
         )}
         <div className="text-sm tabular-nums">
+          {calc.discount > 0 && <>공정 합계 {won(calc.works)} · 할인 -{won(calc.discount)} · </>}
           공급가액 <b>{won(calc.supply)}</b> · 부가세 {won(calc.vat)} · 합계 <b className="text-electric">{won(calc.grand)}원</b>
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
@@ -769,8 +774,16 @@ function QuotePanel({
                 )}
                 {q.costCalc && (
                   <label className="ml-auto flex items-center gap-1.5">
-                    <input type="checkbox" checked={!!s.flat} onChange={(e) => updateSection(s.id, { flat: e.target.checked })} />
-                    이 공종은 원가계산 제외 (재료·노무·경비만)
+                    원가계산
+                    <select
+                      value={sectionMode(s)}
+                      onChange={(e) => updateSection(s.id, modeFields(e.target.value as SectionCalcMode))}
+                      className="h-7 border border-input bg-background px-1 text-xs text-foreground"
+                    >
+                      <option value="full">전부 적용</option>
+                      <option value="overhead">일반관리비만</option>
+                      <option value="none">제외 (재료·노무·경비만)</option>
+                    </select>
                   </label>
                 )}
               </div>
@@ -815,6 +828,7 @@ function QuotePanel({
             <input type="checkbox" checked={q.truncate} onChange={(e) => update({ truncate: e.target.checked })} />
             공종 합계 천원 미만 절사
           </label>
+          <DiscountEditor q={q} works={calc.works} update={update} />
           <Field
             label="특기사항 (한 줄에 한 항목)"
             multiline
@@ -918,6 +932,47 @@ function PrintDialog({
           </Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** 할인(NEGO): 금액을 직접 넣거나, 부가세 포함 최종 금액을 넣으면 할인 금액을 계산해 채운다 */
+function DiscountEditor({ q, works, update }: { q: Quote; works: number; update: (p: Partial<Quote>) => void }) {
+  const [target, setTarget] = useState(0)
+  const [msg, setMsg] = useState('')
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-4">
+      <p className="text-sm font-medium">할인 (공정 합계 {won(works)}원에서 빼고, 부가세는 할인 뒤 금액에 붙음)</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          할인 이름
+          <TextIn value={q.discountLabel} onChange={(v) => update({ discountLabel: v })} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          할인 금액 (부가세 별도)
+          <NumInput value={q.discount} onChange={(n) => update({ discount: Math.max(0, Math.round(n)) })} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          최종 금액(부가세 포함)으로 맞추기
+          <span className="flex gap-1">
+            <NumInput value={target} onChange={setTarget} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-none"
+              onClick={() => {
+                const d = discountForGrand(q, target)
+                if (d == null) return setMsg('공정 합계보다 큰 금액은 맞출 수 없습니다.')
+                setMsg('')
+                update({ discount: d })
+              }}
+            >
+              맞추기
+            </Button>
+          </span>
+        </label>
+      </div>
+      {msg && <p className="text-xs text-destructive">{msg}</p>}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { ClientPortal } from '@/components/admin/client-portal'
 import { formatCode, getPortalInfo } from '@/lib/portal/members'
 import { mailEnabled } from '@/lib/mail'
 import { clientFiles } from '@/lib/clients/files'
+import { clientVideos } from '@/lib/clients/media'
 import { getClient, getVersion, listVersions } from '@/lib/clients/table'
 
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,7 @@ export default async function AdminClientPage({
         proposalHtml={client.proposalHtml}
         quote={client.quote}
         files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
+        videos={clientVideos(client.name)}
         versions={versions.map((x) => ({ ...x, at: x.at.toISOString() }))}
         finalized={client.finalized && { ...client.finalized, at: client.finalized.at.toISOString() }}
         view={

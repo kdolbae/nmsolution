@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { CalendarRange, ChevronLeft } from 'lucide-react'
 import { ClientWorkspace } from '@/components/admin/client-workspace'
 import { ClientPortal } from '@/components/admin/client-portal'
 import { formatCode, getPortalInfo } from '@/lib/portal/members'
@@ -26,9 +26,17 @@ export default async function AdminClientPage({
 
   return (
     <>
-      <Link href="/admin/clients" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="size-4" /> 업체 목록
-      </Link>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <Link href="/admin/clients" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="size-4" /> 업체 목록
+        </Link>
+        <Link
+          href={`/admin/clients/${client.id}/progress`}
+          className="inline-flex h-9 items-center gap-1.5 bg-electric px-4 text-sm font-semibold text-white hover:bg-electric/90"
+        >
+          <CalendarRange className="size-4" /> 공정 진행 · 현장 보고
+        </Link>
+      </div>
       {portal && (
         <div className="mb-5">
           <ClientPortal

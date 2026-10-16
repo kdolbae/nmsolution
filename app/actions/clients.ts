@@ -1,7 +1,6 @@
 'use server'
 
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
+import { requireAdmin } from '@/lib/admin'
 import { revalidatePath } from 'next/cache'
 import { getContent } from '@/lib/content/get'
 import { emptyQuote, normalizeQuote, type Quote } from '@/lib/clients/quote'
@@ -18,11 +17,6 @@ import {
   type ClientInfo,
 } from '@/lib/clients/table'
 
-async function requireAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error('Unauthorized')
-  return session.user
-}
 
 /** 운영에서는 서버 액션의 오류 문구가 가려지므로, 화면에 보여 줄 오류는 값으로 돌려준다 */
 async function shown<T>(run: () => Promise<T>): Promise<({ ok: true } & T) | { ok: false; error: string }> {

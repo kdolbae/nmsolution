@@ -178,6 +178,18 @@ export function SiteHeader({ solidByDefault = false, showProjects = true, showGa
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* 협력업체·관리자 로그인. 로그인한 관리자는 관리자 화면, 협력업체는 자기 업체 포털로 간다 */}
+            <Link
+              href="/portal"
+              className={cn(
+                'hidden h-10 items-center border px-4 text-sm font-semibold transition-colors lg:inline-flex',
+                solid
+                  ? 'border-border text-foreground hover:border-navy'
+                  : 'border-navy-foreground/30 text-navy-foreground hover:border-navy-foreground',
+              )}
+            >
+              협력업체
+            </Link>
             <Link
               href="/#quote"
               className={cn(
@@ -245,6 +257,13 @@ export function SiteHeader({ solidByDefault = false, showProjects = true, showGa
               className="mt-6 inline-flex h-12 items-center justify-center bg-navy text-sm font-semibold text-navy-foreground"
             >
               빠른 견적
+            </Link>
+            <Link
+              href="/portal"
+              onClick={() => setOpen(false)}
+              className="mt-2 inline-flex h-12 items-center justify-center border border-border text-sm font-semibold"
+            >
+              협력업체 로그인
             </Link>
           </nav>
         </div>

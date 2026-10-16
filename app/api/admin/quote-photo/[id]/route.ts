@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+import { getSessionFrom, isAdmin } from '@/lib/admin'
 import { pool } from '@/lib/db'
 import { ensureQuotePhotos } from '@/lib/quote-photos'
 
@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic'
 
 /** 견적 문의에 붙은 현장 사진 한 장. 고객 사진이라 관리자 로그인 뒤에만 준다. */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth.api.getSession({ headers: req.headers })
-  if (!session?.user) return new Response('로그인이 필요합니다.', { status: 401 })
+  const session = await getSessionFrom(req.headers)
+  if (!session?.user || !isAdmin(session.user)) return new Response('로그인이 필요합니다.', { status: 401 })
 
   const id = Number((await params).id)
   if (!Number.isInteger(id) || id <= 0) return new Response('잘못된 요청', { status: 400 })

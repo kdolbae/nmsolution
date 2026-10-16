@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { pool } from '@/lib/db'
+import { ensureUserRole } from '@/lib/auth-roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,8 @@ export const dynamic = 'force-dynamic'
  * 이 사이트는 관리자 1명만 가입할 수 있고 비밀번호 찾기가 없다. 그래서 Vercel 환경변수
  * ADMIN_RESET_TOKEN(10자 이상)을 아는 사람만 기존 관리자 계정을 지울 수 있게 한다.
  * 지우면 /admin/login 이 다시 '관리자 계정 만들기' 화면이 되고, 그때 새로 만든다.
- * 콘텐츠 · 시공사례 · 견적 문의는 건드리지 않는다 (지우는 것은 user · session · account · verification 뿐).
+ * 콘텐츠 · 시공사례 · 견적 문의는 건드리지 않는다 (지우는 것은 관리자 user · session · account 와 verification 뿐).
+ * 협력업체 관계자 계정(role = 'partner')은 그대로 둔다.
  *
  * 값이 없거나 10자보다 짧으면 이 기능은 꺼져 있다(404). 쓰고 나면 환경변수를 지운다.
  */
@@ -40,7 +42,8 @@ export async function POST(req: Request) {
 
   try {
     // session · account 는 user 를 지우면 같이 지워진다 (ON DELETE CASCADE)
-    const { rowCount } = await pool.query('DELETE FROM "user"')
+    await ensureUserRole()
+    const { rowCount } = await pool.query(`DELETE FROM "user" WHERE role = 'admin'`)
     await pool.query('DELETE FROM verification')
     console.warn(`[admin-reset] 관리자 계정 ${rowCount ?? 0}개를 지웠다`)
     tries.delete(ip)

@@ -1,9 +1,11 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/lib/db'
-import { calcQuote, normalizeQuote, type Quote } from './quote'
+import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
-import { kktProposalHtml } from './proposal'
+import { defaultProposalHtml, kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
+import { SINIL_CLIENT, SINIL_SEED_KEY, sinilProposal, sinilQuote } from './seed-sinil'
+import { getContent } from '@/lib/content/get'
 
 /**
  * 업체 관리(제안서·견적서) 표. sql/007_clients.sql, sql/008_client_versions.sql 과 같은 모양.
@@ -37,7 +39,8 @@ export function ensureClients(): Promise<void> {
       await pool.query(`ALTER TABLE clients
         ADD COLUMN IF NOT EXISTS finalized_version int,
         ADD COLUMN IF NOT EXISTS finalized_at timestamptz,
-        ADD COLUMN IF NOT EXISTS finalized_by text`)
+        ADD COLUMN IF NOT EXISTS finalized_by text,
+        ADD COLUMN IF NOT EXISTS biz_number text`)
       await pool.query(`CREATE TABLE IF NOT EXISTS client_versions (
         id            bigint generated always as identity primary key,
         client_id     bigint not null references clients(id) on delete cascade,
@@ -76,12 +79,49 @@ export function ensureClients(): Promise<void> {
           }).catch(() => null)
         }
       }
+      await seedOnce(SINIL_SEED_KEY, async () => {
+        const [home, services, about, settings] = await Promise.all([
+          getContent('home'),
+          getContent('services'),
+          getContent('about'),
+          getContent('settings'),
+        ])
+        const proposal = sinilProposal(defaultProposalHtml(SINIL_CLIENT, { home, services, about, settings }))
+        const quote = JSON.stringify(sinilQuote(today()))
+        const c = SINIL_CLIENT
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, quote],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, quote],
+        )
+      })
     })().catch((e) => {
       ready = null
       throw e
     })
   }
   return ready
+}
+
+/**
+ * 코드로 넣는 업체를 한 번만 넣는다. 넣은 뒤 관리자가 지우거나 이름을 바꿔도 다시 생기지 않는다.
+ * 넣다가 실패하면 표시도 되돌려 다음 조회 때 다시 시도한다.
+ */
+async function seedOnce(key: string, run: () => Promise<void>) {
+  await pool.query(`CREATE TABLE IF NOT EXISTS client_seeds (key text primary key, created_at timestamptz not null default now())`)
+  const { rowCount } = await pool.query(`INSERT INTO client_seeds (key) VALUES ($1) ON CONFLICT DO NOTHING`, [key])
+  if (!rowCount) return
+  try {
+    await run()
+  } catch (e) {
+    await pool.query(`DELETE FROM client_seeds WHERE key = $1`, [key]).catch(() => {})
+    throw e
+  }
 }
 
 type Current = { proposalHtml: string; quote: unknown }
@@ -137,6 +177,8 @@ async function applyChange(
 
 export type ClientInfo = {
   name: string
+  /** 사업자등록번호. 견적서 수신란에 인쇄된다 */
+  bizNumber: string
   contactPerson: string
   phone: string
   email: string
@@ -157,6 +199,7 @@ export type ClientRow = ClientInfo & {
 type DbRow = {
   id: string
   name: string
+  biz_number: string | null
   contact_person: string | null
   phone: string | null
   email: string | null
@@ -175,6 +218,7 @@ function toClient(r: DbRow): ClientRow {
   return {
     id: Number(r.id),
     name: r.name,
+    bizNumber: r.biz_number ?? '',
     contactPerson: r.contact_person ?? '',
     phone: r.phone ?? '',
     email: r.email ?? '',
@@ -204,9 +248,9 @@ export async function getClient(id: number): Promise<ClientRow | null> {
 export async function insertClient(info: ClientInfo, proposalHtml: string, quote: Quote, by: string): Promise<number> {
   await ensureClients()
   const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO clients (name, contact_person, phone, email, site_address, memo, proposal_html, quote)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-    [info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, proposalHtml, JSON.stringify(quote)],
+    `INSERT INTO clients (name, contact_person, phone, email, site_address, memo, proposal_html, quote, biz_number)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+    [info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, proposalHtml, JSON.stringify(quote), info.bizNumber],
   )
   const id = Number(rows[0].id)
   await pool.query(
@@ -220,9 +264,9 @@ export async function insertClient(info: ClientInfo, proposalHtml: string, quote
 export async function updateClientInfo(id: number, info: ClientInfo) {
   await ensureClients()
   await pool.query(
-    `UPDATE clients SET name = $2, contact_person = $3, phone = $4, email = $5, site_address = $6, memo = $7, updated_at = now()
+    `UPDATE clients SET name = $2, contact_person = $3, phone = $4, email = $5, site_address = $6, memo = $7, biz_number = $8, updated_at = now()
      WHERE id = $1`,
-    [id, info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo],
+    [id, info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, info.bizNumber],
   )
 }
 

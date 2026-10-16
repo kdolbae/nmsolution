@@ -46,6 +46,7 @@ import { LockBanner, VersionHistory, VersionView, type Finalized, type VersionRo
 type ClientInfo = {
   id: number
   name: string
+  bizNumber: string
   contactPerson: string
   phone: string
   email: string
@@ -262,11 +263,14 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
         <div className="mt-5 flex flex-col gap-4 border-t border-border pt-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="업체명 *" value={form.name} onChange={set('name')} />
+            <Field label="사업자등록번호" value={form.bizNumber} onChange={set('bizNumber')} placeholder="000-00-00000" />
             <Field label="담당자" value={form.contactPerson} onChange={set('contactPerson')} />
             <Field label="연락처" value={form.phone} onChange={set('phone')} />
             <Field label="이메일" value={form.email} onChange={set('email')} />
             <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />
-            <Field label="메모 (인쇄 안 됨)" value={form.memo} onChange={set('memo')} />
+            <div className="sm:col-span-2">
+              <Field label="메모·조사 자료 (내부용, 인쇄 안 됨)" value={form.memo} onChange={set('memo')} multiline rows={8} />
+            </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
@@ -678,6 +682,17 @@ function QuotePanel({
             />
           </label>
           <Field label="유효기간 (일)" value={String(q.validDays)} onChange={(v) => update({ validDays: Number(v.replace(/\D/g, '')) || 30 })} />
+          <label className="flex flex-col gap-2 text-sm font-medium sm:col-span-3">
+            견적서 수신란
+            <select
+              value={q.recipientFields ?? 'contact'}
+              onChange={(e) => update({ recipientFields: e.target.value === 'biz' ? 'biz' : 'contact' })}
+              className="h-9 border border-input bg-background px-2 text-sm"
+            >
+              <option value="biz">업체명 · 사업자번호 · 현장</option>
+              <option value="contact">업체명 · 담당자 · 연락처 · 현장</option>
+            </select>
+          </label>
           <div className="sm:col-span-3">
             <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
           </div>

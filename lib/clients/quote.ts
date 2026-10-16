@@ -59,6 +59,8 @@ export type Quote = {
   /** 특기사항. 한 줄에 한 항목 */
   notes: string
   validDays: number
+  /** 견적서 수신란. biz = 업체명·사업자번호·현장, contact = 업체명·담당자·연락처·현장(예전 양식) */
+  recipientFields?: 'biz' | 'contact'
 }
 
 export type QuoteRecipient = {
@@ -66,6 +68,7 @@ export type QuoteRecipient = {
   contactPerson?: string | null
   phone?: string | null
   siteAddress?: string | null
+  bizNumber?: string | null
 }
 
 export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safety: 3.11, overhead: 5, profit: 15 }
@@ -105,6 +108,7 @@ export function emptyQuote(): Quote {
     truncate: true,
     notes: '공사 기간: 협의\n결제 조건: 협의',
     validDays: 30,
+    recipientFields: 'biz',
   }
 }
 
@@ -117,6 +121,8 @@ export function normalizeQuote(raw: unknown): Quote {
     ...base,
     ...q,
     rates: { ...DEFAULT_RATES, ...(q.rates ?? {}) },
+    // 이 칸이 없던 견적서(금강변압기 등)는 예전 양식 그대로 인쇄한다
+    recipientFields: q.recipientFields === 'biz' ? 'biz' : 'contact',
     sections: Array.isArray(q.sections)
       ? q.sections.map((s) => ({
           id: s.id || newId('s'),
@@ -354,8 +360,12 @@ ${(
 <div class="q-parties">
   <div class="q-party"><h3>수신</h3><table class="kv"><tbody>
     <tr><th>업체명</th><td><b>${esc(to.name)}</b> 귀중</td></tr>
-    <tr><th>담당자</th><td>${esc(to.contactPerson)}</td></tr>
-    <tr><th>연락처</th><td>${esc(to.phone)}</td></tr>
+    ${
+      q.recipientFields === 'biz'
+        ? `<tr><th>사업자번호</th><td>${esc(to.bizNumber)}</td></tr>`
+        : `<tr><th>담당자</th><td>${esc(to.contactPerson)}</td></tr>
+    <tr><th>연락처</th><td>${esc(to.phone)}</td></tr>`
+    }
     <tr><th>현장</th><td>${esc(to.siteAddress)}</td></tr>
     ${q.title ? `<tr><th>공사명</th><td>${esc(q.title)}</td></tr>` : ''}
   </tbody></table></div>

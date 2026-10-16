@@ -31,6 +31,7 @@ export default async function AdminClientPage({
         client={{
           id: client.id,
           name: client.name,
+          bizNumber: client.bizNumber,
           contactPerson: client.contactPerson,
           phone: client.phone,
           email: client.email,

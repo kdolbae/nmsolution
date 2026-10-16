@@ -46,6 +46,7 @@ function cleanInfo(input: ClientInfo): ClientInfo {
   if (!name) throw new Error('업체명을 입력해 주세요.')
   return {
     name,
+    bizNumber: t(input.bizNumber, 40),
     contactPerson: t(input.contactPerson),
     phone: t(input.phone),
     email: t(input.email),

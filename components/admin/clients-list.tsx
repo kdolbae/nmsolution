@@ -21,7 +21,7 @@ type Item = {
   finalizedVersion: number | null
 }
 
-const EMPTY = { name: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
+const EMPTY = { name: '', bizNumber: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
 
 export function ClientsList({ clients }: { clients: Item[] }) {
   const router = useRouter()
@@ -51,6 +51,7 @@ export function ClientsList({ clients }: { clients: Item[] }) {
         <Section title="업체 추가" description="업체를 만들면 홈페이지 내용으로 기본 제안서가 만들어집니다. 다른 업체 것을 복사해 시작할 수도 있습니다.">
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="업체명 *" value={form.name} onChange={set('name')} placeholder="주식회사 ○○○" />
+            <Field label="사업자등록번호" value={form.bizNumber} onChange={set('bizNumber')} placeholder="000-00-00000" />
             <Field label="담당자" value={form.contactPerson} onChange={set('contactPerson')} />
             <Field label="연락처" value={form.phone} onChange={set('phone')} />
             <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />

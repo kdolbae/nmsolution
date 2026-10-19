@@ -14,6 +14,8 @@ export const ADREAMING_REV3_KEY = 'adreaming-office-2610-v3'
 export const ADREAMING_REV4_KEY = 'adreaming-office-2610-v4'
 /** 5차: 관리자급 1인 × 6일(400,000원) 전 공정 추가, 3D 공정 이미지 박공지붕(용마루 6m·처마 4.5m)·C형강 기준으로 다시 그림 (2026-10-19 kevin) */
 export const ADREAMING_REV5_KEY = 'adreaming-office-2610-v5'
+/** 6차: 전기 배관은 천장면 노출 없이 벽면만 노출 (참고 이미지·배치도 문구) (2026-10-19 kevin) */
+export const ADREAMING_REV6_KEY = 'adreaming-office-2610-v6'
 
 export const ADREAMING_CLIENT = {
   name: '어드리밍',

@@ -1,0 +1,14 @@
+/* sbworks-shared-ui tokens v1.0.0 — 원본 sb_app01/manage/src/shared-ui/tokens.css. 복사본은 고치지 말고 원본을 고친 뒤 버전 올려 복사 */
+:root {
+  --sb-font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --sb-navy: #0F2A44;        /* 브랜드 면·상단바 */
+  --sb-navy-fg: #FAFAFA;
+  --sb-orange: #E8742A;      /* 고객 문서 강조·사업부 배지 (앱 UI 넓은 면에는 쓰지 않음) */
+  --sb-electric: oklch(0.58 0.22 262);  /* 주요 행동(nmsolution DESIGN_SYSTEM 3.2) */
+  --sb-bg: #FFFFFF; --sb-surface: oklch(0.965 0.003 260); --sb-border: oklch(0.9 0.005 260);
+  --sb-text: oklch(0.2 0.012 260); --sb-muted: oklch(0.5 0.012 260);
+  --sb-ok: #1B7F4B; --sb-warn: #B7791F; --sb-danger: oklch(0.577 0.245 27.325);
+  --sb-radius: 0.25rem;      /* nmsolution --radius 와 동일 */
+  --sb-space-1: 4px; --sb-space-2: 8px; --sb-space-3: 12px; --sb-space-4: 16px; --sb-space-6: 24px; --sb-space-8: 32px;
+  --sb-topbar-h: 48px;
+}

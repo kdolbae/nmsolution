@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import './shared-ui/tokens.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -55,7 +56,7 @@
   --popover-foreground: oklch(0.2 0.012 260);
 
   /* Deep navy as primary */
-  --navy: oklch(0.22 0.06 262);
+  --navy: var(--sb-navy); /* 공통 토큰(app/shared-ui/tokens.css)에 연결 */
   --navy-foreground: oklch(0.98 0 0);
   --primary: var(--navy);
   --primary-foreground: var(--navy-foreground);

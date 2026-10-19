@@ -2,7 +2,7 @@ import { discountForGrand, type Quote, type QuoteSection } from './quote'
 
 /**
  * 금강변압기 견적서(최종 A안)를 업체 관리의 첫 업체로 넣을 때 쓰는 값.
- * 처음엔 /kkt 공개 페이지의 견적 내역에서 옮겼고, 지금은 공개 페이지 견적(kkt-public-quote.ts)도 이 값으로 만든다.
+ * 처음엔 /kkt 공개 페이지의 견적 내역에서 옮겼다. 지금 /kkt 는 다른 업체와 같은 업체 페이지라 이 견적(DB 저장본)을 그대로 보여 준다.
  * 2026-10-16 kevin: 4개 공정(베이스·인양·사상용접·전체 인양) 공정 합계 65,368,000원, 가격 조정(NEGO) 1,731,636원,
  * 공급가액 63,636,364원 + 부가세 6,363,636원 = 합계 70,000,000원.
  * 2026-10-19 kevin: 베이스는 기존 조방 위 H빔 10m 2본 + 양 끝 3m 빔, 완성품 이동 추가, 합계 70,000,000원은 그대로.
@@ -11,7 +11,12 @@ import { discountForGrand, type Quote, type QuoteSection } from './quote'
 export const KKT_CLIENT = {
   name: '주식회사 금강변압기',
   siteAddress: '경기 화성시 마도면 마도공단로1길 214',
+  /** 업체용 링크 nm-solution.co.kr/kkt (/금강변압기 도 proxy.ts 가 여기로 넘김) */
+  portalSlug: 'kkt',
 }
+
+/** 2026-10-19 kevin: 다른 업체와 같은 업체 페이지(PDF 다운로드·프레젠테이션 등)로 옮김. 한 번만 돈다 */
+export const KKT_PORTAL_KEY = 'kkt-portal-2610-v1'
 
 export const KKT_QUOTE: Quote = {
   "number": "NMS-2610-KKT-01",

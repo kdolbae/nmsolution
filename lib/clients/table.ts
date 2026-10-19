@@ -6,7 +6,7 @@ import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
-import { ADREAMING_CLIENT, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
+import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -187,6 +187,19 @@ export function ensureClients(): Promise<void> {
            VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
+      })
+      // 어드리밍 2차: 박공지붕 문구, 각파이프 단가. 견적번호는 그대로 둔다
+      await seedOnce(ADREAMING_REV2_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+          `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+          [ADREAMING_CLIENT.portalSlug],
+        )
+        const row = found.rows[0]
+        if (!row || row.finalized_at) return
+        const quote = adreamingQuote(today())
+        if (row.quote?.number) quote.number = row.quote.number
+        const proposal = ADREAMING_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary: '박공지붕, 판넬 공사 한 공종, 각파이프·스카이잭·슬라이딩 도어 단가, 전기 배치도·자재 참고' }))
       })
       await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
     })().catch((e) => {

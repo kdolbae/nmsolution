@@ -198,7 +198,7 @@ const line = (
 
 /**
  * 기본 템플릿. 단가는 2026-10 kevin 기준(판넬 15,000원/㎡, LED 평판등 22,000원, 전기 평당 12만원)이고, 모르는 단가는 0 으로 둔다.
- * 스레드로드 규칙: 천장 구조물(C형강)을 잡는 스레드로드는 1m당 1개, 구조물 간격은 1.5m 이내 (2026-10-19 kevin).
+ * 스레드로드 규칙: 천장틀 간격 1.5m 이내, 기본 지지 간격 1m (2026-10-19 kevin). 고양 어드리밍은 천장틀 1.5m 간격, 천장틀마다 2.2m 간격 3지점(벽 쪽 끝 제외).
  */
 export const BUILTIN_TEMPLATES: TakeoffTemplate[] = [
   {
@@ -223,20 +223,23 @@ export const BUILTIN_TEMPLATES: TakeoffTemplate[] = [
   {
     id: 'panel-ceiling',
     name: '판넬 천장 · 스레드로드',
-    desc: '판넬 천장과 천장 하지. 구조물(C형강) 간격 1.5m 이내, 스레드로드는 구조물 1m당 1개. 지붕 경사면 아래면 최고·최저 높이를 넣는다',
+    desc: '판넬 천장과 천장 하지. 천장틀(각파이프·C형강)을 간격 이내로 걸고, 천장틀마다 지지 간격으로 스레드로드를 단다. 벽 위 끝 지점 포함 여부를 고를 수 있고, 지붕 경사면 아래면 최고·최저 높이를 넣는다',
     builtin: true,
     vars: [
-      v('W', '천장 가로 (구조물 방향)', 'm'),
-      v('D', '천장 세로 (구조물 간격 방향)', 'm'),
+      v('W', '천장틀 방향 길이 (천장틀 1줄 길이)', 'm'),
+      v('D', '천장틀 간격 방향 길이', 'm'),
       v('slabMax', '기존 천장 최고 높이 (용마루 쪽)', 'm', 6),
       v('slabMin', '기존 천장 최저 높이 (처마 쪽, 평지붕이면 최고와 같게)', 'm', 6),
       v('ph', '판넬 천장 높이', 'm', 3),
-      v('pitch', '스레드로드 간격 (구조물 1m당 1개)', 'm', 1),
-      v('gapMax', '구조물 간격 최대', 'm', 1.5),
+      v('gapMax', '천장틀 간격 최대', 'm', 1.5),
+      v('beamEnds', '양 끝 천장틀 포함 (1 포함, 0 벽이 받음)', '', 1),
+      v('pitch', '천장틀당 스레드로드 지지 간격', 'm', 1),
+      v('rodEnds', '천장틀 양 끝 지지점 포함 (1 포함, 0 벽이 받음)', '', 1),
       v('loss', '손실률', '%', 5),
-      v('beams', '구조물 열 수 (양 끝 포함)', '열', 0, 'if(D, ceil(D/gapMax)+1, 0)'),
-      v('gap', '구조물 실제 간격', 'm', 0, 'D/max(1, beams-1)'),
-      v('per', '열당 스레드로드', '개', 0, 'if(W, ceil(W/pitch)+1, 0)'),
+      v('beams', '천장틀 줄 수', '줄', 0, 'if(D, max(0, ceil(D/gapMax)-1+2*beamEnds), 0)'),
+      v('gap', '천장틀 실제 간격', 'm', 0, 'D/max(1, ceil(D/gapMax))'),
+      v('per', '천장틀당 스레드로드', '개', 0, 'if(W, max(0, ceil(W/pitch)-1+2*rodEnds), 0)'),
+      v('rodGap', '스레드로드 실제 간격', 'm', 0, 'W/max(1, ceil(W/pitch))'),
       v('rodMax', '스레드로드 최장', 'm', 0, 'max(0, slabMax-ph)'),
       v('rodMin', '스레드로드 최단', 'm', 0, 'max(0, min(slabMin, slabMax)-ph)'),
       v('rodAvg', '스레드로드 평균 길이 (경사 직선 가정)', 'm', 0, '(rodMax+rodMin)/2'),
@@ -244,9 +247,9 @@ export const BUILTIN_TEMPLATES: TakeoffTemplate[] = [
     ],
     lines: [
       line('천장 판넬', '샌드위치 판넬 75T', '㎡', 'W*D*(1+loss/100)', 15000, '{W} × {D}m = {W*D}㎡, 손실 {loss}%'),
-      line('스레드로드 행거', 'W3/8", L {rodMin}~{rodMax}m, 앙카·너트·와샤 포함', '개소', 'beams*per', 9800, '구조물 {beams}열(간격 {gap}m) × {per}개({pitch}m당 1개), 평균 길이 {rodAvg}m, 총 {rodTotal}m'),
-      line('천장 구조물', 'C형강', 'm', 'beams*W*(1+loss/100)', 0, '{beams}열 × {W}m, 손실 {loss}%'),
-      line('행거 클램프', '구조물 고정용', '개', 'beams*per', 2300, '스레드로드 개소당 1개'),
+      line('스레드로드 행거', 'W3/8", L {rodMin}~{rodMax}m, 앙카·너트·와샤 포함', '개소', 'beams*per', 9800, '천장틀 {beams}줄(간격 {gap}m) × {per}개(간격 {rodGap}m), 평균 길이 {rodAvg}m, 총 {rodTotal}m'),
+      line('천장틀', '각파이프 □50×50×1.6t', 'm', 'beams*W*(1+loss/100)', 6200, '{beams}줄 × {W}m, 손실 {loss}%'),
+      line('행거 클램프', '천장틀 고정용', '개', 'beams*per', 2300, '스레드로드 개소당 1개'),
     ],
   },
   {

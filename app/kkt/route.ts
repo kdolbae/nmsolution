@@ -5,7 +5,7 @@ import { logoSvg } from '@/lib/brand-logo'
 import { withBrandLogo } from '@/lib/clients/proposal'
 
 /**
- * 금강변압기 공사제안서 페이지. /금강변압기 도 proxy.ts 가 여기로 rewrite 한다.
+ * 금강변압기 공사제안서 페이지 (대표 주소 /kkt). 예전 /금강변압기 링크는 proxy.ts 가 여기로 넘긴다.
  *
  * - 링크를 아는 사람도 비밀번호(KKT_PASSWORD)를 넣어야 볼 수 있다. 관리자도 같다.
  * - 본문에는 금액이 없다. 견적서는 맨 아래 칸에서 같은 비밀번호를 열 때마다 다시 넣어야
@@ -59,13 +59,10 @@ export async function POST(req: Request) {
     return lockPage(true)
   }
   const token = (await kktToken())!
-  // 들어온 주소(/금강변압기 또는 /kkt)로 되돌려 보낸다
-  const back = new URL(req.headers.get('referer') ?? '/kkt', req.url)
-  const location = back.origin === new URL(req.url).origin ? back.pathname : '/kkt'
   return new Response(null, {
     status: 303,
     headers: {
-      Location: location,
+      Location: '/kkt',
       'Set-Cookie': `${KKT_COOKIE}=${token}; Path=/; Max-Age=${KKT_COOKIE_MAX_AGE}; HttpOnly; Secure; SameSite=Lax`,
       ...NO_STORE,
     },

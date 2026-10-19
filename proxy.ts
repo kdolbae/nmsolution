@@ -48,12 +48,12 @@ export async function proxy(request: NextRequest) {
     return new NextResponse('Not Found', { status: 404, headers: { 'X-Robots-Tag': 'noindex, nofollow' } })
   }
 
-  // /금강변압기 는 앱·메신저마다 퍼센트 인코딩 대소문자나 방식이 달라 next.config rewrite 로는
-  // 놓치는 경우가 있다. 디코딩한 경로로 비교해 /kkt 로 넘긴다.
+  // 대표 주소는 /kkt 다. 예전에 보낸 /금강변압기 링크도 열리도록 /kkt 로 넘겨 주소창을 영문으로 바꾼다.
+  // 앱·메신저마다 퍼센트 인코딩 대소문자나 방식이 달라 디코딩한 경로로 비교한다.
   if (decodedPath(pathname).normalize('NFC') === KKT_KOREAN_PATH) {
     const url = request.nextUrl.clone()
     url.pathname = '/kkt'
-    return NextResponse.rewrite(url)
+    return NextResponse.redirect(url, 308)
   }
 
   return NextResponse.next()

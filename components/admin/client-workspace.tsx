@@ -25,6 +25,7 @@ import {
 import { Field } from '@/components/admin/form'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { TakeoffPanel } from '@/components/admin/takeoff-panel'
+import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
@@ -73,6 +74,7 @@ export function ClientWorkspace({
   initialTab,
   files = [],
   videos = [],
+  takeoffTemplates = [],
   versions,
   finalized,
   view,
@@ -85,6 +87,8 @@ export function ClientWorkspace({
   files?: { file: string; label: string }[]
   /** 현장 영상(lib/clients/media.ts, R2) */
   videos?: { url: string; label: string }[]
+  /** 적산 템플릿 (기본 + 저장한 것) */
+  takeoffTemplates?: TakeoffTemplate[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
@@ -213,6 +217,7 @@ export function ClientWorkspace({
               locked={locked}
               onContent={(html) => (live.current.quote = html)}
               onPresent={() => setPresent('quote')}
+              takeoffTemplates={takeoffTemplates}
             />
           </div>
         </>
@@ -614,6 +619,7 @@ function QuotePanel({
   locked,
   onContent,
   onPresent,
+  takeoffTemplates,
 }: {
   client: ClientInfo
   initialQuote: Quote
@@ -622,6 +628,7 @@ function QuotePanel({
   locked: boolean
   onContent: (html: string) => void
   onPresent: () => void
+  takeoffTemplates: TakeoffTemplate[]
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -732,6 +739,7 @@ function QuotePanel({
         <TakeoffPanel
           value={q.takeoff}
           sections={q.sections}
+          templates={takeoffTemplates}
           onChange={(takeoff) => update({ takeoff })}
           onApply={(sections) => update({ sections })}
         />

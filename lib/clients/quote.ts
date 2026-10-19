@@ -7,6 +7,7 @@
  */
 
 import { logoSvg } from '@/lib/brand-logo'
+import type { Takeoff } from '@/lib/clients/takeoff'
 
 /** 구분. 재료비·노무비 외에는 모두 원가계산에서 경비로 묶인다 */
 export const ITEM_KINDS = ['재료비', '노무비', '장비', '안전시설', '운반비', '경비'] as const
@@ -90,6 +91,8 @@ export type Quote = {
   optionLabel?: string
   /** 감액 표의 이름. 없으면 '필요 없을 경우 감액' */
   deductLabel?: string
+  /** 적산 입력값 (lib/clients/takeoff.ts). 인쇄에는 쓰지 않고 견적 줄을 만들 때만 쓴다 */
+  takeoff?: Takeoff
 }
 
 export type QuoteRecipient = {

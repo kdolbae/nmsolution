@@ -25,6 +25,9 @@ import {
   X,
 } from 'lucide-react'
 import { Field } from '@/components/admin/form'
+import { NumInput, TextIn } from '@/components/admin/inputs'
+import { TakeoffPanel } from '@/components/admin/takeoff-panel'
+import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
@@ -73,6 +76,7 @@ export function ClientWorkspace({
   initialTab,
   files = [],
   videos = [],
+  takeoffTemplates = [],
   versions,
   finalized,
   view,
@@ -85,6 +89,8 @@ export function ClientWorkspace({
   files?: { file: string; label: string }[]
   /** 현장 영상(lib/clients/media.ts, R2) */
   videos?: { url: string; label: string }[]
+  /** 적산 템플릿 (기본 + 저장한 것) */
+  takeoffTemplates?: TakeoffTemplate[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
@@ -214,6 +220,7 @@ export function ClientWorkspace({
               locked={locked}
               onContent={(html) => (live.current.quote = html)}
               onPresent={() => setPresent('quote')}
+              takeoffTemplates={takeoffTemplates}
             />
           </div>
         </>
@@ -620,34 +627,6 @@ function ProposalPanel({
 
 // ---------- 견적서 ----------
 
-function NumInput({ value, onChange, className }: { value: number; onChange: (n: number) => void; className?: string }) {
-  // 입력 중에는 친 글자를 그대로 두고, 칸을 벗어나면 천 단위 쉼표로 보여 준다
-  const [text, setText] = useState<string | null>(null)
-  return (
-    <input
-      inputMode="decimal"
-      value={text ?? (value ? value.toLocaleString('ko-KR', { maximumFractionDigits: 3 }) : '')}
-      onBlur={() => setText(null)}
-      onChange={(e) => {
-        setText(e.target.value)
-        onChange(Number(e.target.value.replace(/[^\d.-]/g, '')) || 0)
-      }}
-      className={cn('h-8 w-full border border-input bg-background px-2 text-right text-sm tabular-nums', className)}
-    />
-  )
-}
-
-function TextIn({ value, onChange, className, placeholder }: { value: string; onChange: (v: string) => void; className?: string; placeholder?: string }) {
-  return (
-    <input
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn('h-8 w-full border border-input bg-background px-2 text-sm', className)}
-    />
-  )
-}
-
 function QuotePanel({
   client,
   initialQuote,
@@ -656,6 +635,7 @@ function QuotePanel({
   locked,
   onContent,
   onPresent,
+  takeoffTemplates,
 }: {
   client: ClientInfo
   initialQuote: Quote
@@ -664,6 +644,7 @@ function QuotePanel({
   locked: boolean
   onContent: (html: string) => void
   onPresent: () => void
+  takeoffTemplates: TakeoffTemplate[]
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -770,6 +751,14 @@ function QuotePanel({
             <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
           </div>
         </section>
+
+        <TakeoffPanel
+          value={q.takeoff}
+          sections={q.sections}
+          templates={takeoffTemplates}
+          onChange={(takeoff) => update({ takeoff })}
+          onApply={(sections) => update({ sections })}
+        />
 
         {q.sections.map((s, si) => {
           const c = calc.sections[si]

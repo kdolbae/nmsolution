@@ -63,6 +63,14 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   const shareToken = shareLeft ? await portalToken(slug) : null
   if (!shareToken && !(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) return loginPage(`${client.name} 공사 자료`, false)
 
+  const html = portalPageHtml(client)
+  const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
+  if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
+  return new Response(html, { headers })
+}
+
+/** 업체 페이지 HTML: 제안서 + 견적서(엔엠솔루션 양식) + 휴대폰 폭 맞춤 + PDF 저장 버튼 */
+export function portalPageHtml(client: NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>): string {
   const summary = quoteSummaryHtml(client.quote)
   const sheet = `<div class="quote-sheet">${renderQuote(client.quote, client)}</div>`
   const hasSummarySlot = client.proposalHtml.includes('<!--NM:QUOTE-SUMMARY-->')
@@ -75,10 +83,8 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   const head = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
   html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, () => `${head}</head>`) : head + html
   html = keepInside(html)
-  html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${FIT_QUOTE}</body>`) : html + FIT_QUOTE
-  const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
-  if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
-  return new Response(html, { headers })
+  html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${FIT_QUOTE}${PDF_BUTTON}</body>`) : html + FIT_QUOTE + PDF_BUTTON
+  return html
 }
 
 /** 휴대폰처럼 좁은 화면에서는 견적서(A4 양식)를 옆으로 밀지 않아도 되게 화면 폭에 맞춰 줄인다. 두 손가락으로 확대해 볼 수 있다 */
@@ -86,6 +92,18 @@ const FIT_QUOTE = `<style>@media (max-width:720px){.quote-sheet{overflow:hidden!
 <p class="quote-fit-hint" style="display:none;margin:8px 0 0;font-size:13px;color:#6b7280">화면 폭에 맞춰 줄인 견적서임. 두 손가락으로 벌리면 크게 볼 수 있음.</p>
 <script>(function(){function fit(){document.querySelectorAll('.quote-sheet').forEach(function(w){var n=w.firstElementChild;if(!n)return;n.style.zoom='';var cs=getComputedStyle(w),avail=w.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),r=avail/n.scrollWidth;if(r<1)n.style.zoom=String(r);var h=document.querySelector('.quote-fit-hint');if(h&&h.parentNode!==w.parentNode)w.parentNode.insertBefore(h,w.nextSibling)})}
 window.addEventListener('resize',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})()</script>`
+
+/**
+ * PDF 저장 버튼(오른쪽 아래 고정). 접힌 내역을 펼치고 사진을 다 불러온 뒤 인쇄 창을 띄운다.
+ * 인쇄 창에서 'PDF로 저장'을 고르면 페이지 그대로(제안서 + 견적서) PDF 가 된다. 인쇄물에는 버튼이 안 나온다.
+ */
+const PDF_BUTTON = `<style>.nm-pdf{position:fixed;right:16px;bottom:16px;z-index:50;display:inline-flex;align-items:center;gap:8px;font:inherit;font-family:Pretendard,'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;padding:12px 18px;border:0;border-radius:999px;background:#0F2A44;color:#fff;box-shadow:0 6px 18px rgba(15,42,68,.28);cursor:pointer}
+.nm-pdf:hover{background:#163a5c}.nm-pdf svg{width:18px;height:18px}@media print{h1,h2,h3,h4{break-after:avoid-page}figure,tr{break-inside:avoid}.nm-pdf,.quote-fit-hint{display:none!important}.quote-sheet .nmq{zoom:1!important;min-width:0!important}}</style>
+<button type="button" class="nm-pdf" title="인쇄 창에서 'PDF로 저장'을 고르면 PDF 파일로 저장됨"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>PDF 저장</button>
+<script>(function(){var b=document.querySelector('.nm-pdf');if(!b)return;b.addEventListener('click',function(){
+document.querySelectorAll('details').forEach(function(d){d.open=true});
+var imgs=[].slice.call(document.images);imgs.forEach(function(i){i.loading='eager'});
+Promise.all(imgs.map(function(i){return i.complete?0:new Promise(function(r){i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true})})})).then(function(){setTimeout(function(){window.print()},150)})})})()</script>`
 
 /** 페이지 밖으로 나가는 링크를 없앤다. 페이지 안 이동(#…)만 남기고 나머지 a 는 글자만 남긴다 */
 function keepInside(html: string): string {

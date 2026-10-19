@@ -248,7 +248,7 @@ export const BUILTIN_TEMPLATES: TakeoffTemplate[] = [
     lines: [
       line('천장 판넬', '샌드위치 판넬 75T', '㎡', 'W*D*(1+loss/100)', 15000, '{W} × {D}m = {W*D}㎡, 손실 {loss}%'),
       line('스레드로드 행거', 'W3/8", L {rodMin}~{rodMax}m, 앙카·너트·와샤 포함', '개소', 'beams*per', 9800, '천장틀 {beams}줄(간격 {gap}m) × {per}개(간격 {rodGap}m), 평균 길이 {rodAvg}m, 총 {rodTotal}m'),
-      line('천장틀', 'C형강', 'm', 'beams*W*(1+loss/100)', 0, '{beams}줄 × {W}m, 손실 {loss}%'),
+      line('천장틀', 'C형강 100×50×20×2.1t', 'm', 'beams*W*(1+loss/100)', 4800, '{beams}줄 × {W}m, 손실 {loss}%'),
       line('행거 클램프', '천장틀 고정용', '개', 'beams*per', 2300, '스레드로드 개소당 1개'),
     ],
   },

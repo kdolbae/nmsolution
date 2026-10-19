@@ -1,7 +1,7 @@
 /**
  * 업체용 링크(예: nm-solution.co.kr/sinil) 접근 쿠키.
  *
- * 업체 아이디·비밀번호는 clients 표(portal_*)에 두고, 맞으면 업체 주소별 쿠키를 준다.
+ * 업체 비밀번호는 clients 표(portal_*)에 두고, 맞으면 업체 주소별 쿠키를 준다.
  * 쿠키 값은 주소와 BETTER_AUTH_SECRET 로 만든 해시라 서버 밖에서는 만들 수 없다. 비밀값이 없으면 아무도 못 들어간다.
  * 페이지(lib/clients/portal-route.ts)와 사진(proxy.ts, /client-assets/<주소>/) 모두 이 쿠키를 확인한다.
  * proxy 에서도 쓰므로 Node 전용 API 없이 Web Crypto 만 쓴다.

@@ -6,6 +6,7 @@ import {
   Bold,
   Check,
   Code,
+  Copy,
   Download,
   Expand,
   FileText,
@@ -17,6 +18,7 @@ import {
   Pencil,
   Plus,
   Printer,
+  FileDown,
   RotateCcw,
   Trash2,
   Undo2,
@@ -185,6 +187,7 @@ export function ClientWorkspace({
           ))}
         </div>
         <div className="mb-2 flex gap-2">
+          <PdfDownloadButton clientId={client.id} version={view?.no ?? latest} />
           <Button variant="outline" className="rounded-none" onClick={() => setPresent(tab)} title="제안서·견적서를 화면 전체로 띄웁니다">
             <MonitorPlay /> 프레젠테이션
           </Button>
@@ -259,6 +262,7 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
   const [portalPassword, setPortalPassword] = useState('')
+  const [copied, setCopied] = useState(false)
   const set = (k: keyof ClientInfo) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const save = () =>
@@ -275,6 +279,12 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
         setError(e instanceof Error ? e.message : '저장하지 못했습니다.')
       }
     })
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(`https://nm-solution.co.kr/${client.portalSlug}`).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   const remove = () => {
     if (!confirm(`'${client.name}' 업체와 제안서·견적서를 모두 지울까요? 되돌릴 수 없습니다.`)) return
@@ -298,7 +308,14 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
               <a href={`/${client.portalSlug}`} target="_blank" rel="noreferrer" className="font-medium text-electric underline-offset-2 hover:underline">
                 nm-solution.co.kr/{client.portalSlug}
               </a>
-              <span className="text-muted-foreground"> · 아이디 {client.portalLogin || '미정'}{client.portalPasswordSet ? '' : ' · 비밀번호 미정'}</span>
+              <button
+                type="button"
+                onClick={copyLink}
+                className="ml-2 inline-flex items-center gap-1 border border-border px-1.5 py-0.5 align-middle text-xs hover:bg-muted"
+              >
+                {copied ? <Check className="size-3" /> : <Copy className="size-3" />} {copied ? '복사됨' : '링크 복사'}
+              </button>
+              <span className="text-muted-foreground"> · 비밀번호만 입력해 열람{client.portalPasswordSet ? '' : ' · 비밀번호 미정'}</span>
             </p>
           )}
         </div>
@@ -322,12 +339,11 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
               placeholder="sinil"
               hint="nm-solution.co.kr/주소 로 열림. 새 주소는 사이트 반영이 한 번 필요함"
             />
-            <Field label="업체용 링크 아이디" value={form.portalLogin} onChange={set('portalLogin')} placeholder="sinil" />
             <Field
               label="업체용 링크 새 비밀번호"
               value={portalPassword}
               onChange={setPortalPassword}
-              hint={form.portalPasswordSet ? '비워 두면 지금 비밀번호를 그대로 씀' : '아직 비밀번호가 없음'}
+              hint={form.portalPasswordSet ? '업체는 이 비밀번호만 넣고 들어옴. 비워 두면 지금 비밀번호를 그대로 씀' : '업체는 이 비밀번호만 넣고 들어옴. 아직 비밀번호가 없음'}
             />
             <div className="sm:col-span-2">
               <Field label="메모·조사 자료 (내부용, 인쇄 안 됨)" value={form.memo} onChange={set('memo')} multiline rows={8} />
@@ -916,6 +932,36 @@ function QuotePanel({
         <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
       </div>
     </div>
+  )
+}
+
+// ---------- PDF 다운로드 ----------
+
+/** 제안서 + 견적서를 서버에서 PDF 로 만들어 바로 내려받는다 (인쇄 창 없이). 저장된 내용 기준 */
+function PdfDownloadButton({ clientId, version }: { clientId: number; version: number }) {
+  const [busy, setBusy] = useState(false)
+  const download = async () => {
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/pdf?docs=both${version ? `&version=${version}` : ''}`)
+      if (!res.ok) throw new Error(await res.text())
+      const name = decodeURIComponent(res.headers.get('Content-Disposition')?.match(/filename\*=UTF-8''([^;]+)/)?.[1] ?? 'proposal.pdf')
+      const url = URL.createObjectURL(await res.blob())
+      const a = document.createElement('a')
+      a.href = url
+      a.download = name
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (e) {
+      alert(`PDF를 만들지 못했습니다. ${e instanceof Error ? e.message : ''}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Button variant="outline" className="rounded-none" onClick={download} disabled={busy} title="제안서 + 견적서를 PDF 파일로 바로 내려받습니다 (저장된 내용 기준)">
+      {busy ? <Loader2 className="animate-spin" /> : <FileDown />} {busy ? 'PDF 만드는 중…' : 'PDF 다운로드'}
+    </Button>
   )
 }
 

@@ -9,7 +9,8 @@ import { verifyPortalPassword } from './portal-password'
 /**
  * 업체용 링크 (예: app/sinil/route.ts → nm-solution.co.kr/sinil).
  *
- * - 업체 아이디·비밀번호(관리자 업체 정보에서 정함)로 들어온다. 통과하면 7일 동안 기억한다.
+ * - 견적 제출용 링크라 비밀번호(관리자 업체 정보에서 정함)만 넣으면 들어온다. 통과하면 7일 동안 기억한다.
+ *   계약서·공정표처럼 아이디가 필요한 자료는 협력업체 포털(/portal)에서 따로 본다.
  * - 본문은 업체의 제안서 탭 HTML이고, <!--NM:QUOTE--> 자리에 지금 견적서를 엔엠솔루션 양식으로 넣는다.
  *   <!--NM:QUOTE-SUMMARY--> 가 있으면 그 자리에 금액 요약 카드를 따로 넣는다(없으면 견적서 위에 붙임).
  * - 사진은 /client-assets/<주소>/ 에 두고 proxy.ts 가 같은 쿠키를 확인한다.
@@ -41,12 +42,10 @@ button{width:100%;margin-top:16px;font:inherit;font-weight:700;font-size:15px;pa
 <form method="post">
 <div class="mark">${logoSvg('horizontal', { height: '100%' })}</div>
 <h1>${esc(title)}</h1>
-<p>엔엠솔루션이 제출한 공사 자료임. 전달받은 아이디와 비밀번호를 입력해야 열람할 수 있음.</p>
-<label for="u">아이디</label>
-<input id="u" name="login" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus>
+<p>엔엠솔루션이 제출한 공사 자료임. 전달받은 비밀번호를 입력해야 열람할 수 있음.</p>
 <label for="p">비밀번호</label>
-<input id="p" name="password" type="password" autocomplete="current-password" required>
-${error ? '<div class="err" role="alert">아이디 또는 비밀번호가 맞지 않음.</div>' : ''}
+<input id="p" name="password" type="password" inputmode="text" autocomplete="current-password" required autofocus>
+${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' : ''}
 <button type="submit">열기</button>
 </form></body></html>`
   return new Response(html, { status: error ? 401 : 200, headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
@@ -102,12 +101,8 @@ export async function portalPost(req: Request, slug: string): Promise<Response> 
   const client = await getClientBySlug(slug)
   if (!client) return notFound()
   const form = await req.formData().catch(() => null)
-  const login = String(form?.get('login') ?? '').trim().toLowerCase()
-  const password = String(form?.get('password') ?? '')
-  const ok =
-    !!client.portalLogin &&
-    login === client.portalLogin.toLowerCase() &&
-    (await verifyPortalPassword(password, client.portalPasswordHash))
+  const password = String(form?.get('password') ?? '').trim()
+  const ok = !!password && (await verifyPortalPassword(password, client.portalPasswordHash))
   const token = ok ? await portalToken(slug) : null
   if (!token) {
     // 비밀번호가 짧을 수 있어 연속 대입을 늦춘다

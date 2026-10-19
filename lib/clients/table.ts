@@ -191,7 +191,7 @@ export function ensureClients(): Promise<void> {
       // 어드리밍 2~4차: 이미 등록된 업체를 새 견적·제안서로 한 번 갱신한다. 견적번호는 그대로 둔다
       await seedOnce(ADREAMING_REV2_KEY, () => refreshAdreaming('박공지붕, 판넬 공사 한 공종, 각파이프·스카이잭·슬라이딩 도어 단가, 전기 배치도·자재 참고'))
       await seedOnce(ADREAMING_REV3_KEY, () => refreshAdreaming('내부 몰딩 제외'))
-      await seedOnce(ADREAMING_REV4_KEY, () => refreshAdreaming('천장틀 각파이프 5열(1.5m 간격)·스레드로드 45개소, 천장틀 배치도 추가'))
+      await seedOnce(ADREAMING_REV4_KEY, () => refreshAdreaming('천장틀 C형강 짧은 방향 11열·스레드로드 33개소, 천장틀 배치도 추가'))
       await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
     })().catch((e) => {
       ready = null

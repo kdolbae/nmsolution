@@ -15,7 +15,6 @@ export type ClientFile = {
 }
 
 const PDF = 'application/pdf'
-const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 const FILES: Record<string, { dir: string; files: ClientFile[] }> = {
   '주식회사 금강변압기': {
@@ -24,7 +23,6 @@ const FILES: Record<string, { dir: string; files: ClientFile[] }> = {
       { file: 'submission.pdf', label: '제출 서류 묶음 (표지 + 작업계획서 + 견적서)', download: '공사제안서_금강변압기_표지+작업계획서+견적서.pdf', type: PDF },
       { file: 'plan.pdf', label: '작업계획서', download: '작업계획서_금강변압기_진공건조로_회전안착_용접.pdf', type: PDF },
       { file: 'quote.pdf', label: '견적서', download: '견적서_금강변압기_진공건조로_회전안착_용접.pdf', type: PDF },
-      { file: 'quote.xlsx', label: '견적서 (엑셀)', download: '견적서_금강변압기_진공건조로_회전안착_용접.xlsx', type: XLSX },
     ],
   },
 }

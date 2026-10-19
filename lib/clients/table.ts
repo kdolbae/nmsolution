@@ -8,6 +8,8 @@ import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KE
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
+import { hashPortalPassword } from './portal-password'
+import { phoneDigits } from '@/lib/quote'
 
 /**
  * 업체 관리(제안서·견적서) 표. sql/007_clients.sql, sql/008_client_versions.sql 과 같은 모양.
@@ -186,12 +188,42 @@ export function ensureClients(): Promise<void> {
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
       })
+      await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
     })().catch((e) => {
       ready = null
       throw e
     })
   }
   return ready
+}
+
+/**
+ * 어드리밍 담당자는 홈페이지 견적 문의(quote_requests)에서 가져온다(2026-10-19 kevin).
+ * 담당자 이름·연락처를 업체 정보에 넣고, 연락처 뒷번호 4자리를 업체 링크 비밀번호로 둔다.
+ * 담당자와 비밀번호가 둘 다 비어 있을 때만 채우므로, 관리자가 바꾼 값은 덮어쓰지 않는다.
+ */
+async function fillAdreamingContact() {
+  const target = await pool.query<{ id: string }>(
+    `SELECT id FROM clients WHERE portal_slug = $1 AND COALESCE(contact_person, '') = '' AND portal_password_hash IS NULL`,
+    [ADREAMING_CLIENT.portalSlug],
+  )
+  if (!target.rows[0]) return
+  const table = await pool.query<{ ok: boolean }>(`SELECT to_regclass('quote_requests') IS NOT NULL AS ok`)
+  if (!table.rows[0]?.ok) return
+  const found = await pool.query<{ name: string; phone: string }>(
+    `SELECT name, phone FROM quote_requests
+     WHERE company ILIKE '%어드리밍%' OR company ILIKE '%adreaming%' OR name ILIKE '%어드리밍%' OR message ILIKE '%어드리밍%'
+     ORDER BY created_at DESC LIMIT 1`,
+  )
+  const req = found.rows[0]
+  const digits = req ? phoneDigits(req.phone) : ''
+  if (!req || digits.length < 4) return
+  await pool.query(`UPDATE clients SET contact_person = $2, phone = $3, portal_password_hash = $4 WHERE id = $1`, [
+    target.rows[0].id,
+    req.name,
+    req.phone,
+    await hashPortalPassword(digits.slice(-4)),
+  ])
 }
 
 /**

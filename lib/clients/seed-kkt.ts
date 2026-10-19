@@ -5,8 +5,8 @@ import { discountForGrand, type Quote, type QuoteSection } from './quote'
  * 처음엔 /kkt 공개 페이지의 견적 내역에서 옮겼고, 지금은 공개 페이지 견적(kkt-public-quote.ts)도 이 값으로 만든다.
  * 2026-10-16 kevin: 4개 공정(베이스·인양·사상용접·전체 인양) 공정 합계 65,368,000원, 가격 조정(NEGO) 1,731,636원,
  * 공급가액 63,636,364원 + 부가세 6,363,636원 = 합계 70,000,000원.
- * 2026-10-19 kevin: 크레인은 250TON 1대만(100TON·60TON 삭제), 베이스는 기존 조방 위 H빔 10m 2본 + 양 끝 3m 빔,
- * 합계 70,000,000원은 그대로. 공정 합계 67,058,000원, 가격 조정(NEGO) 3,421,636원.
+ * 2026-10-19 kevin: 베이스는 기존 조방 위 H빔 10m 2본 + 양 끝 3m 빔, 완성품 이동 추가, 합계 70,000,000원은 그대로.
+ * 회전·안착은 100TON·70TON 2대, 완성품 전체 인양만 250TON 1대.
  */
 export const KKT_CLIENT = {
   name: '주식회사 금강변압기',
@@ -59,7 +59,7 @@ export const KKT_QUOTE: Quote = {
     {
       "id": "s1",
       "name": "인양 작업",
-      "desc": "진공건조로 2기 회전·베이스 안착(1일, 250TON 1대), 용접면 밀착 이동(2일), 작업구역 안전펜스",
+      "desc": "진공건조로 2기 회전·베이스 안착(1일, 100TON·70TON 2대), 용접면 밀착 이동(2일), 작업구역 안전펜스",
       "items": [
         {
           "id": "i1",
@@ -95,10 +95,20 @@ export const KKT_QUOTE: Quote = {
           "id": "i4",
           "kind": "장비",
           "name": "크레인",
-          "spec": "250TON",
+          "spec": "100TON",
           "unit": "대·일",
           "qty": 1,
-          "price": 5500000,
+          "price": 2400000,
+          "note": "안착일 1일"
+        },
+        {
+          "id": "i5",
+          "kind": "장비",
+          "name": "크레인",
+          "spec": "70TON",
+          "unit": "대·일",
+          "qty": 1,
+          "price": 1700000,
           "note": "안착일 1일"
         },
         {
@@ -358,9 +368,9 @@ export const KKT_QUOTE: Quote = {
     "profit": 15
   },
   "truncate": true,
-  "discount": 3421636,
+  "discount": 1731636,
   "discountLabel": "가격 조정 (NEGO)",
-  "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n크레인은 250TON 1대로 인양 작업(회전·안착)과 전체 인양(완성품 이동)을 모두 수행함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.03, 작업일 12일 (일요일 휴무)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양 작업 완료 후 10%",
+  "notes": "전기 수전, 배관·닥트 해체·복구, 보온, 도장, 시운전은 포함하지 않음.\n인양 작업(회전·안착) 크레인은 100TON·70TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 2026.10.21 ~ 11.03, 작업일 12일 (일요일 휴무)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양 작업 완료 후 10%",
   "validDays": 30
 }
 
@@ -393,10 +403,11 @@ export const KKT_CRANE_NOTE =
   '인양 작업 크레인은 100TON·60TON 2대 기준이며, 현장 상황에 따라 상위 크레인 1대(200TON, 호이스트 30t 보조 조건)로 작업할 수 있음. 이 경우에도 본 견적 금액 안에서 처리하며 추가비용은 없음.'
 const KKT_250_SECTIONS = ['베이스 작업', '인양 작업', '전체 인양 작업']
 const KKT_NOTE_LINES = KKT_QUOTE.notes.split('\n')
-const KKT_250_NOTES: [string, string][] = ['인양 작업 크레인은', '공사 기간:'].map((head) => [
-  head,
-  KKT_NOTE_LINES.find((l) => l.startsWith(head === '인양 작업 크레인은' ? '크레인은 250TON' : head))!,
-])
+/** [바꿀 줄의 시작 문구들, 새 줄] */
+const KKT_250_NOTES: [string[], string][] = [
+  [['인양 작업 크레인은', '크레인은 250TON'], KKT_NOTE_LINES.find((l) => l.startsWith('인양 작업(회전·안착) 크레인은'))!],
+  [['공사 기간:'], KKT_NOTE_LINES.find((l) => l.startsWith('공사 기간:'))!],
+]
 const KKT_FULL_LIFT = KKT_QUOTE.sections.find((s) => s.name === '전체 인양 작업')!
 
 /**
@@ -494,6 +505,7 @@ export function upgradeKkt(
     items: s.items.map((i) => {
       const n = KKT_CRANE_ITEM_NOTES[i.spec]
       if (s.name !== '인양 작업' || i.name !== '크레인' || !n || i.note !== '안착일 1일') return i
+      if (!s.items.some((x) => x.spec === '60TON')) return i
       craneNoted = true
       return { ...i, note: n }
     }),
@@ -518,25 +530,26 @@ export function upgradeKkt(
     html = freshProposal()
     done.push('제안서 B안 삭제')
   }
-  // 2026-10-19 kevin: 250TON 1대 단독(인양 작업의 100TON·60TON 줄이 남아 있을 때만), 합계 70,000,000원 유지
+  // 2026-10-19 kevin: 회전·안착은 100TON·70TON 2대, 완성품 이동만 250TON(인양 작업 크레인이 60TON 또는 250TON일 때만),
+  // 베이스 3m 빔, 합계 70,000,000원 유지
   let { date } = quote
   const lift = next.find((s) => s.name === '인양 작업')
-  if (lift?.items.some((i) => i.name === '크레인' && i.spec === '60TON')) {
+  if (lift?.items.some((i) => i.name === '크레인' && (i.spec === '60TON' || i.spec === '250TON'))) {
     next = next.map((s) => {
       if (!KKT_250_SECTIONS.includes(s.name)) return s
       const seed = KKT_QUOTE.sections.find((x) => x.name === s.name)!
       return { ...s, desc: seed.desc, items: seed.items.map((i) => ({ ...i })) }
     })
     const lines = notes.split('\n')
-    for (const [head, line] of KKT_250_NOTES) {
-      const k = lines.findIndex((l) => l.startsWith(head))
+    for (const [heads, line] of KKT_250_NOTES) {
+      const k = lines.findIndex((l) => heads.some((h) => l.startsWith(h)))
       if (k >= 0) lines[k] = line
     }
     notes = lines.join('\n')
     date = KKT_QUOTE.date
     discount = discountForGrand({ ...quote, sections: next }, KKT_GRAND) ?? discount
     html = freshProposal()
-    done.push('크레인 250TON 1대·베이스 3m 빔·완성품 이동(합계 70,000,000원 유지), 제안서 최종안으로 교체')
+    done.push('회전·안착 크레인 100TON·70TON, 완성품 이동 250TON·베이스 3m 빔(합계 70,000,000원 유지), 제안서 최종안으로 교체')
   }
   if (!done.length) return null
   return { quote: { ...quote, title, notes, date, sections: next, discount }, proposalHtml: html, summary: `자동 정리: ${done.join(', ')}` }

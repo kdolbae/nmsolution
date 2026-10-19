@@ -5,6 +5,7 @@ import { esc, withBrandLogo } from './proposal'
 import { getClientBySlug } from './table'
 import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie, validShareKey } from './portal'
 import { verifyPortalPassword } from './portal-password'
+import { htmlToPdf, pdfResponse } from './pdf'
 
 /**
  * 업체용 링크 (예: app/sinil/route.ts → nm-solution.co.kr/sinil).
@@ -63,6 +64,11 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   const shareToken = shareLeft ? await portalToken(slug) : null
   if (!shareToken && !(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) return loginPage(`${client.name} 공사 자료`, false)
 
+  // ?pdf=1: 이 페이지 그대로 PDF 파일로 내려받는다 (PDF 저장 버튼)
+  if (!shareToken && new URL(req.url).searchParams.get('pdf') === '1') {
+    const pdf = await htmlToPdf(portalPageHtml(client), req)
+    return pdfResponse(pdf, `${client.name} 제안서·견적서 ${client.quote.number}.pdf`)
+  }
   const html = portalPageHtml(client)
   const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
   if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
@@ -94,16 +100,14 @@ const FIT_QUOTE = `<style>@media (max-width:720px){.quote-sheet{overflow:hidden!
 window.addEventListener('resize',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})()</script>`
 
 /**
- * PDF 저장 버튼(오른쪽 아래 고정). 접힌 내역을 펼치고 사진을 다 불러온 뒤 인쇄 창을 띄운다.
- * 인쇄 창에서 'PDF로 저장'을 고르면 페이지 그대로(제안서 + 견적서) PDF 가 된다. 인쇄물에는 버튼이 안 나온다.
+ * PDF 저장 버튼(오른쪽 아래 고정). 누르면 서버가 만든 PDF 파일(?pdf=1)을 바로 내려받는다. 인쇄물에는 버튼이 안 나온다.
+ * 인쇄 CSS: 휴대폰 폭 맞춤 축소를 풀고, 제목이 쪽 끝에 홀로 남지 않게 한다.
  */
-const PDF_BUTTON = `<style>.nm-pdf{position:fixed;right:16px;bottom:16px;z-index:50;display:inline-flex;align-items:center;gap:8px;font:inherit;font-family:Pretendard,'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;padding:12px 18px;border:0;border-radius:999px;background:#0F2A44;color:#fff;box-shadow:0 6px 18px rgba(15,42,68,.28);cursor:pointer}
-.nm-pdf:hover{background:#163a5c}.nm-pdf svg{width:18px;height:18px}@media print{h1,h2,h3,h4{break-after:avoid-page}figure,tr{break-inside:avoid}.nm-pdf,.quote-fit-hint{display:none!important}.quote-sheet .nmq{zoom:1!important;min-width:0!important}}</style>
-<button type="button" class="nm-pdf" title="인쇄 창에서 'PDF로 저장'을 고르면 PDF 파일로 저장됨"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>PDF 저장</button>
-<script>(function(){var b=document.querySelector('.nm-pdf');if(!b)return;b.addEventListener('click',function(){
-document.querySelectorAll('details').forEach(function(d){d.open=true});
-var imgs=[].slice.call(document.images);imgs.forEach(function(i){i.loading='eager'});
-Promise.all(imgs.map(function(i){return i.complete?0:new Promise(function(r){i.addEventListener('load',r,{once:true});i.addEventListener('error',r,{once:true})})})).then(function(){setTimeout(function(){window.print()},150)})})})()</script>`
+const PDF_BUTTON = `<style>.nm-pdf{position:fixed;right:16px;bottom:16px;z-index:50;display:inline-flex;align-items:center;gap:8px;font-family:Pretendard,'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;padding:12px 18px;border-radius:999px;background:#0F2A44;color:#fff!important;text-decoration:none!important;box-shadow:0 6px 18px rgba(15,42,68,.28)}
+.nm-pdf:hover{background:#163a5c}.nm-pdf svg{width:18px;height:18px}.nm-pdf[aria-busy=true]{opacity:.7;pointer-events:none}
+@media print{h1,h2,h3,h4{break-after:avoid-page}figure,tr{break-inside:avoid}.nm-pdf,.quote-fit-hint{display:none!important}.quote-sheet .nmq{zoom:1!important;min-width:0!important}}</style>
+<a class="nm-pdf" href="?pdf=1" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>PDF 다운로드</span></a>
+<script>(function(){var a=document.querySelector('.nm-pdf');if(!a)return;a.addEventListener('click',function(){var t=a.querySelector('span');a.setAttribute('aria-busy','true');t.textContent='PDF 만드는 중…';setTimeout(function(){a.removeAttribute('aria-busy');t.textContent='PDF 다운로드'},15000)})})()</script>`
 
 /** 페이지 밖으로 나가는 링크를 없앤다. 페이지 안 이동(#…)만 남기고 나머지 a 는 글자만 남긴다 */
 function keepInside(html: string): string {

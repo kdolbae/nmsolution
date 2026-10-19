@@ -18,6 +18,7 @@ import {
   Pencil,
   Plus,
   Printer,
+  FileDown,
   RotateCcw,
   Trash2,
   Undo2,
@@ -180,6 +181,7 @@ export function ClientWorkspace({
           ))}
         </div>
         <div className="mb-2 flex gap-2">
+          <PdfDownloadButton clientId={client.id} version={view?.no ?? latest} />
           <Button variant="outline" className="rounded-none" onClick={() => setPresent(tab)} title="제안서·견적서를 화면 전체로 띄웁니다">
             <MonitorPlay /> 프레젠테이션
           </Button>
@@ -941,6 +943,36 @@ function QuotePanel({
         <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
       </div>
     </div>
+  )
+}
+
+// ---------- PDF 다운로드 ----------
+
+/** 제안서 + 견적서를 서버에서 PDF 로 만들어 바로 내려받는다 (인쇄 창 없이). 저장된 내용 기준 */
+function PdfDownloadButton({ clientId, version }: { clientId: number; version: number }) {
+  const [busy, setBusy] = useState(false)
+  const download = async () => {
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/pdf?docs=both${version ? `&version=${version}` : ''}`)
+      if (!res.ok) throw new Error(await res.text())
+      const name = decodeURIComponent(res.headers.get('Content-Disposition')?.match(/filename\*=UTF-8''([^;]+)/)?.[1] ?? 'proposal.pdf')
+      const url = URL.createObjectURL(await res.blob())
+      const a = document.createElement('a')
+      a.href = url
+      a.download = name
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (e) {
+      alert(`PDF를 만들지 못했습니다. ${e instanceof Error ? e.message : ''}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Button variant="outline" className="rounded-none" onClick={download} disabled={busy} title="제안서 + 견적서를 PDF 파일로 바로 내려받습니다 (저장된 내용 기준)">
+      {busy ? <Loader2 className="animate-spin" /> : <FileDown />} {busy ? 'PDF 만드는 중…' : 'PDF 다운로드'}
+    </Button>
   )
 }
 

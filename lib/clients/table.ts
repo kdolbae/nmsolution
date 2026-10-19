@@ -199,7 +199,7 @@ export function ensureClients(): Promise<void> {
         const quote = adreamingQuote(today())
         if (row.quote?.number) quote.number = row.quote.number
         const proposal = ADREAMING_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
-        await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary: '박공지붕 반영, 각파이프·스카이잭 단가 조정, 판넬 공사 한 공종으로' }))
+        await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary: '박공지붕, 판넬 공사 한 공종, 각파이프·스카이잭·슬라이딩 도어 단가, 전기 배치도·자재 참고' }))
       })
       await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
     })().catch((e) => {

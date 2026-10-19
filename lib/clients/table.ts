@@ -6,7 +6,7 @@ import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
-import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
+import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -188,11 +188,12 @@ export function ensureClients(): Promise<void> {
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
       })
-      // 어드리밍 2~5차: 이미 등록된 업체를 새 견적·제안서로 한 번 갱신한다. 견적번호는 그대로 둔다
+      // 어드리밍 2~6차: 이미 등록된 업체를 새 견적·제안서로 한 번 갱신한다. 견적번호는 그대로 둔다
       await seedOnce(ADREAMING_REV2_KEY, () => refreshAdreaming('박공지붕, 판넬 공사 한 공종, 각파이프·스카이잭·슬라이딩 도어 단가, 전기 배치도·자재 참고'))
       await seedOnce(ADREAMING_REV3_KEY, () => refreshAdreaming('내부 몰딩 제외'))
       await seedOnce(ADREAMING_REV4_KEY, () => refreshAdreaming('천장틀 C형강 짧은 방향 11열·스레드로드 33개소, 천장틀 배치도 추가'))
       await seedOnce(ADREAMING_REV5_KEY, () => refreshAdreaming('관리자급 1인 × 6일 추가, 3D 공정 이미지 박공지붕·C형강 반영'))
+      await seedOnce(ADREAMING_REV6_KEY, () => refreshAdreaming('전기 배관 천장면 노출 없음, 벽면만 노출, 노무비 관리자 행을 위로'))
       await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
     })().catch((e) => {
       ready = null

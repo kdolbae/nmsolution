@@ -193,7 +193,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ADREAMING_REV3_KEY, () => refreshAdreaming('내부 몰딩 제외'))
       await seedOnce(ADREAMING_REV4_KEY, () => refreshAdreaming('천장틀 C형강 짧은 방향 11열·스레드로드 33개소, 천장틀 배치도 추가'))
       await seedOnce(ADREAMING_REV5_KEY, () => refreshAdreaming('관리자급 1인 × 6일 추가, 3D 공정 이미지 박공지붕·C형강 반영'))
-      await seedOnce(ADREAMING_REV6_KEY, () => refreshAdreaming('전기 배관 천장면 노출 없음, 벽면만 노출'))
+      await seedOnce(ADREAMING_REV6_KEY, () => refreshAdreaming('전기 배관 천장면 노출 없음, 벽면만 노출, 노무비 관리자 행을 위로'))
       await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
     })().catch((e) => {
       ready = null

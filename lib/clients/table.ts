@@ -321,7 +321,7 @@ export type ClientInfo = {
   memo: string
   /** 업체용 링크 주소 (nm-solution.co.kr/<주소>). 영문 소문자·숫자·하이픈 */
   portalSlug: string
-  /** 업체용 링크 아이디 */
+  /** 업체용 링크 아이디 (지금은 쓰지 않음, 비밀번호만으로 열림) */
   portalLogin: string
 }
 

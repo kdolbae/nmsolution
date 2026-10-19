@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { quoteRequests } from '@/lib/db/schema'
 import { QUOTE_CATEGORIES, isValidKoreanPhone } from '@/lib/quote'
+import { attributionValues, type Attribution } from '@/lib/attribution'
 import { headers } from 'next/headers'
 import { after } from 'next/server'
 import { ensureQuoteRequests } from '@/lib/quote-table'
@@ -17,6 +18,8 @@ export type QuoteInput = {
   message: string
   /** 스팸 봇이 채우는 숨김 필드. 사람은 비워 둔다. */
   website?: string
+  /** 어느 광고에서 온 방문인지. 브라우저 쿠키에서 읽어 보낸다. */
+  attribution?: Partial<Attribution>
 }
 
 export type QuoteResult = { ok: true } | { ok: false; error: string }
@@ -76,6 +79,7 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
       location: (input.location ?? '').trim().slice(0, 200),
       categories: categories.join(','),
       message: message,
+      ...attributionValues(input.attribution),
     }).returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
 
     // 나노마스터 상황판으로 건수·시각만 보낸다(이름·연락처 원문은 안 나간다. lib/board-sync.ts)

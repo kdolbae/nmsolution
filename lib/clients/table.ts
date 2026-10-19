@@ -2,8 +2,8 @@ import type { PoolClient } from 'pg'
 import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
-import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_PORTAL_KEY, KKT_QUOTE, upgradeKkt } from './seed-kkt'
+import { KKT_PAGE_HTML } from './kkt-page'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -64,11 +64,10 @@ export function ensureClients(): Promise<void> {
         unique (client_id, version_no)
       )`)
       if (!rows[0]?.exists) {
-        const { PAGE_HTML } = await import('@/app/kkt/page-html')
         await pool.query(
           `INSERT INTO clients (name, site_address, proposal_html, quote)
            SELECT $1, $2, $3, $4 WHERE NOT EXISTS (SELECT 1 FROM clients)`,
-          [KKT_CLIENT.name, KKT_CLIENT.siteAddress, kktProposalHtml(PAGE_HTML), JSON.stringify(KKT_QUOTE)],
+          [KKT_CLIENT.name, KKT_CLIENT.siteAddress, kktPage(KKT_QUOTE.number), JSON.stringify(KKT_QUOTE)],
         )
       }
       // 버전 기록이 없는 업체는 지금 상태를 v1 로 남긴다
@@ -81,14 +80,35 @@ export function ensureClients(): Promise<void> {
       // 저장된 금강변압기 제안서·견적서를 최신 결정에 맞춘다 (seed-kkt.ts upgradeKkt). 확정된 업체는 건드리지 않는다
       const kkt = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND finalized_at IS NULL`, [KKT_CLIENT.name])
       if (kkt.rows.length) {
-        const { PAGE_HTML } = await import('@/app/kkt/page-html')
         for (const r of kkt.rows) {
           await applyChange(Number(r.id), 'system', '자동 정리', (cur) => {
-            const up = upgradeKkt(normalizeQuote(cur.quote), cur.proposalHtml, () => kktProposalHtml(PAGE_HTML))
+            const up = upgradeKkt(normalizeQuote(cur.quote), cur.proposalHtml, () => kktPage(normalizeQuote(cur.quote).number))
             return up && { proposalHtml: up.proposalHtml, quote: up.quote, summary: up.summary }
           }).catch(() => null)
         }
       }
+      // 금강변압기: 다른 업체와 같은 업체 페이지(/kkt)로 옮긴다. 비밀번호는 지금까지 쓰던 KKT_PASSWORD 를 그대로 업체 비밀번호로 둔다
+      await seedOnce(KKT_PORTAL_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null; portal_password_hash: string | null }>(
+          `SELECT id, finalized_at, portal_password_hash FROM clients WHERE name = $1 ORDER BY id LIMIT 1`,
+          [KKT_CLIENT.name],
+        )
+        const row = found.rows[0]
+        if (!row) return
+        const id = Number(row.id)
+        const taken = await pool.query(`SELECT 1 FROM clients WHERE portal_slug = $1 AND id <> $2`, [KKT_CLIENT.portalSlug, id])
+        if (!taken.rows.length) await pool.query(`UPDATE clients SET portal_slug = COALESCE(portal_slug, $2) WHERE id = $1`, [id, KKT_CLIENT.portalSlug])
+        const password = process.env.KKT_PASSWORD?.trim()
+        if (!row.portal_password_hash && password) {
+          await pool.query(`UPDATE clients SET portal_password_hash = $2 WHERE id = $1`, [id, await hashPortalPassword(password)])
+        }
+        // 확정된 견적이면 제안서는 그대로 둔다(견적서는 페이지 끝에 붙는다)
+        if (row.finalized_at) return
+        await applyChange(id, 'system', 'system', (cur) => ({
+          proposalHtml: kktPage(normalizeQuote(cur.quote).number),
+          summary: '다른 업체와 같은 업체 페이지 틀로 정리(견적 요약·세부내역 칸, 내용 동일)',
+        }))
+      })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {
         const c = SINIL_CLIENT
@@ -201,6 +221,11 @@ export function ensureClients(): Promise<void> {
     })
   }
   return ready
+}
+
+/** 금강변압기 업체 페이지(제안서 탭) HTML */
+function kktPage(quoteNo: string): string {
+  return KKT_PAGE_HTML.split('{{QUOTE_NO}}').join(quoteNo)
 }
 
 /** 어드리밍 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). */

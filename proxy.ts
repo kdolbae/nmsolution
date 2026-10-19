@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { KKT_COOKIE, hasKktAccess } from '@/lib/kkt-access'
 import { getSessionFrom, isAdmin } from '@/lib/admin'
 import { getMembership } from '@/lib/portal/members'
 import { KKT_CLIENT } from '@/lib/clients/seed-kkt'
@@ -19,10 +18,11 @@ function decodedPath(pathname: string): string {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 금강변압기 제출 자료의 이미지·영상은 비밀번호를 통과한 사람에게만 내준다 (lib/kkt-access.ts).
+  // 금강변압기 제출 자료의 이미지·영상은 업체 링크(/kkt) 비밀번호를 통과한 사람에게만 내준다 (lib/clients/portal.ts).
   // 관리자는 업체 관리(제안서 탭·인쇄)에서, 금강변압기 관계자는 협력업체 포털에서 같은 이미지·영상을 쓴다.
   if (pathname.startsWith('/kkt-assets/')) {
-    if (await hasKktAccess(request.cookies.get(KKT_COOKIE)?.value)) return NextResponse.next()
+    const slug = KKT_CLIENT.portalSlug
+    if (await hasPortalAccess(slug, request.cookies.get(portalCookieName(slug))?.value)) return NextResponse.next()
     const session = await getSessionFrom(request.headers)
     if (session?.user && isAdmin(session.user)) return NextResponse.next()
     if (session?.user) {

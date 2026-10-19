@@ -36,22 +36,6 @@ export function esc(s: unknown) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 }
 
-/**
- * 금강변압기 공개 제안서(app/kkt/page-html.ts)를 업체 관리용으로 바꾼다.
- * - 폰트를 Pretendard 로 바꾼다.
- * - 비밀번호로 여는 견적서 칸은 견적서 탭으로 옮겼으므로 안내 문구로 바꾼다.
- */
-export function kktProposalHtml(page: string): string {
-  return withBrandLogo(page)
-    .replace(/<link[^>]+fonts\.googleapis\.com\/css2[^>]*>/, `<link rel="stylesheet" href="${PRETENDARD_CSS}">`)
-    .replace(/--sans:[^;]+;/, `--sans:${FONT_STACK};`)
-    .replace(/--mono:[^;]+;/, `--mono:${FONT_STACK};`)
-    .replace(
-      /<div id="quote-body">[\s\S]*?<\/form>\s*<\/div>/,
-      '<div id="quote-body"><p class="note-box">공종별 내역과 금액은 함께 드리는 견적서를 참고 바람.</p></div>',
-    )
-}
-
 type SiteContent = {
   home: HomeContent
   services: ServicesContent

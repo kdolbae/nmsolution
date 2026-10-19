@@ -20,8 +20,10 @@ export async function htmlToPdf(html: string, req: Request): Promise<Uint8Array>
   try {
     const page = await browser.newPage()
     const cookies = parseCookies(req.headers.get('cookie'))
-    if (cookies.length) {
-      await browser.setCookie(...cookies.map(([name, value]) => ({ name, value, domain: new URL(origin).hostname, path: '/' })))
+    // __Secure- 쿠키(로그인)는 secure 표시가 있어야 받아 준다. 못 넣는 쿠키는 건너뛴다
+    const { hostname, protocol } = new URL(origin)
+    for (const [name, value] of cookies) {
+      await browser.setCookie({ name, value, domain: hostname, path: '/', secure: protocol === 'https:' }).catch(() => {})
     }
     // 인쇄용 HTML 은 열리자마자 인쇄 창을 띄우므로 막는다
     await page.evaluateOnNewDocument(() => {

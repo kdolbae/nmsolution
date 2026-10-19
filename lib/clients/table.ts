@@ -6,6 +6,8 @@ import { kktProposalHtml } from './proposal'
 import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
+import { ADREAMING_CLIENT, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
+import { ADREAMING_PAGE_HTML } from './adreaming-page'
 
 /**
  * 업체 관리(제안서·견적서) 표. sql/007_clients.sql, sql/008_client_versions.sql 과 같은 모양.
@@ -164,6 +166,25 @@ export function ensureClients(): Promise<void> {
           if (eq && !eq.items.some((i) => i.name === '스카이잭 렌탈')) eq.items.push(...sinilRentalItems())
           return { proposalHtml: SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(q.number), quote: q, summary: '스카이잭 렌탈 6일·운송비 추가, 제안서 용마루 28m·박공 34m 문구' }
         })
+      })
+      // 어드리밍: 고양 공장 2층 판넬 사무실. 업체용 비밀번호는 관리자 업체 정보에서 정한다
+      await seedOnce(ADREAMING_SEED_KEY, async () => {
+        const c = ADREAMING_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = adreamingQuote(today())
+        const proposal = ADREAMING_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        // insertClient 는 ensureClients 를 기다리므로 여기서는 직접 넣는다
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
       })
     })().catch((e) => {
       ready = null

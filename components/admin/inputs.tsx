@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
-export function NumInput({ value, onChange, className }: { value: number; onChange: (n: number) => void; className?: string }) {
+export function NumInput({ value, onChange, className, zero }: { value: number; onChange: (n: number) => void; className?: string; /** 0 도 보여 준다 (좌표 등) */ zero?: boolean }) {
   // 입력 중에는 친 글자를 그대로 두고, 칸을 벗어나면 천 단위 쉼표로 보여 준다
   const [text, setText] = useState<string | null>(null)
   return (
     <input
       inputMode="decimal"
-      value={text ?? (value ? value.toLocaleString('ko-KR', { maximumFractionDigits: 3 }) : '')}
+      value={text ?? (value || zero ? value.toLocaleString('ko-KR', { maximumFractionDigits: 3 }) : '')}
       onBlur={() => setText(null)}
       onChange={(e) => {
         setText(e.target.value)

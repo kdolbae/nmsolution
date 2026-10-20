@@ -9,6 +9,7 @@
  */
 
 import { ITEM_KINDS, newId, type ItemKind, type QuoteItem, type QuoteSection } from '@/lib/clients/quote'
+import { normalizePlan, type Plan } from '@/lib/clients/plan'
 
 // ---------- 계산식 ----------
 
@@ -169,7 +170,8 @@ export type TakeoffBlock = {
   memo?: string
 }
 
-export type Takeoff = { blocks: TakeoffBlock[] }
+/** plan: 도면 작성 (있으면 재료별 도면과 '도면 수량' 블록을 만든다) */
+export type Takeoff = { blocks: TakeoffBlock[]; plan?: Plan }
 
 export type TakeoffTemplate = {
   id: string
@@ -344,9 +346,11 @@ function normLine(x: Partial<TakeoffLine>): TakeoffLine {
 /** 저장된 값이 비어 있거나 옛 모양이어도 계산이 깨지지 않게 채운다 */
 export function normalizeTakeoff(raw: unknown): Takeoff {
   const t = raw as Partial<Takeoff> | null
-  if (!t || !Array.isArray(t.blocks)) return { blocks: [] }
+  if (!t || typeof t !== 'object') return { blocks: [] }
+  const plan = normalizePlan(t.plan)
   return {
-    blocks: t.blocks.map((b) => ({
+    ...(plan ? { plan } : {}),
+    blocks: !Array.isArray(t.blocks) ? [] : t.blocks.map((b) => ({
       id: str(b.id) || newId('b'),
       ...(str(b.template) ? { template: str(b.template) } : {}),
       name: str(b.name),

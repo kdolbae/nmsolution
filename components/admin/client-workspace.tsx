@@ -756,6 +756,7 @@ function QuotePanel({
           value={q.takeoff}
           sections={q.sections}
           templates={takeoffTemplates}
+          title={q.title}
           onChange={(takeoff) => update({ takeoff })}
           onApply={(sections) => update({ sections })}
         />

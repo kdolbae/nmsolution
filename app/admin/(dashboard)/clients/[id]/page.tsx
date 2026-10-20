@@ -9,6 +9,10 @@ import { clientFiles } from '@/lib/clients/files'
 import { clientVideos } from '@/lib/clients/media'
 import { getClient, getVersion, listVersions } from '@/lib/clients/table'
 import { getTakeoffTemplates } from '@/lib/clients/takeoff-templates'
+import { ClientIntel, ClientSchedule } from '@/components/admin/client-intel'
+import { listCards } from '@/lib/clients/cards'
+import { getProfile } from '@/lib/clients/profile'
+import { getSchedule, listScheduleLog, stepsFromQuote } from '@/lib/clients/schedule'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +26,15 @@ export default async function AdminClientPage({
   const [{ id }, { tab, v }] = await Promise.all([params, searchParams])
   const client = await getClient(Number(id))
   if (!client) notFound()
-  const [versions, portal, takeoffTemplates] = await Promise.all([listVersions(client.id), getPortalInfo(client.id), getTakeoffTemplates()])
+  const [versions, portal, takeoffTemplates, cards, profile, schedule, scheduleLog] = await Promise.all([
+    listVersions(client.id),
+    getPortalInfo(client.id),
+    getTakeoffTemplates(),
+    listCards(client.id),
+    getProfile(client.id),
+    getSchedule(client.id),
+    listScheduleLog(client.id),
+  ])
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
   const picked = v && Number(v) !== versions[0]?.no ? await getVersion(client.id, Number(v)) : null
 
@@ -31,6 +43,9 @@ export default async function AdminClientPage({
       <Link href="/admin/clients" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ChevronLeft className="size-4" /> 업체 목록
       </Link>
+      <div className="mb-5">
+        <ClientIntel clientId={client.id} initial={{ cards, profile }} />
+      </div>
       {portal && (
         <div className="mb-5">
           <ClientPortal
@@ -74,6 +89,9 @@ export default async function AdminClientPage({
           }
         }
       />
+      <div className="mt-5">
+        <ClientSchedule clientId={client.id} initial={schedule} log={scheduleLog} fromQuote={stepsFromQuote(client.quote)} />
+      </div>
     </>
   )
 }

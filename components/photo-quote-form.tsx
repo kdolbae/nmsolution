@@ -28,7 +28,7 @@ type Photo = { id: string; blob: Blob; url: string }
  * 휴대폰 사진(보통 3~10MB)을 긴 변 1600px JPEG 로 줄인다. 한 장 수백 KB 가 된다.
  * 브라우저가 못 여는 형식(일부 HEIC 등)이면 작은 JPG · PNG 만 그대로 보낸다.
  */
-async function shrink(file: File): Promise<Blob | null> {
+export async function shrink(file: File): Promise<Blob | null> {
   const url = URL.createObjectURL(file)
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {

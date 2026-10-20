@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Calculator, Plus, Loader2 } from 'lucide-react'
+import { FileText, Calculator, Plus, Loader2, ImagePlus, X } from 'lucide-react'
+import { uploadCards } from '@/components/admin/client-intel'
 import { Section, Field } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/app/actions/clients'
@@ -30,6 +31,8 @@ export function ClientsList({ clients }: { clients: Item[] }) {
   const [adding, setAdding] = useState(clients.length === 0)
   const [form, setForm] = useState(EMPTY)
   const [copyFrom, setCopyFrom] = useState<string>('')
+  const [cardFiles, setCardFiles] = useState<File[]>([])
+  const [cardText, setCardText] = useState('')
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
 
@@ -40,6 +43,8 @@ export function ClientsList({ clients }: { clients: Item[] }) {
     startTransition(async () => {
       try {
         const res = await createClient(form, copyFrom ? Number(copyFrom) : null)
+        // 업체를 만들면 명함을 읽고 업체 조사(내부자료)를 바로 시작한다. 실패해도 업체 화면에서 다시 할 수 있다
+        await uploadCards(res.id, cardFiles, { cardText, research: true }).catch((e) => console.error('[clients] 명함·조사 시작 실패', e))
         router.push(`/admin/clients/${res.id}`)
       } catch (e) {
         setError(e instanceof Error ? e.message : '저장하지 못했습니다.')
@@ -50,13 +55,37 @@ export function ClientsList({ clients }: { clients: Item[] }) {
   return (
     <div className="flex flex-col gap-6">
       {adding ? (
-        <Section title="업체 추가" description="업체를 만들면 홈페이지 내용으로 기본 제안서가 만들어집니다. 다른 업체 것을 복사해 시작할 수도 있습니다.">
+        <Section
+          title="업체 추가"
+          description="업체명과 명함을 넣고 만들면 명함을 읽어 담당자·직함을 저장하고, 웹에서 업체를 조사해 내부용 업체 프로필(주업종·주 고객사·재무상태 등)을 만듭니다. 제안서는 홈페이지 내용으로 기본본이 만들어집니다."
+        >
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="업체명 *" value={form.name} onChange={set('name')} placeholder="주식회사 ○○○" />
             <Field label="사업자등록번호" value={form.bizNumber} onChange={set('bizNumber')} placeholder="000-00-00000" />
             <Field label="담당자" value={form.contactPerson} onChange={set('contactPerson')} />
             <Field label="연락처" value={form.phone} onChange={set('phone')} />
             <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />
+          </div>
+          <div className="flex flex-col gap-3 bg-secondary/40 p-4">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <ImagePlus className="size-4" />
+              <span className="font-medium">명함 사진 (여러 장 가능)</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => setCardFiles((f) => [...f, ...Array.from(e.target.files ?? [])].slice(0, 10))}
+              />
+              {cardFiles.length > 0 && <span className="text-muted-foreground">{cardFiles.length}장 고름</span>}
+              {cardFiles.length > 0 && (
+                <button type="button" onClick={() => setCardFiles([])} className="text-muted-foreground hover:text-foreground">
+                  <X className="size-4" />
+                </button>
+              )}
+            </label>
+            <Field label="명함 글 (사진 대신 붙여 넣어도 됨)" value={cardText} onChange={setCardText} multiline rows={3} />
+            <p className="text-xs text-muted-foreground">조사 내용과 명함은 내부자료로만 저장되고 업체 링크·견적서에는 나오지 않습니다.</p>
           </div>
           {clients.length > 0 && (
             <label className="flex flex-col gap-2 text-sm font-medium">

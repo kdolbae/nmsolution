@@ -1,0 +1,1252 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>
+<title>배관 도면 작성 | 엔엠솔루션</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 왼쪽 큰 3D 작업면 + 오른쪽 대화·물량 패널 (폰에서는 위아래) */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --fg:#14202e; --muted:#5c6b7c; --line:#d9dfe7;
+  --navy:#0f2a44; --accent:#e8742a; --canvas:#eef1f5; --grid:#c9d1db; --grid2:#e0e5ec;
+  --me:#e7edf4; --claude:#fdf1e8; --ok:#1f7a4d; --warn:#b5541b;
+  --ret:#c2412d; --sup:#2463a6; --other:#6b5bb3; --equip:#7d8c9c;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1520; --panel:#132030; --fg:#e4eaf1; --muted:#93a3b5; --line:#24364b;
+  --navy:#9cc3ea; --accent:#f08a45; --canvas:#0f1a27; --grid:#2a3d53; --grid2:#1b2a3b;
+  --me:#1b2c40; --claude:#2b2219; --ok:#4cc488; --warn:#f0a06a;
+  --ret:#ef6a55; --sup:#5aa0ea; --other:#a497ea; --equip:#8fa2b6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1520; --panel:#132030; --fg:#e4eaf1; --muted:#93a3b5; --line:#24364b;
+  --navy:#9cc3ea; --accent:#f08a45; --canvas:#0f1a27; --grid:#2a3d53; --grid2:#1b2a3b;
+  --me:#1b2c40; --claude:#2b2219; --ok:#4cc488; --warn:#f0a06a;
+  --ret:#ef6a55; --sup:#5aa0ea; --other:#a497ea; --equip:#8fa2b6; color-scheme:dark}
+[hidden]{display:none!important}
+/* 업체 페이지 보기 전용: 대화·편집 도구를 숨기고 3D만 */
+html[data-mode="view"] .side,html[data-mode="view"] #undo,html[data-mode="view"] #tAdd,html[data-mode="view"] #conn,html[data-mode="view"] #rev{display:none!important}
+html[data-mode="view"] .app{grid-template-columns:minmax(0,1fr)}
+html[data-mode="view"] .lb .x{display:none}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;margin:0;overflow:hidden}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto minmax(0,1fr)}
+header{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{font-weight:700;letter-spacing:.02em;color:var(--navy)} .brand b{color:var(--accent)}
+.title{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font:500 12px var(--mono);padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.live{color:var(--ok);border-color:currentColor}
+.chip.off{color:var(--warn);border-color:currentColor}
+.spacer{flex:1}
+.stage{position:relative;min-width:0;min-height:0;background:var(--canvas)}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb.k{padding-right:2px}
+.lb .x{pointer-events:auto}
+.lb .x{border:0;background:none;color:var(--muted);font:12px var(--sans);cursor:pointer;padding:0 2px 0 5px;line-height:1}
+.lb .x:hover{color:var(--accent)}
+.lb{position:absolute;transform:translate(-50%,-130%);font-size:12px;line-height:1.3;white-space:nowrap;
+  background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);padding:1px 6px;border-radius:4px}
+.lb.node{font:500 11px var(--mono);color:var(--muted);transform:translate(6px,-50%);background:none;border:0;padding:0}
+.lb.eq{font-weight:700;color:var(--navy)}
+.lb.vv{font:500 11px var(--mono);color:var(--accent);background:none;border:0}
+.lb.len{font:500 11px var(--mono);color:var(--muted);background:none;border:0;transform:translate(-50%,-50%)}
+.toolbar{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;display:flex;gap:6px;flex-wrap:wrap}
+.toolbar button,.tbtn{font:500 12px var(--sans);padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.toolbar button[aria-pressed="true"],#elbDirs button[aria-pressed="true"]{background:var(--navy);color:var(--panel);border-color:var(--navy)}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px;
+  background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:6px;padding:6px 10px;max-width:calc(100% - 24px)}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.legend{align-items:center}
+.legend .lg{font:500 12px var(--sans);color:var(--fg);background:none;border:1px solid transparent;border-radius:5px;padding:2px 6px;cursor:pointer}
+.legend .lg[aria-pressed="false"]{color:var(--muted);text-decoration:line-through}
+.legend .lg[aria-pressed="false"] i{opacity:.35}
+.legend .lg:hover{border-color:var(--line)}
+.legend .cap{color:var(--muted)}
+.legend .all{font:500 12px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:5px;padding:2px 8px;cursor:pointer}
+.sel{position:absolute;right:12px;top:12px;width:230px;max-width:calc(100% - 24px);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:8px;box-shadow:0 4px 16px rgb(0 0 0/.12)}
+.sel h4{margin:0;font:700 13px var(--mono)} .sel .row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sel label{font-size:11px;color:var(--muted);display:grid;gap:2px}
+.sel select{width:100%;font:13px var(--sans);padding:4px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
+.sel input{width:100%;box-sizing:border-box;font:13px var(--mono);padding:4px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
+.side{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;border-left:1px solid var(--line);background:var(--panel)}
+.chat{overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.msg{max-width:92%;padding:8px 11px;border-radius:10px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:var(--me)}
+.msg.claude{align-self:flex-start;background:var(--claude)}
+.msg .meta{display:block;font:11px var(--mono);color:var(--muted);margin-top:3px}
+.msg.sys{align-self:center;font-size:12px;color:var(--muted);background:none;padding:2px}
+.hint{color:var(--muted);font-size:13px;line-height:1.6}
+.hint b{color:var(--fg)}
+.composer{border-top:1px solid var(--line);padding:10px 12px;display:grid;gap:8px}
+.composer textarea{width:100%;box-sizing:border-box;resize:none;min-height:58px;max-height:140px;font:14px/1.5 var(--sans);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.crow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.primary{font:700 13px var(--sans);padding:7px 14px;border-radius:7px;border:0;background:var(--navy);color:var(--panel);cursor:pointer}
+.primary:disabled{opacity:.5;cursor:default}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap}
+.thumbs span{position:relative} .thumbs img{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.thumbs button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:0;background:var(--fg);color:var(--panel);font-size:11px;cursor:pointer;line-height:18px;padding:0}
+.status{font-size:12px;color:var(--muted)}
+details.bom{border-top:1px solid var(--line);padding:8px 16px}
+details.bom summary{cursor:pointer;font-weight:500}
+.bom table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;font-variant-numeric:tabular-nums}
+.bom td{padding:3px 0;border-bottom:1px solid var(--line)} .bom td:last-child{text-align:right;font-family:var(--mono)}
+.bom .fh{font-weight:500;margin-top:10px}
+.bom .del{font:12px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--warn);border-radius:4px;padding:1px 8px;cursor:pointer}
+.bom .note{font-size:11px;color:var(--muted);margin-top:4px}
+@media (max-width:820px){
+  body{overflow:auto}
+  .app{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 56vh auto}
+  .side{border-left:0;border-top:1px solid var(--line)}
+  .chat{max-height:46vh}
+  .sel{right:auto;left:12px;top:auto;bottom:56px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="app">
+  <header>
+    <span class="brand"><b>NM</b> SOLUTION</span>
+    <span class="title" id="boardTitle">배관 스케치 보드</span>
+    <span class="chip" id="rev">-</span>
+    <span class="spacer"></span>
+    <button class="tbtn" id="undo" type="button" disabled>되돌리기</button>
+    <span class="chip" id="conn">연결 중</span>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div id="labels"></div>
+    <div class="toolbar" role="toolbar" aria-label="보기">
+      <button type="button" data-view="iso" aria-pressed="true">입체</button>
+      <button type="button" data-view="plan" aria-pressed="false">평면</button>
+      <button type="button" data-view="side" aria-pressed="false">측면</button>
+      <button type="button" id="tNodes" aria-pressed="false">점 이름</button>
+      <button type="button" id="tLen" aria-pressed="false">길이</button>
+      <button type="button" id="tAdd" aria-pressed="false">부속 추가</button>
+
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="sel" id="fit" hidden>
+      <h4 id="fitName">-</h4>
+      <label>종류<select id="fType">
+        <option value="flange">플랜지</option><option value="airvent">에어벤트</option><option value="butterfly">버터플라이 밸브</option><option value="gate">게이트 밸브</option>
+        <option value="ball">볼 밸브</option><option value="check">체크 밸브</option><option value="globe">글로브 밸브</option>
+        <option value="strainer">스트레이너</option><option value="flex">플렉시블</option><option value="union">유니온</option>
+        <option value="gauge">압력계</option><option value="other">기타 (이름 직접)</option>
+      </select></label>
+      <div class="row" style="grid-template-columns:1fr 1fr">
+        <label>이름·태그<input id="fTag" type="text" placeholder="예: BV, 온도계"></label>
+        <label id="fAtLb">시작점에서 mm<input id="fAt" type="number" step="10"></label>
+      </div>
+      <div class="crow"><button class="primary" id="fApply" type="button">추가</button><button class="tbtn" id="fDel" type="button" hidden>삭제</button><button class="tbtn" id="fClose" type="button">닫기</button></div>
+      <div class="status" id="fHint"></div>
+    </div>
+    <div class="sel" id="multip" hidden>
+      <h4 id="mTitle">선택 0개</h4>
+      <div class="status" id="mList"></div>
+      <div class="row">
+        <label>Δx<input id="mx" type="number" step="50" value="0"></label>
+        <label>Δy<input id="my" type="number" step="50" value="0"></label>
+        <label>Δz<input id="mz" type="number" step="50" value="0"></label>
+      </div>
+      <div class="crow"><button class="primary" id="mApply" type="button">같이 옮기기</button><button class="tbtn" id="mClear" type="button">선택 해제</button></div>
+      <div class="crow" id="mConnBox" hidden><button class="primary" id="mConnect" type="button">두 점을 배관으로 잇기</button></div>
+      <div id="mUnitBox" style="display:grid;gap:6px">
+        <label>유닛 이름<input id="mUnit" type="text" placeholder="예: 칠러 유닛"></label>
+        <div class="crow"><button class="tbtn" id="mGroup" type="button">장비를 유닛으로 묶기</button><button class="tbtn" id="mUngroup" type="button">유닛 풀기</button></div>
+      </div>
+      <div class="status">Shift를 누른 채 누르면 추가·빼기. 붙은 배관은 직각을 유지하며 따라옴.</div>
+    </div>
+    <div class="sel" id="eqp" hidden>
+      <h4 id="eTitle">기기</h4>
+      <div class="status" id="eInfo"></div>
+      <label>이름<input id="eName" type="text"></label>
+      <div class="status">옮길 거리 (mm)</div>
+      <div class="row">
+        <label>Δx<input id="ex" type="number" step="50" value="0"></label>
+        <label>Δy<input id="ey" type="number" step="50" value="0"></label>
+        <label>Δz<input id="ez" type="number" step="50" value="0"></label>
+      </div>
+      <div class="status">크기 (mm)</div>
+      <div class="row">
+        <label>폭 x<input id="esx" type="number" step="50"></label>
+        <label>길이 y<input id="esy" type="number" step="50"></label>
+        <label>높이 z<input id="esz" type="number" step="50"></label>
+      </div>
+      <div class="crow"><button class="primary" id="eApply" type="button">적용</button><button class="tbtn" id="eClose" type="button">취소</button><button class="tbtn" id="eDel" type="button">삭제</button></div>
+      <div class="status" id="eHint">입력하면 미리 보여줌. 장비에 붙은 배관은 직각을 유지하며 따라옴(이어진 구간이 늘거나 줄고, 나머지는 같이 평행이동). 바닥·벽에 고정된 점은 안 움직임.</div>
+    </div>
+    <div class="sel" id="segp" hidden>
+      <h4 id="segName">-</h4>
+      <div class="row">
+        <label>Δx 벽 따라<input id="gx" type="number" step="50" value="0"></label>
+        <label>Δy 벽에서<input id="gy" type="number" step="50" value="0"></label>
+        <label>Δz 높이<input id="gz" type="number" step="50" value="0"></label>
+      </div>
+      <div class="crow"><button class="primary" id="segApply" type="button">이 배관 옮기기</button><button class="tbtn" id="segClose" type="button">취소</button></div>
+      <div class="crow"><button class="tbtn" id="segJoint" type="button">누른 자리에 조인트 넣기</button><button class="tbtn" id="segDel" type="button" style="color:var(--warn)">이 배관 삭제</button></div>
+      <div class="status">입력하면 미리 보여줌. 이 배관과 붙은 부속이 같이 움직임. 옮기는 방향과 나란한 배관만 늘거나 줄고, 나머지 이어진 배관은 제자리에 두고 꺾이는 자리에 엘보우를 세움.</div>
+    </div>
+    <div class="sel" id="sel" hidden>
+      <h4 id="selName">-</h4>
+      <div class="row">
+        <label>x 벽 따라<input id="sx" type="number" step="50"></label>
+        <label>y 벽에서<input id="sy" type="number" step="50"></label>
+        <label>z 높이<input id="sz" type="number" step="50"></label>
+      </div>
+      <div class="crow"><button class="primary" id="selApply" type="button">이 점 옮기기</button><button class="tbtn" id="selClose" type="button">닫기</button></div>
+      <div class="status">mm 단위. 연결된 배관은 같이 따라감.</div>
+      <div class="status">여기서 새 배관 뻗기 (옮길 거리 mm)</div>
+      <div class="row">
+        <label>Δx<input id="nx" type="number" step="50" value="0"></label>
+        <label>Δy<input id="ny" type="number" step="50" value="0"></label>
+        <label>Δz<input id="nz" type="number" step="50" value="0"></label>
+      </div>
+      <div class="crow"><button class="tbtn" id="selExtend" type="button">배관 추가</button><button class="tbtn" id="selRmNode" type="button">점만 삭제</button><button class="tbtn" id="selDelNode" type="button" style="color:var(--warn)">이 점과 붙은 배관 삭제</button></div>
+      <div class="status">엘보우 추가: 꺾을 방향을 고르고, 이어질 배관을 화면에서 누름</div>
+      <div class="crow" id="elbDirs"><button class="tbtn" data-d="2,-1" type="button">아래로</button><button class="tbtn" data-d="2,1" type="button">위로</button><button class="tbtn" data-d="0,1" type="button">x+</button><button class="tbtn" data-d="0,-1" type="button">x−</button><button class="tbtn" data-d="1,1" type="button">y+ 벽에서 멀리</button><button class="tbtn" data-d="1,-1" type="button">y− 벽 쪽</button></div>
+      <div class="status" id="elbHint" hidden></div>
+    </div>
+    <div class="empty" id="empty" hidden><div>아직 그려진 배관이 없음.<br>오른쪽에 대략적인 모양을 말하거나 사진을 올리면 여기에 바로 그려짐.</div></div>
+  </div>
+
+  <aside class="side">
+    <div class="chat" id="chat" aria-live="polite">
+      <div class="hint" id="hint">
+        <b>말로 고치는 도면.</b> 저장·파일 전송 없이 이 화면에서 바로 바뀜.<br>
+        예: “서플라이를 리턴보다 600 높여줘”, “R5 에어벤트 빼고 R8 쪽에 하나 달아줘”, “1안으로 리턴을 바닥에서 450으로 내려”.<br>
+        점·배관·장비를 누르면 직접 고칠 수 있음. 저장은 고칠 때마다 저절로 됨.
+      </div>
+    </div>
+    <div>
+      <details class="bom" id="bomBox"><summary>물량·달린 부속</summary><div id="bom"></div></details>
+      <form class="composer" id="form">
+        <div class="thumbs" id="thumbs"></div>
+        <textarea id="ask" placeholder="고칠 내용을 대략 말해줌 (Enter 보내기, Shift+Enter 줄바꿈)" aria-label="요청"></textarea>
+        <div class="crow">
+          <button class="primary" id="send" type="submit">보내기</button>
+          <button class="tbtn" id="stop" type="button" hidden>멈추기</button>
+          <label class="tbtn" id="photoBtn" hidden>사진·스케치<input id="photo" type="file" accept="image/*" multiple hidden></label>
+          <span class="status" id="status"></span>
+        </div>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<script>
+/*
+ * 사이트 연결부: 이 화면(배관 도면 작성)은 Claude 보드와 같은 코드를 쓰고, 저장·대화만 사이트 API로 바꾼다.
+ * ?id=<도면 번호>            관리자 편집 (/api/admin/drawings/<id>)
+ * ?mode=view&id=..&slug=..   업체 페이지 보기 전용 (/api/portal/drawings/<id>)
+ */
+(function () {
+  var qs = new URLSearchParams(location.search)
+  var id = qs.get('id') || ''
+  var mode = qs.get('mode') === 'view' ? 'view' : 'edit'
+  var slug = qs.get('slug') || ''
+  document.documentElement.dataset.mode = mode
+  window.NM_BOARD = { mode: mode, id: id }
+  var base = mode === 'view' ? '/api/portal/drawings/' + encodeURIComponent(id) + '?slug=' + encodeURIComponent(slug) : '/api/admin/drawings/' + encodeURIComponent(id)
+  var state = null, failed = null, busy = 0
+  var subs = { main: [], chat: [], hist: [] }
+  function snap(data) { return { exists: !!data, data: function () { return data } } }
+  function mainData() {
+    var d = state.drawing, m = Object.assign({}, d.model)
+    if (!m.title) m.title = d.title
+    return { model: m, rev: d.rev, summary: d.summary || '' }
+  }
+  function emit(which) {
+    if (!state) return
+    if (!which || which === 'main') subs.main.forEach(function (s) { s.next(snap(mainData())) })
+    if (!which || which === 'chat') subs.chat.forEach(function (s) { s.next(snap({ msgs: state.drawing.chat || [] })) })
+    if (!which || which === 'hist') subs.hist.forEach(function (s) { s.next(snap({ items: state.versions || [] })) })
+  }
+  function fail(e) { failed = e; ['main', 'chat', 'hist'].forEach(function (k) { subs[k].forEach(function (s) { s.error && s.error(e) }) }) }
+  async function fetchState() {
+    var r = await fetch(base, { cache: 'no-store', credentials: 'same-origin' })
+    if (!r.ok) throw { code: r.status === 401 ? 'not_granted' : 'unavailable', message: r.status === 401 ? '로그인이 필요함' : '도면을 열 수 없음' }
+    return r.json()
+  }
+  var loading = fetchState().then(function (s) { state = s; emit() }, fail)
+  // 다른 화면(다른 관리자, 다른 탭)에서 고친 것을 받아 온다
+  setInterval(async function () {
+    if (document.hidden || busy || !state) return
+    try {
+      var s = await fetchState()
+      var revChanged = s.drawing.rev !== state.drawing.rev
+      var chatChanged = JSON.stringify(s.drawing.chat || []) !== JSON.stringify(state.drawing.chat || [])
+      state = s
+      if (revChanged) emit()
+      else if (chatChanged) emit('chat')
+    } catch (e) {}
+  }, mode === 'view' ? 30000 : 5000)
+
+  async function send(url, opts) {
+    busy++
+    try {
+      var r = await fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, opts))
+      var j = await r.json().catch(function () { return {} })
+      if (!r.ok) {
+        var err = new Error(j.error || '저장 실패'); err.code = r.status === 409 ? 'conflict' : 'unavailable'
+        if (r.status === 409) { try { state = await fetchState(); emit() } catch (e2) {} }
+        throw err
+      }
+      return j
+    } finally { busy-- }
+  }
+  function ref(kind) {
+    return {
+      onSnapshot: function (next, error) {
+        var s = { next: next, error: error }
+        subs[kind].push(s)
+        loading.then(function () { if (state) emit(kind); else if (failed && error) error(failed) })
+        return function () { subs[kind] = subs[kind].filter(function (x) { return x !== s }) }
+      },
+      get: async function () { await loading; return snap(kind === 'main' ? mainData() : null) },
+      set: async function (data) {
+        if (mode === 'view') throw new Error('보기 전용')
+        if (kind === 'hist') return // 버전 기록은 서버가 저장할 때마다 남긴다
+        if (kind === 'chat') {
+          await send(base, { method: 'PUT', body: JSON.stringify({ chat: data.msgs || [] }) })
+          state.drawing.chat = data.msgs || []
+          return
+        }
+        var baseRev = state.drawing.rev
+        var j = data.by === '되돌리기'
+          ? await send(base + '/undo', { method: 'POST', body: JSON.stringify({ baseRev: baseRev }) })
+          : await send(base, { method: 'PUT', body: JSON.stringify({ model: data.model, summary: data.summary || '', baseRev: baseRev }) })
+        try { state = await fetchState() } catch (e) { state.drawing.rev = j.rev; state.drawing.model = data.model }
+        if (j.rev !== data.rev || data.by === '되돌리기') emit()
+        else emit('hist')
+      },
+    }
+  }
+  var db = { doc: function (p) { return ref(p.indexOf('chat') >= 0 ? 'chat' : p.indexOf('hist') >= 0 ? 'hist' : 'main') } }
+
+  var IMG = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  function sample() { return Promise.reject({ code: 'invalid_request', message: 'json 만 지원' }) }
+  sample.limits = async function () { return { images: { maxCount: 4, mediaTypes: IMG } } }
+  sample.json = async function (prompt, opts) {
+    opts = opts || {}
+    var fd = new FormData()
+    fd.append('prompt', prompt)
+    ;[].concat(opts.images || []).forEach(function (f) { fd.append('image', f) })
+    var r = await fetch(base + '/assist', { method: 'POST', body: fd, signal: opts.signal, credentials: 'same-origin' })
+    var j = await r.json().catch(function () { return {} })
+    if (!r.ok) throw { code: j.code || 'upstream_error', message: j.error || 'Claude 호출 실패' }
+    if (opts.onText) opts.onText({ text: '', delta: '' })
+    return j
+  }
+
+  window.claude = {
+    use: async function (name) {
+      if (name === 'db') return db
+      if (name === 'sample') return mode === 'view' ? null : sample
+      return null
+    },
+  }
+})()
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const VIEW = (window.NM_BOARD || {}).mode === "view";
+const S = 0.001; // mm -> m
+let model = null, rev = 0, chatMsgs = [], hist = [];
+let db = null, sample = null, mainRef = null, chatRef = null, histRef = null;
+let showNodes = false, showLen = false, showLabels = true, busy = false, abortCtl = null, pendingImgs = [];
+let selected = null;
+
+/* ---------- three.js 장면 ---------- */
+const cv = $("cv"), stage = $("stage"), labelsEl = $("labels");
+const renderer = new THREE.WebGLRenderer({canvas: cv, antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 500);
+const controls = new THREE.OrbitControls(camera, cv);
+controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.7); sun.position.set(-5, 10, 6); scene.add(sun);
+let group = new THREE.Group(); scene.add(group);
+let pickables = [], labelItems = [], fitBox = null, segPick = [], valvePick = [], eqPick = [], addMode = false, fitSel = null;
+const FIT = {butterfly: "버터플라이 밸브", gate: "게이트 밸브", ball: "볼 밸브", check: "체크 밸브", globe: "글로브 밸브", strainer: "스트레이너", flex: "플렉시블", union: "유니온", flange: "플랜지 이음", gauge: "압력계", airvent: "에어벤트"};
+const FTAG = {airvent: "AV", butterfly: "BV", gate: "GV", ball: "BAV", check: "CV", globe: "GLV", strainer: "ST", flex: "FJ", union: "U", flange: "F", gauge: "PG"};
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const col = n => new THREE.Color(css(n) || "#888");
+// 모델 좌표(x 벽 따라, y 벽에서 멀어짐, z 높이) -> three(y 위)
+const P = a => new THREE.Vector3(a[0] * S, a[2] * S, -a[1] * S);
+
+function lineColor(l, i) {
+  if (l.color) return new THREE.Color(l.color);
+  const n = l.name || "";
+  if (/리턴|입수|환수|return/i.test(n)) return col("--ret");
+  if (/서플라이|출수|공급|supply/i.test(n)) return col("--sup");
+  return i % 2 ? col("--other") : col("--equip");
+}
+function labelText(v) { return typeof v === "string" ? v : (v && v.text) || ""; }
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / Math.max(r.height, 1); camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+function clearGroup() {
+  group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+  scene.remove(group); group = new THREE.Group(); scene.add(group);
+  pickables = []; segPick = []; valvePick = []; eqPick = []; labelItems = []; labelsEl.textContent = "";
+}
+// 라벨별 숨기기: 이 브라우저에만 기억함
+let hiddenLb = new Set();
+try { hiddenLb = new Set(JSON.parse(localStorage.getItem("pb.hiddenLabels") || "[]")); } catch (e) {}
+// 배관(그룹)별 라벨 끄기: 이 브라우저에만 기억함
+let lbOff = new Set();
+try { lbOff = new Set(JSON.parse(localStorage.getItem("pb.labelGroupsOff") || "[]")); } catch (e) {}
+function saveHidden() {
+  try { localStorage.setItem("pb.hiddenLabels", JSON.stringify([...hiddenLb])); localStorage.setItem("pb.labelGroupsOff", JSON.stringify([...lbOff])); } catch (e) {}
+}
+function addLabel(pos, text, cls, key, grp) {
+  if (key && hiddenLb.has(key)) return;
+  if (grp && lbOff.has(grp)) return;
+  const d = document.createElement("div"); d.className = "lb " + (cls || "") + (key ? " k" : ""); d.textContent = text;
+  if (key) {
+    const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×";
+    x.title = "이 라벨 숨기기"; x.setAttribute("aria-label", text + " 라벨 숨기기");
+    x.onclick = ev => { ev.stopPropagation(); hiddenLb.add(key); saveHidden(); build(); };
+    d.appendChild(x);
+  }
+  labelsEl.appendChild(d); labelItems.push({pos, el: d, cls: cls || ""});
+}
+function cyl(a, b, r, mat) {
+  const len = a.distanceTo(b); if (len < 1e-6) return null;
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 20), mat);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  group.add(m); return m;
+}
+
+function analyze(m) {
+  const nodes = m.nodes || {}, adj = {}, seen = new Set(), segs = [];
+  (m.lines || []).forEach((l, li) => {
+    const p = (l.path || []).filter(id => nodes[id]);
+    for (let i = 0; i < p.length - 1; i++) {
+      const k = [p[i], p[i + 1]].sort().join("|"); if (seen.has(k)) continue; seen.add(k);
+      segs.push({a: p[i], b: p[i + 1], li});
+      (adj[p[i]] = adj[p[i]] || []).push(p[i + 1]); (adj[p[i + 1]] = adj[p[i + 1]] || []).push(p[i]);
+    }
+  });
+  const fit = {};
+  for (const id in adj) {
+    const nb = adj[id], o = nodes[id];
+    const dir = q => { const v = [nodes[q][0] - o[0], nodes[q][1] - o[1], nodes[q][2] - o[2]]; const L = Math.hypot(...v) || 1; return v.map(x => x / L); };
+    if (nb.length === 2) {
+      const a = dir(nb[0]), b = dir(nb[1]), dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+      if (dot > -0.999) { const ang = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI; fit[id] = ang > 112 ? "엘보 45°" : "엘보 90°"; }
+    } else if (nb.length === 3) fit[id] = "티"; else if (nb.length >= 4) fit[id] = "크로스";
+  }
+  return {segs, fit, adj};
+}
+
+function build() {
+  clearGroup();
+  const m = model;
+  $("empty").hidden = !!(m && m.nodes && Object.keys(m.nodes).length);
+  if (!m || !m.nodes) { renderLegend([]); renderBom(null); return; }
+  const nodes = m.nodes, {segs, fit, adj} = analyze(m);
+  const ng = {}; (m.lines || []).forEach(l => (l.path || []).forEach(id => { if (!ng[id]) ng[id] = l.name || "배관"; }));
+  const r = (Number(m.draw_od) || 150) * S / 2;
+  const mats = (m.lines || []).map((l, i) => new THREE.MeshStandardMaterial({color: lineColor(l, i), roughness: .55, metalness: .15}));
+  const box = new THREE.Box3();
+  segs.forEach(s => {
+    const a = P(nodes[s.a]), b = P(nodes[s.b]); const cm = cyl(a, b, r, mats[s.li]); if (cm) { cm.userData.seg = [s.a, s.b]; segPick.push(cm); } box.expandByPoint(a); box.expandByPoint(b);
+    if (showLen) {
+      const L = Math.round(Math.hypot(nodes[s.a][0] - nodes[s.b][0], nodes[s.a][1] - nodes[s.b][1], nodes[s.a][2] - nodes[s.b][2]));
+      addLabel(a.clone().add(b).multiplyScalar(.5), String(L), "len");
+    }
+  });
+  // 엘보·티는 구, 모든 점은 선택용 마커
+  const nodeLine = {};
+  segs.forEach(s => { nodeLine[s.a] = nodeLine[s.a] ?? s.li; nodeLine[s.b] = nodeLine[s.b] ?? s.li; });
+  for (const id in nodes) {
+    const p = P(nodes[id]);
+    if (fit[id]) { const sp = new THREE.Mesh(new THREE.SphereGeometry(r * 1.25, 20, 14), mats[nodeLine[id]] || mats[0]); sp.position.copy(p); group.add(sp); }
+    const mk = new THREE.Mesh(new THREE.SphereGeometry(r * 1.9, 12, 8), new THREE.MeshBasicMaterial({color: col("--accent"), transparent: true, opacity: showNodes || selected === id ? .55 : 0, depthWrite: false}));
+    mk.position.copy(p); mk.userData.node = id; group.add(mk); pickables.push(mk);
+    if (showNodes) addLabel(p, id, "node");
+    box.expandByPoint(p);
+  }
+  // 밸브
+  (m.valves || []).forEach((v, vi) => {
+    const sg = v.seg || v.on; if (!sg || !nodes[sg[0]] || !nodes[sg[1]]) return;
+    const A = nodes[sg[0]], B = nodes[sg[1]], L = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]) || 1;
+    const t = v.at === "mid" || v.at == null ? .5 : Math.min(1, Math.max(0, Number(v.at) / L));
+    const pa = P(A), pb = P(B), pos = pa.clone().lerp(pb, t), dir = pb.clone().sub(pa).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const navy = new THREE.MeshStandardMaterial({color: col("--navy"), roughness: .5});
+    if (v.type === "airvent") { // 배관 위로 서는 짧은 관 + 밸브 머리
+      const up = new THREE.Vector3(0, 1, 0), purple = new THREE.MeshStandardMaterial({color: col("--other"), roughness: .5});
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(r * .35, r * .35, r * 3, 16), purple); st.position.copy(pos).addScaledVector(up, r * 1.5); group.add(st);
+      const hd = new THREE.Mesh(new THREE.CylinderGeometry(r * .8, r * .8, r * .9, 16), purple); hd.position.copy(pos).addScaledVector(up, r * 3.2); group.add(hd);
+      st.userData.vi = vi; hd.userData.vi = vi; valvePick.push(st, hd);
+      addLabel(pos.clone().addScaledVector(up, r * 4.8), v.tag || "에어벤트", "vv", "v:" + sg.join("-") + ":" + v.at + ":" + v.type, ng[sg[0]] || "배관");
+      return;
+    }
+    if (v.type === "flange" || v.type === "union") {
+      const f = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.7, r * 1.7, r * .5, 24), navy); f.position.copy(pos); f.quaternion.copy(q); group.add(f);
+      f.userData.vi = vi; valvePick.push(f);
+    } else if (!FIT[v.type]) {
+      const bx = new THREE.Mesh(new THREE.BoxGeometry(r * 2.4, r * 1.6, r * 2.4), new THREE.MeshStandardMaterial({color: col("--accent"), roughness: .5}));
+      bx.position.copy(pos); bx.quaternion.copy(q); group.add(bx); bx.userData.vi = vi; valvePick.push(bx);
+    } else {
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.45, r * 1.45, r * 1.6, 24), new THREE.MeshStandardMaterial({color: v.type === "butterfly" ? 0x3f9a6b : col("--navy"), roughness: .5}));
+      body.position.copy(pos); body.quaternion.copy(q); group.add(body); body.userData.vi = vi; valvePick.push(body);
+      const stem = new THREE.Mesh(new THREE.BoxGeometry(r * .5, r * 3.2, r * .5), navy);
+      stem.position.copy(pos).add(new THREE.Vector3(0, r * 2.2, 0)); group.add(stem);
+    }
+    const tag = v.tag || FTAG[v.type] || (v.type === "other" ? "기타" : v.type);
+    addLabel(pos.clone().add(new THREE.Vector3(0, r * 3.5, 0)), tag, "vv", "v:" + sg.join("-") + ":" + v.at + ":" + v.type, ng[sg[0]] || "배관");
+  });
+  // 기기
+  (m.equipment || []).forEach((e, ei) => {
+    if (!e.at || !e.size) return;
+    const o = e.offset || [0, 0, 0];
+    const c = [e.at[0] + o[0] + e.size[0] / 2, e.at[1] + o[1] + e.size[1] / 2, e.at[2] + o[2] + e.size[2] / 2];
+    let g;
+    if (e.shape === "cyl") { // 원통: axis 방향이 길이, 나머지 두 치수 중 작은 값이 지름
+      const ax = e.axis || "y", len = e.size[{x: 0, y: 1, z: 2}[ax]];
+      const dia = Math.min(...e.size.filter((_, i) => i !== {x: 0, y: 1, z: 2}[ax]));
+      g = new THREE.CylinderGeometry(dia * S / 2, dia * S / 2, len * S, 40);
+      if (ax === "x") g.rotateZ(Math.PI / 2); else if (ax === "y") g.rotateX(Math.PI / 2);
+    } else g = new THREE.BoxGeometry(e.size[0] * S, e.size[2] * S, e.size[1] * S);
+    const solid = e.solid !== false;
+    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color: col("--equip"), transparent: true, opacity: solid ? .2 : .06, depthWrite: false}));
+    mesh.position.copy(P(c)); group.add(mesh); mesh.userData.ei = ei; eqPick.push(mesh);
+    const ed = new THREE.LineSegments(new THREE.EdgesGeometry(g, 30), new THREE.LineBasicMaterial({color: col("--equip"), transparent: true, opacity: solid ? .9 : .45}));
+    ed.position.copy(mesh.position); group.add(ed);
+    box.expandByObject(mesh);
+    addLabel(P([c[0], c[1], e.at[2] + o[2] + e.size[2]]), e.name || "기기", "eq", "q:" + (e.name || ""), "기기");
+  });
+  if (m.labels) for (const id in m.labels) if (nodes[id] && labelText(m.labels[id])) addLabel(P(nodes[id]), labelText(m.labels[id]), "", "n:" + id, ng[id] || "배관");
+  if (m.ends) for (const id in m.ends) if (nodes[id] && !(m.labels && m.labels[id])) addLabel(P(nodes[id]), m.ends[id], "", "e:" + id, ng[id] || "배관");
+  // 바닥 격자 (1 m)
+  if (!box.isEmpty()) {
+    const sz = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    const n = Math.ceil(Math.max(sz.x, sz.z) + 2);
+    const grid = new THREE.GridHelper(n, n, col("--grid"), col("--grid2")); grid.position.set(c.x, 0, c.z); group.add(grid);
+    const firstFit = !fitBox; fitBox = box; if (firstFit) setView(currentView);
+  }
+  paintMulti();
+  renderLegend(m.lines || []); renderBom(m, segs, fit);
+}
+
+let currentView = "iso";
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  if (!fitBox) return;
+  const c = fitBox.getCenter(new THREE.Vector3()), sz = fitBox.getSize(new THREE.Vector3());
+  const d = Math.max(sz.x, sz.y, sz.z) * 1.7 + 1;
+  const dirs = {iso: [-1, .9, 1.1], plan: [0, 1, .0015], side: [-1, .0015, 0]};
+  const dv = new THREE.Vector3(...dirs[v]).normalize();
+  camera.position.copy(c).addScaledVector(dv, d); controls.target.copy(c); camera.up.set(0, 1, 0);
+  controls.update();
+}
+document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+function toggle(id, getset) { const b = $(id); b.addEventListener("click", () => { const v = getset(); b.setAttribute("aria-pressed", String(v)); build(); }); }
+toggle("tNodes", () => (showNodes = !showNodes));
+toggle("tLen", () => (showLen = !showLen));
+
+
+function renderLegend(lines) {
+  const el = $("legend"); el.textContent = "";
+  if (!lines.length) { el.hidden = true; return; }
+  const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = "라벨"; el.appendChild(cap);
+  const groups = [];
+  lines.forEach((l, i) => { const g = l.name || "배관"; if (!groups.some(x => x.g === g)) groups.push({g, label: g + (l.size ? " " + l.size : ""), color: "#" + lineColor(l, i).getHexString()}); });
+  if (model && (model.equipment || []).length) groups.push({g: "기기", label: "기기", color: ""});
+  groups.forEach(x => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "lg";
+    b.setAttribute("aria-pressed", String(!lbOff.has(x.g))); b.title = "이 배관 라벨 표시/숨김";
+    if (x.color) { const ic = document.createElement("i"); ic.style.background = x.color; b.appendChild(ic); }
+    b.appendChild(document.createTextNode(x.label));
+    b.onclick = () => { lbOff.has(x.g) ? lbOff.delete(x.g) : lbOff.add(x.g); saveHidden(); build(); };
+    el.appendChild(b);
+  });
+  const all = (txt, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = "all"; b.textContent = txt; b.onclick = () => { fn(); saveHidden(); build(); }; el.appendChild(b); };
+  all("모두 표시" + (hiddenLb.size ? " (숨긴 " + hiddenLb.size + "개 포함)" : ""), () => { lbOff.clear(); hiddenLb.clear(); });
+  all("모두 숨기기", () => groups.forEach(x => lbOff.add(x.g)));
+  el.hidden = false;
+}
+function renderBom(m, segs, fit) {
+  const el = $("bom"); el.textContent = "";
+  if (!m) return;
+  const rows = [];
+  const byLine = {};
+  segs.forEach(s => { const l = m.lines[s.li], A = m.nodes[s.a], B = m.nodes[s.b];
+    const k = (l.name || "배관") + (l.size ? " " + l.size : ""); byLine[k] = (byLine[k] || 0) + Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); });
+  for (const k in byLine) rows.push([k + " 길이", (byLine[k] / 1000).toFixed(1) + " m"]);
+  const cnt = {}; Object.values(fit).forEach(f => cnt[f] = (cnt[f] || 0) + 1);
+  (m.valves || []).forEach(v => { const k = FIT[v.type] || v.tag || "기타 부속"; cnt[k] = (cnt[k] || 0) + 1; });
+  for (const k in cnt) rows.push([k, cnt[k] + " 개"]);
+  const t = document.createElement("table");
+  rows.forEach(r => { const tr = t.insertRow(); tr.insertCell().textContent = r[0]; tr.insertCell().textContent = r[1]; });
+  const note = document.createElement("div"); note.className = "note"; note.textContent = "치수가 대략값이면 물량도 대략값임. 실측 반영 후 확정.";
+  el.append(t, note);
+  // 달린 부속 목록: 하나씩 삭제
+  const vs = m.valves || [];
+  const h = document.createElement("div"); h.className = "fh"; h.textContent = "달린 부속 " + vs.length + "개"; el.appendChild(h);
+  if (!vs.length) { const e = document.createElement("div"); e.className = "note"; e.textContent = "없음. 툴바 '부속 추가'로 넣음."; el.appendChild(e); }
+  const ft = document.createElement("table");
+  vs.forEach((v, i) => {
+    const tr = ft.insertRow(), sg = v.seg || v.on || [];
+    tr.insertCell().textContent = (v.tag ? v.tag + " " : "") + (FIT[v.type] || "기타") + " · " + sg.join("–") + (v.at == null || v.at === "mid" ? " 가운데" : " " + v.at);
+    const c = tr.insertCell(), b = document.createElement("button");
+    b.type = "button"; b.className = "del"; b.textContent = "삭제"; b.setAttribute("aria-label", tr.cells[0].textContent + " 삭제");
+    b.onclick = () => delFit(i); c.appendChild(b);
+  });
+  el.appendChild(ft);
+}
+async function delFit(i) {
+  if (busy || !model || !model.valves || !model.valves[i]) return;
+  const next = JSON.parse(JSON.stringify(model)); const [gone] = next.valves.splice(i, 1);
+  $("fit").hidden = true; fitSel = null;
+  await commit(next, "부속 삭제: " + (gone.tag || FIT[gone.type] || "기타") + " (" + (gone.seg || []).join("–") + ")", "직접");
+}
+
+/* 라벨 위치 갱신 */
+const tmp = new THREE.Vector3();
+function placeLabels() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  for (const it of labelItems) {
+    tmp.copy(it.pos).project(camera);
+    const vis = tmp.z < 1 && tmp.x > -1.2 && tmp.x < 1.2 && tmp.y > -1.2 && tmp.y < 1.2;
+    it.el.hidden = !vis;
+    if (vis) { it.el.style.left = ((tmp.x + 1) / 2 * w) + "px"; it.el.style.top = ((1 - tmp.y) / 2 * h) + "px"; }
+  }
+}
+(function loop() { controls.update(); renderer.render(scene, camera); placeLabels(); requestAnimationFrame(loop); })();
+
+function applyTheme() { scene.background = col("--canvas"); if (model) build(); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+scene.background = col("--canvas");
+
+/* 점 선택·직접 수정 */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let downAt = null;
+cv.addEventListener("pointerdown", e => downAt = [e.clientX, e.clientY]);
+cv.addEventListener("pointerup", e => {
+  if (VIEW) return; // 업체 페이지는 보기만
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
+  const r = cv.getBoundingClientRect();
+  mouse.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  if (e.shiftKey && !addMode && !segSel && eqSel == null) { // 여러 개 선택
+    let h = ray.intersectObjects([...pickables, ...segPick])[0] || ray.intersectObjects(eqPick)[0];
+    if (!h) return; const u = h.object.userData;
+    const it = u.node ? {k: "node", id: u.node} : u.seg ? {k: "seg", id: u.seg.join("|")} : {k: "eq", id: u.ei};
+    toggleMulti(it); return;
+  }
+  if (elbPick) { const h = ray.intersectObjects([...pickables, ...segPick])[0]; if (h) elbowTo(h.object.userData); return; }
+  if (multi.length) return; // 여러 개 선택 중에는 Shift 없이 눌러도 새로 안 열음
+  if (segSel || eqSel != null) return; // 미리보기 창이 열려 있으면 새 선택 안 함
+  const hit = ray.intersectObjects(addMode ? [...valvePick, ...segPick] : [...valvePick, ...pickables, ...segPick])[0];
+  if (!hit) { const eh = !addMode && ray.intersectObjects(eqPick)[0]; if (eh) openEq(eh.object.userData.ei); return; }
+  const u = hit.object.userData;
+  if (u.vi != null) openFit({idx: u.vi});
+  else if (u.node) selectNode(u.node);
+  else if (u.seg) {
+    const A = model.nodes[u.seg[0]], B = model.nodes[u.seg[1]], pa = P(A), pb = P(B), ab = pb.clone().sub(pa);
+    const t = Math.min(1, Math.max(0, hit.point.clone().sub(pa).dot(ab) / ab.lengthSq()));
+    const L = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
+    const at = Math.round(t * L / 10) * 10;
+    if (addMode) openFit({seg: u.seg, at}); else openSeg(u.seg, at);
+  }
+});
+/* 배관 연결 편집: 삭제·조인트·잇기·뻗기 */
+function newNodeId(m, base) {
+  const pre = (String(base).match(/^[A-Za-z]+/) || ["P"])[0];
+  let i = 1; while (m.nodes[pre + i]) i++; return pre + i;
+}
+function lineOfNode(m, id) { return (m.lines || []).find(l => (l.path || []).includes(id)); }
+function sameSeg(s, a, b) { return s && ((s[0] === a && s[1] === b) || (s[0] === b && s[1] === a)); }
+// 배관에 없는 점과 그 점의 라벨·끝 설명·부속을 정리함
+function tidy(m) {
+  const used = new Set(); (m.lines || []).forEach(l => (l.path || []).forEach(id => used.add(id)));
+  for (const id of Object.keys(m.nodes)) if (!used.has(id)) { delete m.nodes[id]; if (m.labels) delete m.labels[id]; if (m.ends) delete m.ends[id]; }
+  m.valves = (m.valves || []).filter(v => { const s = v.seg || v.on; return s && m.nodes[s[0]] && m.nodes[s[1]]; });
+}
+function deleteSeg(m, a, b) {
+  const out = [];
+  (m.lines || []).forEach(l => {
+    const p = l.path || []; let cur = [p[0]];
+    for (let i = 1; i < p.length; i++) {
+      if (sameSeg([p[i - 1], p[i]], a, b)) { if (cur.length > 1) out.push({...l, path: cur}); cur = [p[i]]; }
+      else cur.push(p[i]);
+    }
+    if (cur.length > 1) out.push({...l, path: cur});
+  });
+  m.lines = out;
+  m.valves = (m.valves || []).filter(v => !sameSeg(v.seg || v.on, a, b));
+  tidy(m);
+}
+// a–b 구간의 a에서 dist 자리에 새 점(조인트)을 넣고, 부속은 제자리에 남김
+function splitSeg(m, a, b, dist) {
+  const A = m.nodes[a], B = m.nodes[b], L = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
+  if (!L || dist <= 0 || dist >= L) return null;
+  const J = newNodeId(m, a);
+  m.nodes[J] = A.map((v, k) => Math.round(v + (B[k] - v) * dist / L));
+  (m.lines || []).forEach(l => {
+    const p = l.path || [];
+    for (let i = p.length - 1; i > 0; i--) if (sameSeg([p[i - 1], p[i]], a, b)) p.splice(i, 0, J);
+  });
+  (m.valves || []).forEach(v => {
+    const s = v.seg || v.on; if (!sameSeg(s, a, b)) return;
+    const raw = v.at == null || v.at === "mid" ? L / 2 : Number(v.at), fromA = s[0] === a ? raw : L - raw;
+    if (fromA <= dist) { v.seg = [a, J]; v.at = Math.round(fromA); } else { v.seg = [J, b]; v.at = Math.round(fromA - dist); }
+    delete v.on;
+  });
+  return J;
+}
+// 두 점을 직각 배관으로 잇기: 높이(z) 먼저, 그다음 x, y 순서로 꺾임
+function connectNodes(m, a, b, name) {
+  const A = m.nodes[a], B = m.nodes[b], path = [a]; let cur = A.slice();
+  const order = [2, 0, 1].filter(k => A[k] !== B[k]);
+  order.forEach((k, i) => {
+    cur = cur.slice(); cur[k] = B[k];
+    if (i < order.length - 1) { const id = newNodeId(m, a); m.nodes[id] = cur; path.push(id); }
+  });
+  path.push(b);
+  (m.lines = m.lines || []).push({name: name || "배관", path});
+  return path.length - 1;
+}
+/* 배관 통째로 옮기기: 두 점을 같은 거리만큼 */
+let segSel = null, segBase = null, segAt = 0;
+function openSeg(seg, at) {
+  segAt = at || 0;
+  $("sel").hidden = true; $("fit").hidden = true; selected = null;
+  segSel = seg; segBase = JSON.parse(JSON.stringify(model));
+  const ln = (model.lines || []).find(l => (l.path || []).includes(seg[0]) && (l.path || []).includes(seg[1]));
+  $("segName").textContent = (ln && ln.name ? ln.name + " " : "") + seg.join("–") + " 구간";
+  ["gx", "gy", "gz"].forEach(id => $(id).value = 0);
+  $("segp").hidden = false;
+}
+function segMoved() {
+  const d = ["gx", "gy", "gz"].map(id => Number($(id).value) || 0);
+  if (!d.some(v => v)) return {next: JSON.parse(JSON.stringify(segBase)), d, risers: 0};
+  // 같은 줄로 이어진 배관 쪽으로 옆·위로 옮기면 그 자리에 엘보우 점을 남겨 세움관(입상·입하)을 만듦
+  const mid = JSON.parse(JSON.stringify(segBase)), keep = [];
+  const axis = (p, q) => { const df = p.map((v, k) => Math.abs(v - q[k])); return df.indexOf(Math.max(...df)); };
+  const sa = axis(mid.nodes[segSel[0]], mid.nodes[segSel[1]]);
+  const perp = d.some((v, k) => k !== sa && v);
+  if (perp) segSel.forEach(e => {
+    const other = segSel[0] === e ? segSel[1] : segSel[0];
+    (mid.lines || []).forEach(l => {
+      const p = l.path || [];
+      for (let i = 0; i < p.length; i++) {
+        if (p[i] !== e) continue;
+        // 옮기는 방향과 나란한 배관만 늘어나고, 나머지 이어진 배관은 제자리에 두고 꺾인 자리에 엘보우를 세움
+        const want = nb => nb && nb !== other && !keep.includes(nb) && d.some((v, k) => v && k !== axis(mid.nodes[e], mid.nodes[nb]));
+        const addK = nb => {
+          const K = newNodeId(mid, e); mid.nodes[K] = mid.nodes[e].slice(); keep.push(K);
+          (mid.valves || []).forEach(v => { const s = v.seg || v.on; if (sameSeg(s, e, nb)) { v.seg = s[0] === e ? [K, nb] : [nb, K]; delete v.on; } });
+          return K;
+        };
+        if (want(p[i + 1])) p.splice(i + 1, 0, addK(p[i + 1]));
+        if (want(p[i - 1])) { p.splice(i, 0, addK(p[i - 1])); i++; }
+      }
+    });
+  });
+  const next = JSON.parse(JSON.stringify(mid));
+  dragPipes(mid, next, segSel, d, new Set(keep));
+  fixFittings(mid, next);
+  return {next, d, risers: keep.length};
+}
+// 길이가 바뀐 구간의 부속은 가까운 끝에서의 거리를 유지함(장비 쪽 플랜지는 장비를, 벽 쪽은 벽을 따라감)
+function fixFittings(base, next) {
+  const len = (m, s) => { const A = m.nodes[s[0]], B = m.nodes[s[1]]; return A && B ? Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]) : 0; };
+  (next.valves || []).forEach(v => {
+    const s = v.seg || v.on; if (!s || v.at == null || v.at === "mid") return;
+    const L0 = len(base, s), L1 = len(next, s), at = Number(v.at);
+    if (!L0 || !L1 || Math.abs(L0 - L1) < 0.5) return;
+    v.at = Math.round(Math.min(L1, Math.max(0, at <= L0 / 2 ? at : L1 - (L0 - at))));
+  });
+}
+["gx", "gy", "gz"].forEach(id => $(id).addEventListener("input", () => { if (!segSel) return; model = segMoved().next; build(); }));
+function closeSeg() { if (segBase) { model = segBase; build(); } segSel = null; segBase = null; $("segp").hidden = true; }
+$("segClose").onclick = closeSeg;
+$("segApply").onclick = async () => {
+  if (!segSel) return;
+  const {next, d, risers} = segMoved(), seg = segSel;
+  model = segBase; segSel = null; segBase = null; $("segp").hidden = true;
+  if (d.every(v => !v)) { build(); return; }
+  await commit(next, seg.join("–") + " 배관을 " + d.map((v, i) => "xyz"[i] + (v >= 0 ? "+" : "") + v).join(" ") + " 옮김", "직접");
+};
+/* 여러 개 선택(Shift)·같이 옮기기·유닛 묶기 */
+let multi = [], multiBase = null;
+function toggleMulti(it) {
+  if (!multi.length) { $("sel").hidden = true; $("fit").hidden = true; $("segp").hidden = true; $("eqp").hidden = true; selected = null; multiBase = JSON.parse(JSON.stringify(model)); }
+  const i = multi.findIndex(x => x.k === it.k && x.id === it.id);
+  if (i >= 0) multi.splice(i, 1); else multi.push(it);
+  ["mx", "my", "mz"].forEach(id => $(id).value = 0);
+  if (!multi.length) { clearMulti(); return; }
+  model = multiBase; showMulti(); build();
+}
+function multiEqs(m) {
+  const s = new Set();
+  multi.filter(x => x.k === "eq").forEach(x => unitOf(m.equipment, x.id).forEach(j => s.add(j)));
+  return [...s].filter(j => m.equipment[j] && !isFixed(m.equipment[j]));
+}
+function showMulti() {
+  const m = multiBase;
+  $("mTitle").textContent = "선택 " + multi.length + "개";
+  $("mList").textContent = multi.map(x => x.k === "eq" ? (m.equipment[x.id]?.name || "기기") + (isFixed(m.equipment[x.id] || {}) ? "(고정)" : "") : x.k === "seg" ? "배관 " + x.id.replace("|", "–") : "점 " + x.id).join(", ");
+  const eqs = multi.filter(x => x.k === "eq").map(x => m.equipment[x.id]).filter(e => e && !isFixed(e));
+  $("mUnitBox").hidden = !eqs.length;
+  $("mConnBox").hidden = !(multi.length === 2 && multi.every(x => x.k === "node"));
+  $("mUnit").value = (eqs.find(e => e.unit) || {}).unit || "";
+  $("multip").hidden = false;
+}
+function clearMulti() { if (multiBase) model = multiBase; multi = []; multiBase = null; $("multip").hidden = true; build(); }
+function multiMoved() {
+  const base = multiBase, next = JSON.parse(JSON.stringify(base));
+  const d = ["mx", "my", "mz"].map(id => Number($(id).value) || 0);
+  if (!d.some(v => v)) return {next, d, n: 0};
+  const ids = new Set();
+  multi.forEach(x => { if (x.k === "node") ids.add(x.id); if (x.k === "seg") x.id.split("|").forEach(i => ids.add(i)); });
+  const eqs = multiEqs(base);
+  eqs.forEach(j => { next.equipment[j].at = next.equipment[j].at.map((v, k) => v + d[k]); });
+  const boxes = eqs.map(j => eqBox(base.equipment[j], 60));
+  Object.keys(base.nodes).forEach(id => { if (boxes.some(b => inBox(base.nodes[id], b))) ids.add(id); });
+  const moved = dragPipes(base, next, [...ids].filter(id => base.nodes[id]), d);
+  fixFittings(base, next);
+  return {next, d, n: moved.length};
+}
+["mx", "my", "mz"].forEach(id => $(id).addEventListener("input", () => { if (!multi.length) return; model = multiMoved().next; build(); }));
+$("mClear").onclick = clearMulti;
+$("mApply").onclick = async () => {
+  if (!multi.length) return;
+  const {next, d, n} = multiMoved();
+  if (!d.some(v => v)) return;
+  const base = multiBase; multi = []; multiBase = null; $("multip").hidden = true; model = base;
+  await commit(next, "여러 개 같이 이동 " + d.map((v, k) => "xyz"[k] + (v >= 0 ? "+" : "") + v).join(" ") + "(배관 점 " + n + "개)", "직접");
+};
+async function setUnit(name) {
+  const base = multiBase, next = JSON.parse(JSON.stringify(base));
+  const idx = multi.filter(x => x.k === "eq").map(x => x.id).filter(j => next.equipment[j] && !isFixed(next.equipment[j]));
+  if (!idx.length) return;
+  idx.forEach(j => { if (name) next.equipment[j].unit = name; else delete next.equipment[j].unit; });
+  const names = idx.map(j => next.equipment[j].name).join(", ");
+  multi = []; multiBase = null; $("multip").hidden = true; model = base;
+  await commit(next, name ? "유닛 묶음: " + name + " (" + names + ")" : "유닛 풀기: " + names, "직접");
+}
+$("mGroup").onclick = () => setUnit($("mUnit").value.trim() || "유닛 " + (1 + new Set((model.equipment || []).map(e => e.unit).filter(Boolean)).size));
+$("mUngroup").onclick = () => setUnit("");
+function paintMulti() {
+  if (!multi.length) return;
+  const acc = col("--accent"), nodes = new Set(), segs = new Set(), eqs = new Set();
+  multi.forEach(x => x.k === "node" ? nodes.add(x.id) : x.k === "seg" ? segs.add(x.id) : unitOf(model.equipment, x.id).forEach(j => eqs.add(j)));
+  group.children.forEach(o => {
+    const u = o.userData;
+    if (u.node && nodes.has(u.node)) { o.material.opacity = .8; }
+    else if (u.seg && (segs.has(u.seg.join("|")) || segs.has([u.seg[1], u.seg[0]].join("|")))) { o.material = o.material.clone(); o.material.emissive = acc; o.material.emissiveIntensity = .55; }
+    else if (u.ei != null && eqs.has(u.ei)) { o.material.opacity = .42; o.material.emissive = acc; o.material.emissiveIntensity = .4; }
+  });
+}
+addEventListener("keydown", e => { if (e.key === "Escape" && multi.length) clearMulti(); });
+/* 기기·벽 옮기기·크기 */
+let eqSel = null, eqBase = null;
+const isFixed = e => !!(e.fixed || e.solid === false);
+function eqBox(e, tol) { const o = e.offset || [0, 0, 0], lo = e.at.map((v, k) => v + o[k] - tol); return {lo, hi: lo.map((v, k) => v + e.size[k] + 2 * tol)}; }
+const inBox = (p, b) => p.every((v, k) => v >= b.lo[k] && v <= b.hi[k]);
+function unitOf(eqs, i) { const e = eqs[i]; return e.unit ? eqs.map((x, j) => x.unit === e.unit ? j : -1).filter(j => j >= 0) : [i]; }
+// 장비에 붙은 점을 d만큼 옮기고, 이어진 배관은 자기 방향으로만 늘어나게 전파
+function dragPipes(base, next, ids, d, stop) {
+  const nodes = base.nodes, adj = {};
+  (base.lines || []).forEach(l => { const p = l.path || []; for (let i = 0; i < p.length - 1; i++) { (adj[p[i]] = adj[p[i]] || []).push(p[i + 1]); (adj[p[i + 1]] = adj[p[i + 1]] || []).push(p[i]); } });
+  const fixedBoxes = (base.equipment || []).filter(isFixed).map(e => eqBox(e, 60));
+  const anchored = id => nodes[id][2] <= 0 || fixedBoxes.some(b => inBox(nodes[id], b));
+  const moved = {}, q = ids.map(id => [id, d]);
+  while (q.length) {
+    const [id, dd] = q.shift(); if (moved[id]) continue; moved[id] = dd;
+    for (const nb of adj[id] || []) {
+      if (moved[nb] || anchored(nb) || (stop && stop.has(nb))) continue;
+      const diff = nodes[nb].map((v, k) => Math.abs(v - nodes[id][k])), ax = diff.indexOf(Math.max(...diff));
+      const nd = dd.map((v, k) => k === ax ? 0 : v);
+      if (nd.some(v => v)) q.push([nb, nd]);
+    }
+  }
+  for (const id in moved) next.nodes[id] = nodes[id].map((v, k) => v + moved[id][k]);
+  return Object.keys(moved);
+}
+function openEq(i) {
+  $("sel").hidden = true; $("fit").hidden = true; $("segp").hidden = true; selected = null;
+  eqSel = i; eqBase = JSON.parse(JSON.stringify(model)); const e = model.equipment[i], fx = isFixed(e);
+  $("eTitle").textContent = (e.name || "기기") + (fx ? " (고정 구조)" : "");
+  const unit = unitOf(model.equipment, i).map(j => model.equipment[j].name);
+  $("eInfo").textContent = fx ? "고정 구조는 옮기거나 크기를 바꾸지 않음. 이름만 고칠 수 있음." : unit.length > 1 ? "같이 움직이는 유닛: " + unit.join(", ") : "";
+  $("eName").value = e.name || ""; ["ex", "ey", "ez"].forEach(id => { $(id).value = 0; $(id).disabled = fx; });
+  $("esx").value = e.size[0]; $("esy").value = e.size[1]; $("esz").value = e.size[2];
+  ["esx", "esy", "esz"].forEach(id => $(id).disabled = fx); $("eDel").hidden = fx; $("eHint").hidden = fx;
+  $("eqp").hidden = false;
+}
+function eqMoved() {
+  const next = JSON.parse(JSON.stringify(eqBase)), e = next.equipment[eqSel];
+  if (isFixed(e)) { const nm = $("eName").value.trim(); if (nm) e.name = nm; return {next, d: [0, 0, 0], e, pipes: []}; }
+  const d = ["ex", "ey", "ez"].map(id => Number($(id).value) || 0);
+  const unit = unitOf(eqBase.equipment, eqSel);
+  let pipes = [];
+  if (d.some(v => v)) {
+    const boxes = unit.map(j => eqBox(eqBase.equipment[j], 60));
+    const attached = Object.keys(eqBase.nodes).filter(id => boxes.some(b => inBox(eqBase.nodes[id], b)));
+    unit.forEach(j => { next.equipment[j].at = next.equipment[j].at.map((v, k) => v + d[k]); });
+    pipes = dragPipes(eqBase, next, attached, d);
+  }
+  e.size = ["esx", "esy", "esz"].map((id, k) => Math.max(10, Number($(id).value) || e.size[k]));
+  const nm = $("eName").value.trim(); if (nm) e.name = nm;
+  fixFittings(eqBase, next);
+  return {next, d, e, pipes};
+}
+["ex", "ey", "ez", "esx", "esy", "esz", "eName"].forEach(id => $(id).addEventListener("input", () => { if (eqSel == null) return; model = eqMoved().next; build(); }));
+function closeEq() { if (eqBase) { model = eqBase; build(); } eqSel = null; eqBase = null; $("eqp").hidden = true; }
+$("eClose").onclick = closeEq;
+$("eApply").onclick = async () => {
+  if (eqSel == null) return;
+  const {next, d, e, pipes: pipesMoved} = eqMoved(), old = eqBase.equipment[eqSel];
+  model = eqBase; eqSel = null; eqBase = null; $("eqp").hidden = true;
+  if (JSON.stringify(old) === JSON.stringify(e)) { build(); return; }
+  const parts = [];
+  if (d.some(v => v)) parts.push(d.map((v, k) => "xyz"[k] + (v >= 0 ? "+" : "") + v).join(" ") + " 이동" + (pipesMoved.length ? "(배관 점 " + pipesMoved.length + "개 따라옴)" : ""));
+  if (old.size.join() !== e.size.join()) parts.push("크기 " + e.size.join("×"));
+  if (old.name !== e.name) parts.push("이름 " + e.name);
+  await commit(next, (old.name || "기기") + ": " + parts.join(", "), "직접");
+};
+$("eDel").onclick = async () => {
+  if (eqSel == null) return;
+  const next = JSON.parse(JSON.stringify(eqBase)); const [gone] = next.equipment.splice(eqSel, 1);
+  model = eqBase; eqSel = null; eqBase = null; $("eqp").hidden = true;
+  await commit(next, "기기 삭제: " + (gone.name || ""), "직접");
+};
+/* 부속 추가·수정 */
+$("tAdd").addEventListener("click", () => {
+  addMode = !addMode; $("tAdd").setAttribute("aria-pressed", String(addMode));
+  if (addMode) { $("sel").hidden = true; selected = null; sysMsg("부속 추가: 배관에서 넣을 자리를 누름"); }
+});
+function openFit(f) {
+  fitSel = f; $("sel").hidden = true; selected = null;
+  const v = f.idx != null ? model.valves[f.idx] : null;
+  const seg = v ? (v.seg || v.on) : f.seg;
+  $("fitName").textContent = v ? "부속: " + (v.tag || FIT[v.type] || "기타") + " (" + seg.join("–") + ")" : "부속 추가: " + seg.join("–") + " 구간";
+  $("fType").value = v ? (FIT[v.type] ? v.type : "other") : "flange";
+  $("fTag").value = v ? (v.tag || "") : "";
+  $("fAt").value = v ? (v.at === "mid" || v.at == null ? "" : v.at) : f.at;
+  $("fAtLb").firstChild.textContent = seg[0] + "에서 mm";
+  $("fApply").textContent = v ? "고치기" : "추가"; $("fDel").hidden = !v;
+  $("fHint").textContent = "빈 칸이면 구간 가운데. 기타는 이름을 적어줌.";
+  $("fit").hidden = false;
+}
+$("fClose").onclick = () => { $("fit").hidden = true; fitSel = null; };
+$("fApply").onclick = async () => {
+  if (!fitSel) return;
+  const next = JSON.parse(JSON.stringify(model)); next.valves = next.valves || [];
+  const type = $("fType").value, tag = $("fTag").value.trim(), atv = $("fAt").value === "" ? "mid" : Number($("fAt").value);
+  const old = fitSel.idx != null ? next.valves[fitSel.idx] : null;
+  const v = {type, seg: old ? (old.seg || old.on) : fitSel.seg, at: atv};
+  if (tag) v.tag = tag; else if (type === "other") v.tag = "기타";
+  if (old) next.valves[fitSel.idx] = v; else next.valves.push(v);
+  const name = v.tag || FIT[type];
+  $("fit").hidden = true; fitSel = null;
+  await commit(next, (old ? "부속 고침: " : "부속 추가: ") + name + " (" + v.seg.join("–") + ", " + atv + ")", "직접");
+};
+$("fDel").onclick = async () => {
+  if (!fitSel || fitSel.idx == null) return;
+  const next = JSON.parse(JSON.stringify(model)); const [gone] = next.valves.splice(fitSel.idx, 1);
+  $("fit").hidden = true; fitSel = null;
+  await commit(next, "부속 삭제: " + (gone.tag || FIT[gone.type] || "기타"), "직접");
+};
+function selectNode(id) {
+  elbOff(); selected = id; const p = model.nodes[id];
+  $("selName").textContent = id + (model.labels && labelText(model.labels[id]) ? " · " + labelText(model.labels[id]) : "");
+  $("sx").value = p[0]; $("sy").value = p[1]; $("sz").value = p[2];
+  $("sel").hidden = false; build();
+}
+$("selClose").onclick = () => { elbOff(); selected = null; $("sel").hidden = true; build(); };
+$("segDel").onclick = async () => {
+  if (!segSel) return;
+  const seg = segSel, base = segBase; segSel = null; segBase = null; $("segp").hidden = true; model = base;
+  const next = JSON.parse(JSON.stringify(base)); deleteSeg(next, seg[0], seg[1]);
+  await commit(next, "배관 삭제: " + seg.join("–"), "직접");
+};
+$("segJoint").onclick = async () => {
+  if (!segSel) return;
+  const seg = segSel, base = segBase; segSel = null; segBase = null; $("segp").hidden = true; model = base;
+  const next = JSON.parse(JSON.stringify(base)); const J = splitSeg(next, seg[0], seg[1], segAt);
+  if (!J) { sysMsg("배관 끝이 아닌 중간을 눌러야 조인트를 넣을 수 있음"); build(); return; }
+  await commit(next, "조인트 " + J + " 추가 (" + seg.join("–") + ", " + seg[0] + "에서 " + segAt + ")", "직접");
+  selectNode(J);
+};
+$("mConnect").onclick = async () => {
+  if (multi.length !== 2) return;
+  const [a, b] = multi.map(x => x.id), base = multiBase;
+  multi = []; multiBase = null; $("multip").hidden = true; model = base;
+  const next = JSON.parse(JSON.stringify(base));
+  const ln = lineOfNode(base, a) || lineOfNode(base, b);
+  const n = connectNodes(next, a, b, ln && ln.name);
+  await commit(next, a + "–" + b + " 배관 추가(" + n + "구간)", "직접");
+};
+$("selExtend").onclick = async () => {
+  if (!selected) return;
+  const d = ["nx", "ny", "nz"].map(id => Number($(id).value) || 0);
+  if (!d.some(v => v)) { sysMsg("뻗을 거리를 Δx·Δy·Δz에 넣어줌"); return; }
+  const next = JSON.parse(JSON.stringify(model)), a = selected;
+  const end = newNodeId(next, a); next.nodes[end] = next.nodes[a].map((v, k) => v + d[k]);
+  const ln = lineOfNode(model, a);
+  connectNodes(next, a, end, ln && ln.name);
+  ["nx", "ny", "nz"].forEach(id => $(id).value = 0);
+  await commit(next, a + "에서 배관 추가 → " + end, "직접");
+  selectNode(end);
+};
+/* 점만 삭제: 일자 배관 중간 점(조인트)은 앞뒤 배관을 하나로 합치고, 끝점은 그 끝 구간만 지움 */
+$("selRmNode").onclick = async () => {
+  if (!selected) return;
+  const id = selected, next = JSON.parse(JSON.stringify(model)), N = next.nodes;
+  const nbs = []; (next.lines || []).forEach(l => { const p = l.path || []; p.forEach((x, i) => { if (x === id) { if (p[i - 1]) nbs.push(p[i - 1]); if (p[i + 1]) nbs.push(p[i + 1]); } }); });
+  if (nbs.length === 1) { deleteSeg(next, id, nbs[0]); }
+  else if (nbs.length === 2) {
+    const [a, b] = nbs, A = N[a], B = N[b], C = N[id];
+    const ab = B.map((v, k) => v - A[k]), ac = C.map((v, k) => v - A[k]);
+    const cross = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+    if (cross.some(v => Math.abs(v) > 1)) { sysMsg(id + "는 꺾이는 점(엘보우)이라 빼면 배관이 사선이 됨. 꺾인 곳은 \"이 점과 붙은 배관 삭제\" 후 다시 이어야 함"); return; }
+    const la = Math.hypot(...ac);
+    (next.valves || []).forEach(v => {
+      const s2 = v.seg || v.on; if (!s2) return;
+      const L = Math.hypot(...N[s2[1]].map((x, k) => x - N[s2[0]][k])), raw = v.at == null || v.at === "mid" ? L / 2 : Number(v.at);
+      if (sameSeg(s2, a, id)) { const fromA = s2[0] === a ? raw : L - raw; v.seg = [a, b]; v.at = Math.round(fromA); delete v.on; }
+      else if (sameSeg(s2, id, b)) { const fromC = s2[0] === id ? raw : L - raw; v.seg = [a, b]; v.at = Math.round(la + fromC); delete v.on; }
+    });
+    next.lines.forEach(l => { l.path = (l.path || []).filter(x => x !== id); });
+    tidy(next);
+  } else { sysMsg(id + "는 배관 " + nbs.length + "개가 만나는 점(티)이라 점만 뺄 수 없음"); return; }
+  selected = null; $("sel").hidden = true;
+  await commit(next, id + " 점만 삭제", "직접");
+};
+$("selDelNode").onclick = async () => {
+  if (!selected) return;
+  const id = selected, next = JSON.parse(JSON.stringify(model));
+  const nbs = new Set(); (next.lines || []).forEach(l => { const p = l.path || []; p.forEach((x, i) => { if (x === id) { if (p[i - 1]) nbs.add(p[i - 1]); if (p[i + 1]) nbs.add(p[i + 1]); } }); });
+  nbs.forEach(nb => deleteSeg(next, id, nb));
+  selected = null; $("sel").hidden = true;
+  await commit(next, id + " 점과 붙은 배관 삭제", "직접");
+};
+/* 엘보우 추가: 고른 점에서 한 방향으로 꺾어 내려가(올라가) 누른 배관에 닿게 이음 */
+let elbPick = null;
+const DIRN = {"2,-1": "아래로", "2,1": "위로", "0,1": "x+", "0,-1": "x−", "1,1": "y+", "1,-1": "y−"};
+function elbOff() { elbPick = null; $("elbHint").hidden = true; document.querySelectorAll("#elbDirs button").forEach(b => b.setAttribute("aria-pressed", "false")); }
+document.querySelectorAll("#elbDirs button").forEach(b => b.onclick = () => {
+  if (!selected) return;
+  const [k, sg] = b.dataset.d.split(",").map(Number);
+  elbPick = {from: selected, k, sg};
+  document.querySelectorAll("#elbDirs button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("elbHint").textContent = selected + "에서 " + DIRN[b.dataset.d] + " 꺾음. 이어질 배관(또는 점)을 누름. Esc는 취소.";
+  $("elbHint").hidden = false;
+});
+addEventListener("keydown", e => { if (e.key === "Escape" && elbPick) elbOff(); });
+async function elbowTo(u) {
+  const {from, k, sg} = elbPick, next = JSON.parse(JSON.stringify(model)), P = next.nodes[from];
+  let Q, to;
+  if (u.node) { if (u.node === from) return; to = u.node; Q = next.nodes[to]; }
+  else if (u.seg) {
+    const [a, b] = u.seg, A = next.nodes[a], B = next.nodes[b];
+    const df = A.map((v, i) => Math.abs(v - B[i])), ta = df.indexOf(Math.max(...df));
+    if (ta === k) { sysMsg("꺾는 방향과 나란한 배관에는 엘보우로 닿을 수 없음. 다른 방향이나 배관을 고름"); return; }
+    const lo = Math.min(A[ta], B[ta]), hi = Math.max(A[ta], B[ta]);
+    Q = A.slice(); Q[ta] = Math.min(hi, Math.max(lo, P[ta]));
+    const dist = Math.abs(Q[ta] - A[ta]);
+    if (dist < 1) to = a; else if (Math.abs(Q[ta] - B[ta]) < 1) to = b; else to = splitSeg(next, a, b, dist);
+    Q = next.nodes[to];
+  } else return;
+  if ((Q[k] - P[k]) * sg <= 0) { sysMsg("고른 방향(" + DIRN[k + "," + sg] + ")에 그 배관이 없음. 방향을 다시 고름"); return; }
+  // 첫 꺾임은 고른 방향, 그다음 남은 차이를 직각으로
+  const path = [from]; let cur = P.slice();
+  [k, ...[2, 0, 1].filter(i => i !== k)].forEach(i => {
+    if (cur[i] === Q[i]) return;
+    cur = cur.slice(); cur[i] = Q[i];
+    if (cur.some((v, j) => v !== Q[j])) { const id = newNodeId(next, from); next.nodes[id] = cur; path.push(id); }
+  });
+  path.push(to);
+  const ln = lineOfNode(model, from);
+  (next.lines = next.lines || []).push({name: ln ? ln.name : "배관", path});
+  elbOff(); selected = null; $("sel").hidden = true;
+  await commit(next, from + "에서 " + DIRN[k + "," + sg] + " 엘보우 → " + to + " 연결 (" + (path.length - 1) + "구간)", "직접");
+}
+$("selApply").onclick = async () => {
+  if (!selected) return;
+  const np = [Number($("sx").value), Number($("sy").value), Number($("sz").value)];
+  if (np.some(x => !isFinite(x))) return;
+  const next = JSON.parse(JSON.stringify(model)); next.nodes[selected] = np;
+  await commit(next, `${selected} 점을 ${np.join(", ")} 로 옮김`, "직접");
+};
+
+/* ---------- 저장소 ---------- */
+function setConn(t, cls) { const c = $("conn"); c.textContent = t; c.className = "chip " + (cls || ""); }
+function setRev() { $("rev").textContent = "버전 " + rev; $("undo").disabled = !hist.length || busy; }
+
+async function commit(next, summary, by) {
+  if (!mainRef) { model = next; build(); return; }
+  const prev = model ? {model, rev, summary: lastSummary} : null;
+  try {
+    if (prev) { hist = [...hist, prev].slice(-15); await histRef.set({items: hist}); }
+    rev += 1; lastSummary = summary;
+    model = next; build(); setRev();
+    await mainRef.set({model: next, rev, summary, by: by || "", at: new Date().toISOString()});
+  } catch (e) { sysMsg("저장 못 함: " + (e.message || e.code)); }
+}
+let lastSummary = "";
+$("undo").onclick = async () => {
+  if (!hist.length || busy) return;
+  const last = hist[hist.length - 1]; hist = hist.slice(0, -1);
+  try {
+    await histRef.set({items: hist});
+    rev += 1; model = last.model; lastSummary = "되돌림"; build(); setRev();
+    await mainRef.set({model: last.model, rev, summary: "되돌림: " + (last.summary || ""), by: "되돌리기", at: new Date().toISOString()});
+    sysMsg("한 단계 되돌림");
+  } catch (e) { sysMsg("되돌리기 못 함: " + (e.message || e.code)); }
+};
+
+function renderChat() {
+  const el = $("chat"); [...el.querySelectorAll(".msg")].forEach(n => n.remove());
+  $("hint").hidden = chatMsgs.length > 0;
+  chatMsgs.forEach(m => {
+    const d = document.createElement("div"); d.className = "msg " + (m.role === "user" ? "user" : m.role === "sys" ? "sys" : "claude");
+    d.textContent = m.text;
+    if (m.role !== "sys") { const meta = document.createElement("span"); meta.className = "meta"; meta.textContent = (m.role === "user" ? "나" : "Claude") + (m.photos ? " · 사진 " + m.photos + "장" : "") + " · " + (m.at || "").slice(11, 16); d.appendChild(meta); }
+    el.appendChild(d);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+async function pushChat(msg) {
+  chatMsgs = [...chatMsgs, {...msg, at: new Date().toISOString()}].slice(-60); renderChat();
+  if (chatRef) { try { await chatRef.set({msgs: chatMsgs}); } catch (e) { /* 대화 기록 저장 실패는 도면에 영향 없음 */ } }
+}
+function sysMsg(t) { chatMsgs = [...chatMsgs, {role: "sys", text: t, at: new Date().toISOString()}]; renderChat(); }
+
+/* ---------- Claude에게 묻기 ---------- */
+const GUIDE = `너는 엔엠솔루션(NM SOLUTION) 배관 도면 보조임. 사용자(kevin)는 현장 배관을 대략적으로 말하거나 사진·손스케치를 보여줌. 현재 배관 모델(JSON)을 요청대로 고친 새 모델을 돌려줌.
+
+모델 형식 (단위 mm):
+- 좌표: x = 배관이 올라오는 벽을 따라, y = 벽에서 멀어지는 방향(칠러·열교환기 길이방향), z = 높이(옥상·바닥 0).
+- nodes: {"ID": [x, y, z]}  ID는 짧은 영문+숫자(R1, S2 등). 기존 ID는 유지하고, 새 점은 같은 규칙으로 이어서 붙임.
+- lines: [{"name": "리턴(입수)", "path": ["RW","R1",...], "size": "100A"(알면), "color"(생략 가능)}]  path 순서대로 직선 구간으로 이어짐. 갈라지는 관은 별도 line으로 갈라지는 점부터 시작.
+- valves: [{"type": "butterfly|gate|ball|check|globe|strainer|flex|union|flange|gauge|airvent|other"(airvent=에어벤트, 배관 위에 섬)(other는 tag에 이름 필수), "seg": ["A","B"], "at": A에서 거리 mm 또는 "mid", "tag": "BV" 등}]
+- ends: {"ID": "에어벤트"} 끝 점 설명.
+- equipment: [{"name", "at": [x,y,z], "size": [x폭, y길이, z높이], "offset": [ox,oy,oz], "solid": false(벽처럼 윤곽만), "fixed": true(벽 등 고정 구조), "unit": "칠러 유닛"(같은 값끼리 함께 움직임), "shape": "cyl"(원통형일 때), "axis": "x|y|z"(원통 길이방향)}]  범위는 at+offset 부터 at+offset+size. 원통은 그 범위에 내접(지름 = 길이방향 외 두 치수 중 작은 값).
+- labels: {"ID": "설명 문장"}  짧게.
+- notes: ["도면 주기"], draw_od: 그림용 관 굵기 mm, title: 도면 이름.
+
+규칙:
+- 요청한 부분만 고치고 나머지는 그대로 둠. 이전 모델의 모든 키를 유지해서 전체 모델을 돌려줌.
+- 배관은 직교로 유지함(한 구간에서 x·y·z 중 하나만 변함). 높이를 바꾸면 이어진 수직·수평 구간이 맞게 따라가도록 점들을 함께 옮김.
+- 치수를 모르면 그럴듯한 대략값을 쓰고, 답에 "대략값"이라고 밝힘.
+- 밸브 seg는 실제로 이어진 두 점이어야 함. 점을 지우면 그 점을 쓰는 밸브·라벨도 정리함.
+- 사진이 첨부되면 사진의 배관 형상을 읽어 모델에 반영함. 사진은 이번 요청에만 첨부됨.
+- 질문만 하거나 바꿀 게 없으면 model은 null.
+- reply는 1~3문장, "~함/~했음" 개조식 문체(예: "서플라이를 리턴보다 600 높게 올림"). "~했어요/~합니다" 쓰지 않음. 모호하면 가장 그럴듯하게 고치고 어떻게 해석했는지 한 줄로 밝힘.
+
+출력: JSON 하나만. {"reply": "...", "model": {...} 또는 null}`;
+
+function validModel(m) {
+  if (!m || typeof m !== "object" || !m.nodes || typeof m.nodes !== "object" || !Array.isArray(m.lines)) return false;
+  for (const id in m.nodes) { const p = m.nodes[id]; if (!Array.isArray(p) || p.length !== 3 || p.some(x => typeof x !== "number" || !isFinite(x))) return false; }
+  return m.lines.every(l => Array.isArray(l.path) && l.path.every(id => m.nodes[id]));
+}
+
+$("ask").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("form").requestSubmit(); } });
+$("ask").addEventListener("paste", e => {
+  if ($("photoBtn").hidden) return;
+  const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith("image/"));
+  if (files.length) { addImgs(files); e.preventDefault(); }
+});
+$("photo").addEventListener("change", e => { addImgs([...e.target.files]); e.target.value = ""; });
+let imgMax = 4;
+function addImgs(files) { pendingImgs = [...pendingImgs, ...files].slice(0, imgMax); renderThumbs(); }
+function renderThumbs() {
+  const el = $("thumbs"); el.textContent = "";
+  pendingImgs.forEach((f, i) => { const s = document.createElement("span"), im = document.createElement("img"), x = document.createElement("button");
+    im.src = URL.createObjectURL(f); im.alt = "첨부 사진"; x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "사진 빼기");
+    x.onclick = () => { pendingImgs.splice(i, 1); renderThumbs(); }; s.append(im, x); el.appendChild(s); });
+}
+function setBusy(b, t) { busy = b; $("send").disabled = b; $("stop").hidden = !b; $("status").textContent = t || ""; setRev(); }
+
+$("stop").onclick = () => abortCtl && abortCtl.abort();
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("ask").value.trim();
+  if (busy || (!text && !pendingImgs.length)) return;
+  if (!sample) { sysMsg("이 화면에서는 Claude 연결이 안 됨. 서버 ANTHROPIC_API_KEY 설정을 확인해야 함."); return; }
+  const imgs = pendingImgs; pendingImgs = []; renderThumbs(); $("ask").value = "";
+  await pushChat({role: "user", text: text || "(사진)", photos: imgs.length || undefined});
+  setBusy(true, "생각 중…");
+  abortCtl = new AbortController();
+  const recent = chatMsgs.filter(m => m.role !== "sys").slice(-9, -1).map(m => (m.role === "user" ? "kevin: " : "Claude: ") + m.text).join("\n");
+  const prompt = `${GUIDE}\n\n최근 대화:\n${recent || "(없음)"}\n\n현재 모델:\n${JSON.stringify(model || {nodes: {}, lines: []})}\n\n${imgs.length ? `첨부 사진 ${imgs.length}장 있음.\n` : ""}이번 요청: ${text || "첨부 사진대로 그려줘"}`;
+  try {
+    const out = await sample.json(prompt, {signal: abortCtl.signal, cache: false, images: imgs.length ? imgs : undefined,
+      onText: () => $("status").textContent = "도면 고치는 중…"});
+    const reply = out && typeof out.reply === "string" ? out.reply : "답을 읽지 못함.";
+    if (out && out.model) {
+      if (validModel(out.model)) { await commit(out.model, reply, "Claude"); }
+      else { await pushChat({role: "claude", text: reply + "\n(돌려준 도면 형식이 맞지 않아 화면은 그대로 둠. 다시 말해주면 고침.)"}); setBusy(false); return; }
+    }
+    await pushChat({role: "claude", text: reply});
+  } catch (err) {
+    const c = err && err.code;
+    if (c === "cancelled" || err?.name === "AbortError") sysMsg("멈춤");
+    else if (c === "not_granted" || c === "sampling_disabled" || c === "capability_disabled") { sysMsg("Claude 사용이 허용되지 않음. 서버 ANTHROPIC_API_KEY 설정을 확인해야 함."); }
+    else if (c === "rate_limited") sysMsg("요청이 많아 잠시 쉬어야 함. 조금 뒤에 다시 보내줌.");
+    else if (c === "invalid_json") sysMsg("답 형식이 깨져 반영 못 함. 조금 짧게 다시 말해줌.");
+    else if (c === "images_unavailable" || c === "image_rejected") sysMsg("사진을 보낼 수 없음(형식·개수 확인). 글로 다시 보내줌.");
+    else sysMsg("오류: " + (err?.message || c || err));
+  } finally { setBusy(false); abortCtl = null; }
+});
+
+/* ---------- 시작 ---------- */
+(async () => {
+  resize(); build();
+  try { sample = await claude.use("sample"); } catch (e) { sample = null; }
+  if (sample) {
+    try { const lim = await sample.limits(); if (lim && lim.images) { $("photoBtn").hidden = false; imgMax = lim.images.maxCount || 4; $("photo").accept = (lim.images.mediaTypes || ["image/*"]).join(","); } } catch (e) {}
+  } else { $("ask").placeholder = "이 화면에서는 Claude 연결 안 됨. 서버 ANTHROPIC_API_KEY 설정을 확인해야 함."; }
+  try { db = await claude.use("db"); } catch (e) { db = null; }
+  if (!db) { setConn("저장 연결 안 됨", "off"); return; }
+  mainRef = db.doc("boards/main"); chatRef = db.doc("boards/chat"); histRef = db.doc("boards/hist");
+  mainRef.onSnapshot(snap => {
+    setConn("실시간", "live");
+    if (!snap.exists) { model = null; rev = 0; setRev(); build(); return; }
+    const d = snap.data();
+    if (d.rev === rev && model) return;
+    if (segSel) { segBase = d.model; rev = d.rev || 0; setRev(); return; }
+    if (eqSel != null) { eqBase = d.model; rev = d.rev || 0; setRev(); return; }
+    if (multi.length) { multiBase = d.model; rev = d.rev || 0; setRev(); return; } // 미리보기 중에는 기준만 갱신
+    model = d.model || null; rev = d.rev || 0; lastSummary = d.summary || "";
+    $("boardTitle").textContent = (model && model.title) || "배관 스케치 보드";
+    setRev(); build();
+    if (selected && model && model.nodes[selected]) { const p = model.nodes[selected]; $("sx").value = p[0]; $("sy").value = p[1]; $("sz").value = p[2]; }
+  }, () => setConn("연결 끊김", "off"));
+  chatRef.onSnapshot(snap => { const d = snap.exists ? snap.data() : null; const msgs = (d && d.msgs) || [];
+    if (JSON.stringify(msgs) !== JSON.stringify(chatMsgs.filter(m => m.role !== "sys"))) { chatMsgs = msgs; renderChat(); } });
+  histRef.onSnapshot(snap => { hist = (snap.exists && snap.data().items) || []; setRev(); });
+})();
+</script>
+
+</body></html>

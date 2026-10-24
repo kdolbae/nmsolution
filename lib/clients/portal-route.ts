@@ -6,6 +6,7 @@ import { getClientBySlug } from './table'
 import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie, validShareKey } from './portal'
 import { verifyPortalPassword } from './portal-password'
 import { htmlToPdf, pdfResponse } from './pdf'
+import { portalDrawingsHtml } from '@/lib/drawings/portal'
 
 /**
  * 업체용 링크 (예: app/sinil/route.ts → nm-solution.co.kr/sinil).
@@ -69,14 +70,14 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
     const pdf = await htmlToPdf(portalPageHtml(client), req)
     return pdfResponse(pdf, `${client.name} 제안서·견적서 ${client.quote.number}.pdf`)
   }
-  const html = portalPageHtml(client)
+  const html = portalPageHtml(client, await portalDrawingsHtml(client.id, slug))
   const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
   if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
   return new Response(html, { headers })
 }
 
 /** 업체 페이지 HTML: 제안서 + 견적서(엔엠솔루션 양식) + 휴대폰 폭 맞춤 + PDF 저장 버튼 */
-export function portalPageHtml(client: NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>): string {
+export function portalPageHtml(client: NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>, drawings = ''): string {
   const summary = quoteSummaryHtml(client.quote)
   const sheet = `<div class="quote-sheet">${renderQuote(client.quote, client)}</div>`
   const hasSummarySlot = client.proposalHtml.includes('<!--NM:QUOTE-SUMMARY-->')
@@ -89,6 +90,8 @@ export function portalPageHtml(client: NonNullable<Awaited<ReturnType<typeof get
   const head = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
   html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, () => `${head}</head>`) : head + html
   html = keepInside(html)
+  // 배관 도면(보기 전용): <!--NM:DRAWINGS--> 자리, 없으면 본문 끝
+  if (drawings) html = html.includes('<!--NM:DRAWINGS-->') ? html.replace('<!--NM:DRAWINGS-->', () => drawings) : /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${drawings}</body>`) : html + drawings
   html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${FIT_QUOTE}${PDF_BUTTON}</body>`) : html + FIT_QUOTE + PDF_BUTTON
   return html
 }

@@ -57,7 +57,7 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
 .lb.len{font:500 11px var(--mono);color:var(--muted);background:none;border:0;transform:translate(-50%,-50%)}
 .toolbar{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;display:flex;gap:6px;flex-wrap:wrap}
 .toolbar button,.tbtn{font:500 12px var(--sans);padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
-.toolbar button[aria-pressed="true"]{background:var(--navy);color:var(--panel);border-color:var(--navy)}
+.toolbar button[aria-pressed="true"],#elbDirs button[aria-pressed="true"]{background:var(--navy);color:var(--panel);border-color:var(--navy)}
 button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .legend{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px;
   background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:6px;padding:6px 10px;max-width:calc(100% - 24px)}
@@ -192,7 +192,7 @@ details.bom summary{cursor:pointer;font-weight:500}
       </div>
       <div class="crow"><button class="primary" id="segApply" type="button">이 배관 옮기기</button><button class="tbtn" id="segClose" type="button">취소</button></div>
       <div class="crow"><button class="tbtn" id="segJoint" type="button">누른 자리에 조인트 넣기</button><button class="tbtn" id="segDel" type="button" style="color:var(--warn)">이 배관 삭제</button></div>
-      <div class="status">입력하면 미리 보여줌. 이 배관과 붙은 부속이 같이 움직이고, 이어진 배관은 직각을 유지하며 늘거나 줌. 바닥·벽에 고정된 점은 안 움직임.</div>
+      <div class="status">입력하면 미리 보여줌. 이 배관과 붙은 부속이 같이 움직임. 옮기는 방향과 나란한 배관만 늘거나 줄고, 나머지 이어진 배관은 제자리에 두고 꺾이는 자리에 엘보우를 세움.</div>
     </div>
     <div class="sel" id="sel" hidden>
       <h4 id="selName">-</h4>
@@ -210,6 +210,9 @@ details.bom summary{cursor:pointer;font-weight:500}
         <label>Δz<input id="nz" type="number" step="50" value="0"></label>
       </div>
       <div class="crow"><button class="tbtn" id="selExtend" type="button">배관 추가</button><button class="tbtn" id="selDelNode" type="button" style="color:var(--warn)">이 점과 붙은 배관 삭제</button></div>
+      <div class="status">엘보우 추가: 꺾을 방향을 고르고, 이어질 배관을 화면에서 누름</div>
+      <div class="crow" id="elbDirs"><button class="tbtn" data-d="2,-1" type="button">아래로</button><button class="tbtn" data-d="2,1" type="button">위로</button><button class="tbtn" data-d="0,1" type="button">x+</button><button class="tbtn" data-d="0,-1" type="button">x−</button><button class="tbtn" data-d="1,1" type="button">y+ 벽에서 멀리</button><button class="tbtn" data-d="1,-1" type="button">y− 벽 쪽</button></div>
+      <div class="status" id="elbHint" hidden></div>
     </div>
     <div class="empty" id="empty" hidden><div>아직 그려진 배관이 없음.<br>오른쪽에 대략적인 모양을 말하거나 사진을 올리면 여기에 바로 그려짐.</div></div>
   </div>
@@ -655,6 +658,7 @@ cv.addEventListener("pointerup", e => {
     const it = u.node ? {k: "node", id: u.node} : u.seg ? {k: "seg", id: u.seg.join("|")} : {k: "eq", id: u.ei};
     toggleMulti(it); return;
   }
+  if (elbPick) { const h = ray.intersectObjects([...pickables, ...segPick])[0]; if (h) elbowTo(h.object.userData); return; }
   if (multi.length) return; // 여러 개 선택 중에는 Shift 없이 눌러도 새로 안 열음
   if (segSel || eqSel != null) return; // 미리보기 창이 열려 있으면 새 선택 안 함
   const hit = ray.intersectObjects(addMode ? [...valvePick, ...segPick] : [...valvePick, ...pickables, ...segPick])[0];
@@ -752,7 +756,8 @@ function segMoved() {
       const p = l.path || [];
       for (let i = 0; i < p.length; i++) {
         if (p[i] !== e) continue;
-        const want = nb => nb && nb !== other && !keep.includes(nb) && axis(mid.nodes[e], mid.nodes[nb]) === sa; // 꺾인 배관은 그대로 늘어남
+        // 옮기는 방향과 나란한 배관만 늘어나고, 나머지 이어진 배관은 제자리에 두고 꺾인 자리에 엘보우를 세움
+        const want = nb => nb && nb !== other && !keep.includes(nb) && d.some((v, k) => v && k !== axis(mid.nodes[e], mid.nodes[nb]));
         const addK = nb => {
           const K = newNodeId(mid, e); mid.nodes[K] = mid.nodes[e].slice(); keep.push(K);
           (mid.valves || []).forEach(v => { const s = v.seg || v.on; if (sameSeg(s, e, nb)) { v.seg = s[0] === e ? [K, nb] : [nb, K]; delete v.on; } });
@@ -971,12 +976,12 @@ $("fDel").onclick = async () => {
   await commit(next, "부속 삭제: " + (gone.tag || FIT[gone.type] || "기타"), "직접");
 };
 function selectNode(id) {
-  selected = id; const p = model.nodes[id];
+  elbOff(); selected = id; const p = model.nodes[id];
   $("selName").textContent = id + (model.labels && labelText(model.labels[id]) ? " · " + labelText(model.labels[id]) : "");
   $("sx").value = p[0]; $("sy").value = p[1]; $("sz").value = p[2];
   $("sel").hidden = false; build();
 }
-$("selClose").onclick = () => { selected = null; $("sel").hidden = true; build(); };
+$("selClose").onclick = () => { elbOff(); selected = null; $("sel").hidden = true; build(); };
 $("segDel").onclick = async () => {
   if (!segSel) return;
   const seg = segSel, base = segBase; segSel = null; segBase = null; $("segp").hidden = true; model = base;
@@ -1020,6 +1025,47 @@ $("selDelNode").onclick = async () => {
   selected = null; $("sel").hidden = true;
   await commit(next, id + " 점과 붙은 배관 삭제", "직접");
 };
+/* 엘보우 추가: 고른 점에서 한 방향으로 꺾어 내려가(올라가) 누른 배관에 닿게 이음 */
+let elbPick = null;
+const DIRN = {"2,-1": "아래로", "2,1": "위로", "0,1": "x+", "0,-1": "x−", "1,1": "y+", "1,-1": "y−"};
+function elbOff() { elbPick = null; $("elbHint").hidden = true; document.querySelectorAll("#elbDirs button").forEach(b => b.setAttribute("aria-pressed", "false")); }
+document.querySelectorAll("#elbDirs button").forEach(b => b.onclick = () => {
+  if (!selected) return;
+  const [k, sg] = b.dataset.d.split(",").map(Number);
+  elbPick = {from: selected, k, sg};
+  document.querySelectorAll("#elbDirs button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("elbHint").textContent = selected + "에서 " + DIRN[b.dataset.d] + " 꺾음. 이어질 배관(또는 점)을 누름. Esc는 취소.";
+  $("elbHint").hidden = false;
+});
+addEventListener("keydown", e => { if (e.key === "Escape" && elbPick) elbOff(); });
+async function elbowTo(u) {
+  const {from, k, sg} = elbPick, next = JSON.parse(JSON.stringify(model)), P = next.nodes[from];
+  let Q, to;
+  if (u.node) { if (u.node === from) return; to = u.node; Q = next.nodes[to]; }
+  else if (u.seg) {
+    const [a, b] = u.seg, A = next.nodes[a], B = next.nodes[b];
+    const df = A.map((v, i) => Math.abs(v - B[i])), ta = df.indexOf(Math.max(...df));
+    if (ta === k) { sysMsg("꺾는 방향과 나란한 배관에는 엘보우로 닿을 수 없음. 다른 방향이나 배관을 고름"); return; }
+    const lo = Math.min(A[ta], B[ta]), hi = Math.max(A[ta], B[ta]);
+    Q = A.slice(); Q[ta] = Math.min(hi, Math.max(lo, P[ta]));
+    const dist = Math.abs(Q[ta] - A[ta]);
+    if (dist < 1) to = a; else if (Math.abs(Q[ta] - B[ta]) < 1) to = b; else to = splitSeg(next, a, b, dist);
+    Q = next.nodes[to];
+  } else return;
+  if ((Q[k] - P[k]) * sg <= 0) { sysMsg("고른 방향(" + DIRN[k + "," + sg] + ")에 그 배관이 없음. 방향을 다시 고름"); return; }
+  // 첫 꺾임은 고른 방향, 그다음 남은 차이를 직각으로
+  const path = [from]; let cur = P.slice();
+  [k, ...[2, 0, 1].filter(i => i !== k)].forEach(i => {
+    if (cur[i] === Q[i]) return;
+    cur = cur.slice(); cur[i] = Q[i];
+    if (cur.some((v, j) => v !== Q[j])) { const id = newNodeId(next, from); next.nodes[id] = cur; path.push(id); }
+  });
+  path.push(to);
+  const ln = lineOfNode(model, from);
+  (next.lines = next.lines || []).push({name: ln ? ln.name : "배관", path});
+  elbOff(); selected = null; $("sel").hidden = true;
+  await commit(next, from + "에서 " + DIRN[k + "," + sg] + " 엘보우 → " + to + " 연결 (" + (path.length - 1) + "구간)", "직접");
+}
 $("selApply").onclick = async () => {
   if (!selected) return;
   const np = [Number($("sx").value), Number($("sy").value), Number($("sz").value)];

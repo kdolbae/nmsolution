@@ -209,7 +209,7 @@ details.bom summary{cursor:pointer;font-weight:500}
         <label>Δy<input id="ny" type="number" step="50" value="0"></label>
         <label>Δz<input id="nz" type="number" step="50" value="0"></label>
       </div>
-      <div class="crow"><button class="tbtn" id="selExtend" type="button">배관 추가</button><button class="tbtn" id="selDelNode" type="button" style="color:var(--warn)">이 점과 붙은 배관 삭제</button></div>
+      <div class="crow"><button class="tbtn" id="selExtend" type="button">배관 추가</button><button class="tbtn" id="selRmNode" type="button">점만 삭제</button><button class="tbtn" id="selDelNode" type="button" style="color:var(--warn)">이 점과 붙은 배관 삭제</button></div>
       <div class="status">엘보우 추가: 꺾을 방향을 고르고, 이어질 배관을 화면에서 누름</div>
       <div class="crow" id="elbDirs"><button class="tbtn" data-d="2,-1" type="button">아래로</button><button class="tbtn" data-d="2,1" type="button">위로</button><button class="tbtn" data-d="0,1" type="button">x+</button><button class="tbtn" data-d="0,-1" type="button">x−</button><button class="tbtn" data-d="1,1" type="button">y+ 벽에서 멀리</button><button class="tbtn" data-d="1,-1" type="button">y− 벽 쪽</button></div>
       <div class="status" id="elbHint" hidden></div>
@@ -1016,6 +1016,30 @@ $("selExtend").onclick = async () => {
   ["nx", "ny", "nz"].forEach(id => $(id).value = 0);
   await commit(next, a + "에서 배관 추가 → " + end, "직접");
   selectNode(end);
+};
+/* 점만 삭제: 일자 배관 중간 점(조인트)은 앞뒤 배관을 하나로 합치고, 끝점은 그 끝 구간만 지움 */
+$("selRmNode").onclick = async () => {
+  if (!selected) return;
+  const id = selected, next = JSON.parse(JSON.stringify(model)), N = next.nodes;
+  const nbs = []; (next.lines || []).forEach(l => { const p = l.path || []; p.forEach((x, i) => { if (x === id) { if (p[i - 1]) nbs.push(p[i - 1]); if (p[i + 1]) nbs.push(p[i + 1]); } }); });
+  if (nbs.length === 1) { deleteSeg(next, id, nbs[0]); }
+  else if (nbs.length === 2) {
+    const [a, b] = nbs, A = N[a], B = N[b], C = N[id];
+    const ab = B.map((v, k) => v - A[k]), ac = C.map((v, k) => v - A[k]);
+    const cross = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+    if (cross.some(v => Math.abs(v) > 1)) { sysMsg(id + "는 꺾이는 점(엘보우)이라 빼면 배관이 사선이 됨. 꺾인 곳은 \"이 점과 붙은 배관 삭제\" 후 다시 이어야 함"); return; }
+    const la = Math.hypot(...ac);
+    (next.valves || []).forEach(v => {
+      const s2 = v.seg || v.on; if (!s2) return;
+      const L = Math.hypot(...N[s2[1]].map((x, k) => x - N[s2[0]][k])), raw = v.at == null || v.at === "mid" ? L / 2 : Number(v.at);
+      if (sameSeg(s2, a, id)) { const fromA = s2[0] === a ? raw : L - raw; v.seg = [a, b]; v.at = Math.round(fromA); delete v.on; }
+      else if (sameSeg(s2, id, b)) { const fromC = s2[0] === id ? raw : L - raw; v.seg = [a, b]; v.at = Math.round(la + fromC); delete v.on; }
+    });
+    next.lines.forEach(l => { l.path = (l.path || []).filter(x => x !== id); });
+    tidy(next);
+  } else { sysMsg(id + "는 배관 " + nbs.length + "개가 만나는 점(티)이라 점만 뺄 수 없음"); return; }
+  selected = null; $("sel").hidden = true;
+  await commit(next, id + " 점만 삭제", "직접");
 };
 $("selDelNode").onclick = async () => {
   if (!selected) return;

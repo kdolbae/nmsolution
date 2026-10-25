@@ -13,6 +13,7 @@ const nextConfig = {
     // 서버에서 PDF 를 만드는 크롬 (lib/clients/pdf.ts)
     '/adreaming': ['./node_modules/@sparticuz/chromium/bin/**/*'],
     '/sinil': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    '/atotech': ['./node_modules/@sparticuz/chromium/bin/**/*'],
   },
   // 검색광고 상황판은 나노마스터 관리 화면의 같은 상황판으로 옮겼다 (lib/board-sync.ts)
   async redirects() {

@@ -16,7 +16,7 @@ export function SiteFooter({ settings }: { settings: SettingsContent }) {
           <div className="flex flex-col gap-6 lg:col-span-5">
             <Logo />
             <p className="max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
-              Factory Renovation Specialist.
+              Industrial Turnkey Partner.
               <br />
               공장 개보수, 빠르게 그리고 정확하게. 평택 고덕을 기반으로 경기·충청권 현장을 직접 방문합니다.
             </p>

@@ -220,7 +220,11 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground">이미지는 작업 범위를 설명하기 위한 예시입니다.</p>
+            <p className="text-xs text-muted-foreground">
+              {item.media && item.media.length > 0
+                ? '실제 현장 사진과 일부 예시 이미지(크린룸)입니다.'
+                : '이미지는 작업 범위를 설명하기 위한 예시입니다.'}
+            </p>
           </div>
         </section>
       )}

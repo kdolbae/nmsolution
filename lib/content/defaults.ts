@@ -285,9 +285,9 @@ export const DEFAULT_HOME: HomeContent = {
 
 export const DEFAULT_SERVICES: ServicesContent = {
   kicker: 'Business Areas',
-  title: '공장 개보수를 중심으로,\n공간의 문제를 함께 해결합니다.',
+  title: '산업시설 공사를\n한 팀이 턴키로 맡습니다.',
   description:
-    '엔엠솔루션의 핵심은 공장 개보수입니다. 반도체 공장의 크린룸·공압·냉각수·배관설비까지 맡고, 현장에서 축적한 기술을 바탕으로 누수 복구, 단열·곰팡이, 코팅 솔루션과 제품·교육 사업을 함께 운영합니다.',
+    '엔엠솔루션의 핵심은 공장 개보수입니다. 개축·증축, 장비·중량물 이전 설치, 신설 배관, 고압배관·탱크 용접, 반도체 공장 설비까지 진단부터 마감까지 한 팀이 진행하고, 정기 관리 계약으로 이어 갑니다.',
   items: [
     {
       slug: 'factory',

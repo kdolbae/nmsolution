@@ -8,6 +8,8 @@ import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KE
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
+import { ATOTECH_CLIENT, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
+import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -195,6 +197,24 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ADREAMING_REV5_KEY, () => refreshAdreaming('관리자급 1인 × 6일 추가, 3D 공정 이미지 박공지붕·C형강 반영'))
       await seedOnce(ADREAMING_REV6_KEY, () => refreshAdreaming('전기 배관 천장면 노출 없음, 벽면만 노출, 노무비 관리자 행을 위로'))
       await fillAdreamingContact().catch((e) => console.error('adreaming contact', e))
+      // 아토텍코리아: 냉수 순환 펌프 교체·배관 구조 변경. 담당자·업체용 비밀번호는 관리자 업체 정보에서 정한다
+      await seedOnce(ATOTECH_SEED_KEY, async () => {
+        const c = ATOTECH_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = atotechQuote(today())
+        const proposal = ATOTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+      })
     })().catch((e) => {
       ready = null
       throw e

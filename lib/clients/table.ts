@@ -8,7 +8,7 @@ import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KE
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
-import { ATOTECH_CLIENT, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
+import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -215,6 +215,7 @@ export function ensureClients(): Promise<void> {
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
       })
+      await seedOnce(ATOTECH_REV2_KEY, () => refreshAtotech('모터 전원 케이블 F-CV 6sq 4C 교체·전기 기술자 추가'))
     })().catch((e) => {
       ready = null
       throw e
@@ -234,6 +235,20 @@ async function refreshAdreaming(summary: string) {
   const quote = adreamingQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = ADREAMING_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 아토텍코리아 견적·제안서를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). */
+async function refreshAtotech(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [ATOTECH_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = atotechQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = ATOTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

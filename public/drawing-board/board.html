@@ -646,6 +646,38 @@ scene.background = col("--canvas");
 /* 점 선택·직접 수정 */
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let downAt = null;
 cv.addEventListener("pointerdown", e => downAt = [e.clientX, e.clientY]);
+/* 부속 끌어 옮기기: 부속을 누른 채 끌면 배관을 따라(다른 배관으로도) 움직임 */
+let fDrag = null;
+function rayAt(e) { const r = cv.getBoundingClientRect(); mouse.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(mouse, camera); }
+addEventListener("pointerdown", e => {
+  if (e.target !== cv || e.button !== 0 || e.shiftKey || addMode || segSel || eqSel != null || multi.length || elbPick || (typeof VIEW !== "undefined" && VIEW)) return;
+  rayAt(e); const h = ray.intersectObjects(valvePick)[0]; if (!h) return;
+  controls.enabled = false;
+  fDrag = {vi: h.object.userData.vi, base: JSON.parse(JSON.stringify(model)), x: e.clientX, y: e.clientY, moved: false, raf: 0};
+}, true);
+addEventListener("pointermove", e => {
+  if (!fDrag) return;
+  if (!fDrag.moved && Math.hypot(e.clientX - fDrag.x, e.clientY - fDrag.y) <= 5) return;
+  fDrag.moved = true; cv.style.cursor = "grabbing";
+  rayAt(e); const h = ray.intersectObjects(segPick)[0]; if (!h) return;
+  const sg = h.object.userData.seg, b = fDrag.base, A = b.nodes[sg[0]], B = b.nodes[sg[1]], pa = P(A), pb = P(B), ab = pb.clone().sub(pa);
+  const L = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
+  const t = Math.min(1, Math.max(0, h.point.clone().sub(pa).dot(ab) / ab.lengthSq()));
+  const next = JSON.parse(JSON.stringify(b)), v = next.valves[fDrag.vi];
+  v.seg = sg.slice(); v.at = Math.round(t * L / 10) * 10; delete v.on;
+  fDrag.next = next;
+  if (!fDrag.raf) fDrag.raf = requestAnimationFrame(() => { if (!fDrag) return; fDrag.raf = 0; model = fDrag.next; build(); });
+});
+addEventListener("pointerup", async () => {
+  if (!fDrag) return;
+  const d = fDrag; fDrag = null; controls.enabled = true; cv.style.cursor = "";
+  if (d.raf) cancelAnimationFrame(d.raf);
+  if (!d.moved || !d.next) { if (d.moved) { model = d.base; build(); } return; }
+  const v = d.next.valves[d.vi], o = d.base.valves[d.vi];
+  model = d.base;
+  if (sameSeg(v.seg, (o.seg || o.on)[0], (o.seg || o.on)[1]) && v.at === o.at) { build(); return; }
+  await commit(d.next, "부속 이동: " + (v.tag || FIT[v.type] || "기타") + " → " + v.seg.join("–") + " " + v.seg[0] + "에서 " + v.at, "직접");
+});
 cv.addEventListener("pointerup", e => {
   if (VIEW) return; // 업체 페이지는 보기만
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
@@ -953,7 +985,7 @@ function openFit(f) {
   $("fAt").value = v ? (v.at === "mid" || v.at == null ? "" : v.at) : f.at;
   $("fAtLb").firstChild.textContent = seg[0] + "에서 mm";
   $("fApply").textContent = v ? "고치기" : "추가"; $("fDel").hidden = !v;
-  $("fHint").textContent = "빈 칸이면 구간 가운데. 기타는 이름을 적어줌.";
+  $("fHint").textContent = "빈 칸이면 구간 가운데. 기타는 이름을 적어줌. 부속은 화면에서 끌어서 옮길 수도 있음.";
   $("fit").hidden = false;
 }
 $("fClose").onclick = () => { $("fit").hidden = true; fitSel = null; };

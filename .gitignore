@@ -17,3 +17,6 @@ node_modules
 # Next.js generated
 next-env.d.ts
 *.tsbuildinfo
+
+# wrangler 로컬 상태 (r2 object put 등이 남긴다)
+.wrangler/

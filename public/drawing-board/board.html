@@ -27,7 +27,7 @@
   --ret:#ef6a55; --sup:#5aa0ea; --other:#a497ea; --equip:#8fa2b6; color-scheme:dark}
 [hidden]{display:none!important}
 /* 업체 페이지 보기 전용: 대화·편집 도구를 숨기고 3D만 */
-html[data-mode="view"] .side,html[data-mode="view"] #undo,html[data-mode="view"] #tAdd,html[data-mode="view"] #conn,html[data-mode="view"] #rev{display:none!important}
+html[data-mode="view"] .side,html[data-mode="view"] #undo,html[data-mode="view"] #tAdd,html[data-mode="view"] #tExport,html[data-mode="view"] #conn,html[data-mode="view"] #rev{display:none!important}
 html[data-mode="view"] .app{grid-template-columns:minmax(0,1fr)}
 html[data-mode="view"] .lb .x{display:none}
 html,body{height:100%}
@@ -54,6 +54,7 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
 .lb.node{font:500 11px var(--mono);color:var(--muted);transform:translate(6px,-50%);background:none;border:0;padding:0}
 .lb.eq{font-weight:700;color:var(--navy)}
 .lb.vv{font:500 11px var(--mono);color:var(--accent);background:none;border:0}
+.lb.code{font:700 12px var(--mono);color:var(--navy);background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:1px 5px;transform:translate(-50%,-100%)}
 .lb.len{font:500 11px var(--mono);color:var(--muted);background:none;border:0;transform:translate(-50%,-50%)}
 .toolbar{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;display:flex;gap:6px;flex-wrap:wrap}
 .toolbar button,.tbtn{font:500 12px var(--sans);padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
@@ -130,6 +131,8 @@ details.bom summary{cursor:pointer;font-weight:500}
       <button type="button" id="tNodes" aria-pressed="false">점 이름</button>
       <button type="button" id="tLen" aria-pressed="false">길이</button>
       <button type="button" id="tAdd" aria-pressed="false">부속 추가</button>
+      <button type="button" id="tShot">스냅샷</button>
+      <button type="button" id="tExport">내보내기</button>
 
     </div>
     <div class="legend" id="legend"></div>
@@ -191,6 +194,12 @@ details.bom summary{cursor:pointer;font-weight:500}
         <label>Δz 높이<input id="gz" type="number" step="50" value="0"></label>
       </div>
       <div class="crow"><button class="primary" id="segApply" type="button">이 배관 옮기기</button><button class="tbtn" id="segClose" type="button">취소</button></div>
+      <div class="row">
+        <label>표기<input id="lnCode" list="codeList" placeholder="SCW"></label>
+        <label style="grid-column:span 2">흐름 방향<select id="lnFlow"></select></label>
+      </div>
+      <datalist id="codeList"><option value="SCW">냉각수 공급</option><option value="RCW">냉각수 환수</option><option value="CHS">냉수 공급</option><option value="CHR">냉수 환수</option><option value="HWS">온수 공급</option><option value="HWR">온수 환수</option><option value="ST">증기</option><option value="CD">응축수</option><option value="D">배수</option><option value="V">통기</option><option value="CA">압축공기</option><option value="F">소화</option></datalist>
+      <div class="crow"><button class="tbtn" id="lnApply" type="button">표기·흐름 적용 (이 배관 줄 전체)</button></div>
       <div class="crow"><button class="tbtn" id="segJoint" type="button">누른 자리에 조인트 넣기</button><button class="tbtn" id="segDel" type="button" style="color:var(--warn)">이 배관 삭제</button></div>
       <div class="status">입력하면 미리 보여줌. 이 배관과 붙은 부속이 같이 움직임. 옮기는 방향과 나란한 배관만 늘거나 줄고, 나머지 이어진 배관은 제자리에 두고 꺾이는 자리에 엘보우를 세움.</div>
     </div>
@@ -437,6 +446,25 @@ function cyl(a, b, r, mat) {
   group.add(m); return m;
 }
 
+// 배관 표기(SCW·RCW 등)와 흐름 방향 화살표. flow 1은 경로 순서대로, -1은 반대로 흐름
+const flowMat = new THREE.MeshStandardMaterial({color: 0x0F2A44, roughness: .45});
+function flowMarks(l, s, a, b, r, nodes, segs) {
+  if (!l || (!l.code && !l.flow)) return;
+  const L = Math.hypot(...nodes[s.a].map((v, k) => v - nodes[s.b][k]));
+  if (l.flow && L >= 500) {
+    const dir = (l.flow < 0 ? a.clone().sub(b) : b.clone().sub(a)).normalize(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const n = Math.max(1, Math.floor(L / 2000));
+    for (let i = 1; i <= n; i++) {
+      const c = new THREE.Mesh(new THREE.ConeGeometry(r * 1.7, r * 4.2, 18), flowMat);
+      c.position.copy(a).lerp(b, i / (n + 1)); c.quaternion.copy(q); group.add(c);
+    }
+  }
+  if (l.code) {
+    const mine = segs.filter(x => x.li === s.li), len = x => Math.hypot(...nodes[x.a].map((v, k) => v - nodes[x.b][k]));
+    const longest = mine.reduce((p, x) => len(x) > len(p) ? x : p, mine[0]);
+    if (s === longest || L >= 2500) addLabel(a.clone().lerp(b, .5).add(new THREE.Vector3(0, r * 3, 0)), l.code, "code", "c:" + s.a + "-" + s.b, l.name || "배관");
+  }
+}
 function analyze(m) {
   const nodes = m.nodes || {}, adj = {}, seen = new Set(), segs = [];
   (m.lines || []).forEach((l, li) => {
@@ -471,6 +499,7 @@ function build() {
   const box = new THREE.Box3();
   segs.forEach(s => {
     const a = P(nodes[s.a]), b = P(nodes[s.b]); const cm = cyl(a, b, r, mats[s.li]); if (cm) { cm.userData.seg = [s.a, s.b]; segPick.push(cm); } box.expandByPoint(a); box.expandByPoint(b);
+    flowMarks(m.lines[s.li], s, a, b, r, nodes, segs);
     if (showLen) {
       const L = Math.round(Math.hypot(nodes[s.a][0] - nodes[s.b][0], nodes[s.a][1] - nodes[s.b][1], nodes[s.a][2] - nodes[s.b][2]));
       addLabel(a.clone().add(b).multiplyScalar(.5), String(L), "len");
@@ -574,7 +603,7 @@ function renderLegend(lines) {
   if (!lines.length) { el.hidden = true; return; }
   const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = "라벨"; el.appendChild(cap);
   const groups = [];
-  lines.forEach((l, i) => { const g = l.name || "배관"; if (!groups.some(x => x.g === g)) groups.push({g, label: g + (l.size ? " " + l.size : ""), color: "#" + lineColor(l, i).getHexString()}); });
+  lines.forEach((l, i) => { const g = l.name || "배관"; if (!groups.some(x => x.g === g)) groups.push({g, label: g + (l.code ? " " + l.code : "") + (l.size ? " " + l.size : ""), color: "#" + lineColor(l, i).getHexString()}); });
   if (model && (model.equipment || []).length) groups.push({g: "기기", label: "기기", color: ""});
   groups.forEach(x => {
     const b = document.createElement("button"); b.type = "button"; b.className = "lg";
@@ -772,6 +801,10 @@ function openSeg(seg, at) {
   const ln = (model.lines || []).find(l => (l.path || []).includes(seg[0]) && (l.path || []).includes(seg[1]));
   $("segName").textContent = (ln && ln.name ? ln.name + " " : "") + seg.join("–") + " 구간";
   ["gx", "gy", "gz"].forEach(id => $(id).value = 0);
+  $("lnCode").value = ln && ln.code || "";
+  const fwd = ln ? ln.path.indexOf(seg[0]) < ln.path.indexOf(seg[1]) : true, f = ln && ln.flow ? (ln.flow > 0) === fwd ? "ab" : "ba" : "";
+  $("lnFlow").innerHTML = ""; [["", "표시 안 함"], ["ab", seg[0] + " → " + seg[1]], ["ba", seg[1] + " → " + seg[0]]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; $("lnFlow").appendChild(o); });
+  $("lnFlow").value = f;
   $("segp").hidden = false;
 }
 function segMoved() {
@@ -1014,6 +1047,19 @@ function selectNode(id) {
   $("sel").hidden = false; build();
 }
 $("selClose").onclick = () => { elbOff(); selected = null; $("sel").hidden = true; build(); };
+$("lnApply").onclick = async () => {
+  if (!segSel) return;
+  const seg = segSel, base = segBase; segSel = null; segBase = null; $("segp").hidden = true; model = base;
+  const next = JSON.parse(JSON.stringify(base));
+  const ln = (next.lines || []).find(l => (l.path || []).includes(seg[0]) && (l.path || []).includes(seg[1]));
+  if (!ln) { build(); return; }
+  const code = $("lnCode").value.trim().toUpperCase(), fv = $("lnFlow").value;
+  // 표기는 같은 이름의 배관 줄 모두에, 흐름은 누른 배관 줄에
+  (next.lines || []).forEach(l => { if ((l.name || "") === (ln.name || "")) { if (code) l.code = code; else delete l.code; } });
+  const fwd = ln.path.indexOf(seg[0]) < ln.path.indexOf(seg[1]);
+  if (fv) ln.flow = (fv === "ab") === fwd ? 1 : -1; else delete ln.flow;
+  await commit(next, (ln.name || "배관") + " 표기 " + (code || "없음") + ", 흐름 " + (fv ? (fv === "ab" ? seg[0] + "→" + seg[1] : seg[1] + "→" + seg[0]) : "표시 안 함"), "직접");
+};
 $("segDel").onclick = async () => {
   if (!segSel) return;
   const seg = segSel, base = segBase; segSel = null; segBase = null; $("segp").hidden = true; model = base;
@@ -1118,7 +1164,8 @@ async function elbowTo(u) {
   });
   path.push(to);
   const ln = lineOfNode(model, from);
-  (next.lines = next.lines || []).push({name: ln ? ln.name : "배관", path});
+  const nl = {name: ln ? ln.name : "배관", path}; if (ln && ln.code) nl.code = ln.code;
+  (next.lines = next.lines || []).push(nl);
   elbOff(); selected = null; $("sel").hidden = true;
   await commit(next, from + "에서 " + DIRN[k + "," + sg] + " 엘보우 → " + to + " 연결 (" + (path.length - 1) + "구간)", "직접");
 }
@@ -1171,6 +1218,140 @@ async function pushChat(msg) {
   chatMsgs = [...chatMsgs, {...msg, at: new Date().toISOString()}].slice(-60); renderChat();
   if (chatRef) { try { await chatRef.set({msgs: chatMsgs}); } catch (e) { /* 대화 기록 저장 실패는 도면에 영향 없음 */ } }
 }
+/* 스냅샷(PNG)·모형 내보내기(ZIP: GLB·OBJ·STL·DXF·JSON) */
+async function saveFile(name, data) {
+  const dl = await (window.claude && claude.use ? claude.use("downloads") : null);
+  if (dl) {
+    try { await dl.save({filename: name, data}); return true; }
+    catch (e) { if (e && e.code === "declined") return false; if (!["unavailable", "not_granted", "capability_disabled", "capability_removed"].includes(e && e.code)) { sysMsg("내려받기 실패: " + (e && e.message || e)); return false; } }
+  }
+  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]));
+  const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000); return true;
+}
+const fileBase = () => ((model && model.title) || "배관도면").replace(/[\\/:*?"<>|]+/g, " ").trim() + "_" + new Date().toISOString().slice(2, 10).replace(/-/g, "");
+function snapshotBlob() {
+  renderer.render(scene, camera);
+  const w = cv.width, h = cv.height, k = w / cv.clientWidth, c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); g.drawImage(cv, 0, 0);
+  const sr = cv.getBoundingClientRect();
+  labelItems.forEach(it => {
+    const el = it.el; if (el.style.display === "none") return;
+    const r = el.getBoundingClientRect(); if (!r.width || r.right < sr.left || r.left > sr.right || r.bottom < sr.top || r.top > sr.bottom) return;
+    const cs = getComputedStyle(el), x = (r.left - sr.left) * k, y = (r.top - sr.top) * k;
+    if (cs.backgroundColor && cs.backgroundColor !== "rgba(0, 0, 0, 0)") { g.fillStyle = cs.backgroundColor; g.fillRect(x, y, r.width * k, r.height * k); }
+    g.fillStyle = cs.color; g.font = cs.fontWeight + " " + parseFloat(cs.fontSize) * k + "px " + cs.fontFamily; g.textBaseline = "middle";
+    g.fillText((el.firstChild && el.firstChild.nodeType === 3 ? el.firstChild.nodeValue : el.textContent.replace(/×$/, "")), x + parseFloat(cs.paddingLeft) * k, y + r.height * k / 2);
+  });
+  g.fillStyle = col("--navy").getStyle(); g.font = "700 " + 16 * k + "px Pretendard, sans-serif"; g.textBaseline = "top";
+  g.fillText((model && model.title) || "배관 도면", 14 * k, h - 30 * k);
+  return new Promise(res => c.toBlob(res, "image/png"));
+}
+$("tShot").onclick = async () => { const b = await snapshotBlob(); if (b) await saveFile(fileBase() + ".png", b); };
+// 화면의 배관·부속·기기 메시를 실제 좌표(m, Y 위)로 굳혀서 모음. 선택용 투명 표시는 뺌
+function bakeMeshes() {
+  group.updateMatrixWorld(true); const out = [];
+  group.children.forEach(o => {
+    if (!o.isMesh || !o.geometry) return; const mt = o.material;
+    if (mt.transparent && mt.opacity < 0.05) return;
+    const gm = o.geometry.index ? o.geometry : o.geometry.clone();
+    const pos = gm.attributes.position, nor = gm.attributes.normal, nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld);
+    const P3 = new Float32Array(pos.count * 3), N3 = new Float32Array(pos.count * 3), v = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); P3.set([v.x, v.y, v.z], i * 3);
+      if (nor) { v.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize(); N3.set([v.x, v.y, v.z], i * 3); }
+    }
+    const idx = gm.index ? Uint32Array.from(gm.index.array) : Uint32Array.from({length: pos.count}, (_, i) => i);
+    out.push({P: P3, N: N3, I: idx, color: mt.color ? mt.color.toArray() : [.5, .5, .5], alpha: mt.transparent ? mt.opacity : 1});
+  });
+  return out;
+}
+function toGLB(ms) {
+  const parts = [], bvs = [], acc = [], meshes = [], mats = []; let off = 0;
+  const push = (arr, target) => { const b = new Uint8Array(arr.buffer.slice(0)); parts.push(b); bvs.push({buffer: 0, byteOffset: off, byteLength: b.length, target}); off += b.length; const pad = (4 - off % 4) % 4; if (pad) { parts.push(new Uint8Array(pad)); off += pad; } return bvs.length - 1; };
+  ms.forEach((m, i) => {
+    const mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
+    for (let j = 0; j < m.P.length; j += 3) for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], m.P[j + k]); mx[k] = Math.max(mx[k], m.P[j + k]); }
+    acc.push({bufferView: push(m.P, 34962), componentType: 5126, count: m.P.length / 3, type: "VEC3", min: mn, max: mx});
+    acc.push({bufferView: push(m.N, 34962), componentType: 5126, count: m.N.length / 3, type: "VEC3"});
+    acc.push({bufferView: push(m.I, 34963), componentType: 5125, count: m.I.length, type: "SCALAR"});
+    mats.push({pbrMetallicRoughness: {baseColorFactor: [...m.color, m.alpha], metallicFactor: 0.1, roughnessFactor: 0.6}, alphaMode: m.alpha < 1 ? "BLEND" : "OPAQUE", doubleSided: m.alpha < 1});
+    meshes.push({primitives: [{attributes: {POSITION: i * 3, NORMAL: i * 3 + 1}, indices: i * 3 + 2, material: i}]});
+  });
+  const gl = {asset: {version: "2.0", generator: "NM SOLUTION 배관 보드"}, scene: 0, scenes: [{nodes: meshes.map((_, i) => i)}], nodes: meshes.map((_, i) => ({mesh: i})), meshes, materials: mats, accessors: acc, bufferViews: bvs, buffers: [{byteLength: off}]};
+  let js = new TextEncoder().encode(JSON.stringify(gl)); const jp = (4 - js.length % 4) % 4; if (jp) { const t = new Uint8Array(js.length + jp).fill(32); t.set(js); js = t; }
+  const total = 12 + 8 + js.length + 8 + off, out = new Uint8Array(total), dv = new DataView(out.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, total, true);
+  dv.setUint32(12, js.length, true); dv.setUint32(16, 0x4E4F534A, true); out.set(js, 20);
+  let o2 = 20 + js.length; dv.setUint32(o2, off, true); dv.setUint32(o2 + 4, 0x004E4942, true); o2 += 8;
+  parts.forEach(b => { out.set(b, o2); o2 += b.length; });
+  return out;
+}
+function toOBJ(ms) {
+  const L = ["# NM SOLUTION 배관 보드, 단위 m, Y 위"], M = ["# 색상"]; let base = 1;
+  ms.forEach((m, i) => {
+    M.push("newmtl m" + i, "Kd " + m.color.map(x => x.toFixed(4)).join(" "), "d " + m.alpha.toFixed(3));
+    L.push("o part" + i, "usemtl m" + i);
+    for (let j = 0; j < m.P.length; j += 3) L.push("v " + m.P[j].toFixed(5) + " " + m.P[j + 1].toFixed(5) + " " + m.P[j + 2].toFixed(5));
+    for (let j = 0; j < m.I.length; j += 3) L.push("f " + (m.I[j] + base) + " " + (m.I[j + 1] + base) + " " + (m.I[j + 2] + base));
+    base += m.P.length / 3;
+  });
+  return {obj: "mtllib model.mtl\n" + L.join("\n") + "\n", mtl: M.join("\n") + "\n"};
+}
+function toSTL(ms) {
+  const n = ms.reduce((a, m) => a + m.I.length / 3, 0), out = new ArrayBuffer(84 + n * 50), dv = new DataView(out); let o = 84;
+  dv.setUint32(80, n, true);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), nn = new THREE.Vector3();
+  ms.forEach(m => { for (let j = 0; j < m.I.length; j += 3) {
+    a.fromArray(m.P, m.I[j] * 3); b.fromArray(m.P, m.I[j + 1] * 3); c.fromArray(m.P, m.I[j + 2] * 3);
+    nn.subVectors(c, b).cross(a.clone().sub(b)).normalize();
+    [nn, a, b, c].forEach(v => { dv.setFloat32(o, v.x, true); dv.setFloat32(o + 4, v.y, true); dv.setFloat32(o + 8, v.z, true); o += 12; }); o += 2;
+  } });
+  return new Uint8Array(out);
+}
+// 배관 중심선 3D DXF(mm, x 벽 따라·y 벽에서·z 높이). 레이어 = 표기(없으면 LINE번호)
+function toDXF(m) {
+  const E = [], g = (c, v) => E.push(String(c), String(v));
+  const {segs} = analyze(m), lay = l => ((l && l.code) || "").replace(/[^A-Za-z0-9_-]/g, "") || "LINE" + (m.lines.indexOf(l) + 1);
+  segs.forEach(s => { const l = m.lines[s.li], A = m.nodes[s.a], B = m.nodes[s.b];
+    g(0, "LINE"); g(8, lay(l)); g(62, (s.li % 6) + 1); g(10, A[0]); g(20, A[1]); g(30, A[2]); g(11, B[0]); g(21, B[1]); g(31, B[2]); });
+  (m.valves || []).forEach(v => { const sg = v.seg || v.on; if (!sg || !m.nodes[sg[0]] || !m.nodes[sg[1]]) return;
+    const A = m.nodes[sg[0]], B = m.nodes[sg[1]], L = Math.hypot(...A.map((x, k) => x - B[k])) || 1, t = v.at == null || v.at === "mid" ? .5 : Math.min(1, Number(v.at) / L);
+    const p = A.map((x, k) => x + (B[k] - x) * t);
+    g(0, "POINT"); g(8, "FITTING"); g(10, p[0]); g(20, p[1]); g(30, p[2]);
+    g(0, "TEXT"); g(8, "FITTING"); g(10, p[0]); g(20, p[1]); g(30, p[2] + 120); g(40, 80); g(1, String(v.type).toUpperCase()); });
+  (m.equipment || []).forEach(e => { if (!e.at || !e.size) return; const o = e.offset || [0, 0, 0], lo = e.at.map((x, k) => x + o[k]), hi = lo.map((x, k) => x + e.size[k]);
+    [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([i, j], n, arr) => { const [i2, j2] = arr[(n + 1) % 4]; [lo[2], hi[2]].forEach(z => { g(0, "LINE"); g(8, "EQUIP"); g(10, i ? hi[0] : lo[0]); g(20, j ? hi[1] : lo[1]); g(30, z); g(11, i2 ? hi[0] : lo[0]); g(21, j2 ? hi[1] : lo[1]); g(31, z); });
+      g(0, "LINE"); g(8, "EQUIP"); g(10, i ? hi[0] : lo[0]); g(20, j ? hi[1] : lo[1]); g(30, lo[2]); g(11, i ? hi[0] : lo[0]); g(21, j ? hi[1] : lo[1]); g(31, hi[2]); }); });
+  return ["0", "SECTION", "2", "HEADER", "9", "$INSUNITS", "70", "4", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES", ...E, "0", "ENDSEC", "0", "EOF"].join("\r\n");
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function zip(files) {
+  const enc = new TextEncoder(), loc = [], cen = []; let off = 0;
+  files.forEach(f => {
+    const d = typeof f.data === "string" ? enc.encode(f.data) : f.data, nm = enc.encode(f.name);
+    let c = 0xFFFFFFFF; for (let i = 0; i < d.length; i++) c = CRC[(c ^ d[i]) & 255] ^ (c >>> 8); c = (c ^ 0xFFFFFFFF) >>> 0;
+    const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint32(14, c, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, nm.length, true);
+    const ce = new DataView(new ArrayBuffer(46)); ce.setUint32(0, 0x02014b50, true); ce.setUint16(4, 20, true); ce.setUint16(6, 20, true); ce.setUint16(8, 0x0800, true);
+    ce.setUint32(16, c, true); ce.setUint32(20, d.length, true); ce.setUint32(24, d.length, true); ce.setUint16(28, nm.length, true); ce.setUint32(42, off, true);
+    loc.push(new Uint8Array(h.buffer), nm, d); cen.push(new Uint8Array(ce.buffer), nm); off += 30 + nm.length + d.length;
+  });
+  const cl = cen.reduce((a, b) => a + b.length, 0), end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cl, true); end.setUint32(16, off, true);
+  return new Blob([...loc, ...cen, new Uint8Array(end.buffer)], {type: "application/zip"});
+}
+async function exportZip() {
+  if (!model || !model.nodes) return null;
+  const ms = bakeMeshes(), {obj, mtl} = toOBJ(ms), png = await snapshotBlob();
+  return zip([
+    {name: "model.glb", data: toGLB(ms)}, {name: "model.obj", data: obj}, {name: "model.mtl", data: mtl}, {name: "model.stl", data: toSTL(ms)},
+    {name: "centerline_3d.dxf", data: toDXF(model)}, {name: "model.json", data: JSON.stringify(model, null, 1)},
+    {name: "snapshot.png", data: new Uint8Array(await png.arrayBuffer())},
+    {name: "읽어보기.txt", data: "배관 모형 내보내기\r\n- model.glb: 3D(색 포함). 윈도우 3D 뷰어, 스케치업(가져오기), 블렌더 등에서 열림. 단위 m\r\n- model.obj / model.mtl: 3D(색 포함). 대부분의 3D·CAD 프로그램. 단위 m, Y가 위\r\n- model.stl: 3D(색 없음). 단위 m\r\n- centerline_3d.dxf: 배관 중심선 3D(오토캐드 등). 단위 mm, x 벽 따라, y 벽에서, z 높이. 레이어 = 배관 표기, FITTING = 부속, EQUIP = 기기 윤곽\r\n- model.json: 이 보드에 다시 넣을 수 있는 원본 모형\r\n- snapshot.png: 내보낼 때 화면\r\n"},
+  ]);
+}
+$("tExport").onclick = async () => { const z = await exportZip(); if (z) await saveFile(fileBase() + "_모형.zip", z); };
 function sysMsg(t) { chatMsgs = [...chatMsgs, {role: "sys", text: t, at: new Date().toISOString()}]; renderChat(); }
 
 /* ---------- Claude에게 묻기 ---------- */

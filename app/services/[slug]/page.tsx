@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
+import { QuoteForm } from '@/components/quote-form'
+import { TrackLink } from '@/components/track-link'
 import { MultilineText } from '@/components/multiline-text'
 import { getContent } from '@/lib/content/get'
 
@@ -24,6 +26,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   if (idx === -1) notFound()
   const item = services.items[idx]
   const others = services.items.filter((s) => s.slug !== slug)
+  // 광고 랜딩에서 어떤 버튼·폼으로 연락이 오는지 보려고 남긴다
+  const from = `service_${slug}`
+  // 공장 개보수 견적폼은 설비 이전·배관 항목을 미리 골라 둔다
+  const initialCategories = slug === 'factory' ? ['설비 이전 · 수리', '배관 · 탱크 · 용접'] : []
 
   return (
     <PageShell settings={settings}>
@@ -47,6 +53,30 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             {item.name}
           </h1>
           <p className="max-w-2xl text-pretty text-lg leading-relaxed text-navy-foreground/80">{item.summary}</p>
+          {/* 광고로 들어온 사람이 첫 화면에서 바로 연락할 수 있게 */}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <TrackLink
+              href="#quote"
+              channel="quote_scroll"
+              from={from}
+              className="group inline-flex h-14 items-center justify-between gap-6 bg-electric px-6 text-base font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy sm:w-auto"
+            >
+              견적 받기
+              <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5" />
+            </TrackLink>
+            <TrackLink
+              href={`tel:${settings.phoneMain}`}
+              channel="call_main"
+              from={from}
+              className="inline-flex h-14 items-center justify-between gap-6 border border-navy-foreground/40 px-6 transition-colors hover:border-navy-foreground hover:bg-navy-foreground/10"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Phone className="size-4 text-electric" />
+                대표전화
+              </span>
+              <span className="font-mono text-lg font-bold">{settings.phoneMain}</span>
+            </TrackLink>
+          </div>
         </div>
       </section>
 
@@ -95,33 +125,37 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
               <p className="text-sm leading-relaxed text-navy-foreground/75">
                 사진 몇 장과 위치만 보내주시면 담당자가 당일 회신드립니다.
               </p>
-              <a
-                href={`tel:${settings.phoneMobile}`}
+              <TrackLink
+                href={`tel:${settings.phoneMain}`}
+                channel="call_main"
+                from={from}
                 className="flex items-center justify-between border border-electric bg-electric/10 px-5 py-4 transition-colors hover:bg-electric/20"
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">
-                  <Smartphone className="size-4 text-electric" />
-                  담당자 직통
-                </span>
-                <span className="font-mono text-xl font-bold">{settings.phoneMobile}</span>
-              </a>
-              <a
-                href={`tel:${settings.phoneMain}`}
-                className="flex items-center justify-between border border-navy-foreground/25 px-5 py-4 transition-colors hover:bg-navy-foreground/10"
-              >
-                <span className="flex items-center gap-2 text-sm">
                   <Phone className="size-4 text-electric" />
                   대표전화
                 </span>
                 <span className="font-mono text-xl font-bold">{settings.phoneMain}</span>
-              </a>
-              <Link
-                href="/#quote"
+              </TrackLink>
+              <TrackLink
+                href={`tel:${settings.phoneMobile}`}
+                channel="call_mobile"
+                from={from}
+                className="flex items-center justify-between border border-navy-foreground/25 px-5 py-4 transition-colors hover:bg-navy-foreground/10"
+              >
+                <span className="flex items-center gap-2 text-sm">
+                  <Smartphone className="size-4 text-electric" />
+                  담당자 직통
+                </span>
+                <span className="font-mono text-xl font-bold">{settings.phoneMobile}</span>
+              </TrackLink>
+              <a
+                href="#quote"
                 className="group inline-flex h-12 items-center justify-between bg-electric px-5 text-sm font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"
               >
                 견적 문의
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+                <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5" />
+              </a>
             </div>
 
             <div className="flex flex-col gap-3 border border-border p-6">
@@ -185,6 +219,33 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           </div>
         </section>
       )}
+
+      {/* 견적폼: 홈으로 보내지 않고 이 페이지에서 바로 받는다 */}
+      <section className="border-t border-border bg-navy py-16 text-navy-foreground lg:py-24">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <div id="quote" className="scroll-mt-28 bg-background p-6 text-foreground sm:p-10 lg:p-14">
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16">
+              <div className="flex flex-col gap-5 lg:col-span-4">
+                <p className="text-kicker flex items-center gap-3 text-muted-foreground">
+                  <span className="h-px w-8 bg-electric" aria-hidden />
+                  Request a Quote
+                </p>
+                <h2 className="text-balance text-3xl font-black leading-[1.15] tracking-[-0.025em]">
+                  {item.name} 견적,
+                  <br />
+                  남겨만 주세요.
+                </h2>
+                <p className="text-pretty text-base leading-relaxed text-muted-foreground">
+                  성함과 연락처, 어떤 설비·배관인지 한 줄이면 됩니다. 당일 연락드려 현장 진단 일정을 잡습니다.
+                </p>
+              </div>
+              <div className="lg:col-span-8">
+                <QuoteForm phoneMobile={settings.phoneMobile} initialCategories={initialCategories} from={from} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </PageShell>
   )
 }

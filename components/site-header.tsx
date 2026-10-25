@@ -95,10 +95,10 @@ export function SiteHeader({ solidByDefault = false, showProjects = true, showGa
         (autoHide ? !peek : hidden) && !open && '-translate-y-full',
       )}
     >
-      {/* 기타 사업분야 배너 */}
+      {/* 기타 사업분야 배너 (목록이 비어 있으면 숨김) */}
       <div
         className={cn(
-          'hidden border-b transition-all duration-300 lg:block',
+          OTHER_SERVICES.length === 0 ? 'hidden' : 'hidden border-b transition-all duration-300 lg:block',
           scrolled
             ? 'max-h-0 overflow-hidden border-transparent opacity-0'
             : 'max-h-10 border-navy-foreground/10 bg-charcoal text-charcoal-foreground opacity-100',
@@ -235,7 +235,7 @@ export function SiteHeader({ solidByDefault = false, showProjects = true, showGa
               </Link>
             ))}
 
-            <p className="text-kicker mt-8 text-muted-foreground">Other Solutions</p>
+            {OTHER_SERVICES.length > 0 && <p className="text-kicker mt-8 text-muted-foreground">Other Solutions</p>}
             <ul className="mt-3 grid grid-cols-2 gap-2">
               {OTHER_SERVICES.map((s) => (
                 <li key={s.label}>

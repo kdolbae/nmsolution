@@ -24,14 +24,16 @@ export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidde
   { label: '고객문의', href: '/#contact' },
 ]
 
-/** 헤더 배너에 노출되는 기타 사업분야 (사업소개 상세 페이지로 이동) */
-export const OTHER_SERVICES = [
+/** 헤더·푸터에 노출되는 기타 사업분야. 2026-10-25 사업주: 공장 개보수(산업시설 턴키)만 보이게 — 누수·결로·코팅·교육은
+ *  메뉴에서 빼고 사업소개(/services) 아래쪽에만 작게 남긴다. 다시 보이게 하려면 OTHER_SERVICES_HIDDEN 을 되돌린다. */
+export const OTHER_SERVICES_HIDDEN = [
   { label: '누수 피해복구', href: '/services/recovery' },
   { label: '단열 · 결로 · 곰팡이', href: '/services/insulation' },
   { label: '나노 · UV 코팅', href: '/services/coating' },
   { label: '코팅제 판매', href: '/services/products' },
   { label: '시공 교육', href: '/services/academy' },
 ]
+export const OTHER_SERVICES: typeof OTHER_SERVICES_HIDDEN = []
 
 /** 공식 로고(lib/brand-logo.ts). inverted 는 어두운 배경용(회색 부분을 흰색으로) */
 export function Logo({ className, inverted = false }: { className?: string; inverted?: boolean }) {

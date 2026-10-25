@@ -64,6 +64,18 @@ export type ServiceItem = {
   areasTitle?: string
   areasDescription?: string
   areasImage?: string
+  /** 현장 기록: 실제 사진과 짧은 영상(드론 항공, 작업 계획 애니메이션). 비어 있으면 섹션이 나오지 않는다. */
+  media?: ServiceMedia[]
+}
+
+export type ServiceMedia = {
+  /** 'video' 는 Cloudflare R2 공개 주소의 mp4 (소리 없음, 자동 반복) */
+  kind: 'photo' | 'video'
+  src: string
+  /** 영상의 첫 화면 */
+  poster?: string
+  title: string
+  caption: string
 }
 
 export type ServiceArea = {
@@ -105,13 +117,13 @@ export type SettingsContent = {
 
 export const DEFAULT_HOME: HomeContent = {
   hero: {
-    kicker: 'Factory Renovation Specialist',
-    titleLine1: '공장의 모든 수리,',
+    kicker: 'Industrial Turnkey Partner',
+    titleLine1: '산업시설 공사,',
     titleHighlight1: '빠르게',
     titleMiddle: '그리고',
     titleHighlight2: '정확하게.',
     description:
-      '철골 · 지붕 · 벽체부터 배관 수리, 탱크 용접, 장비 수리, 그리고 반도체 공장의 크린룸 · 방음 · 공압 · 냉각수 배관까지. 공장에서 생기는 문제는 무엇이든 맡겨 주세요. 상황마다 업체를 따로 찾을 필요 없이, 진단부터 마감까지 모두 진행해 드립니다.',
+      '공장 개축 · 증축, 생산 장비 · 중량물 이전 설치, 신설 배관, 고압배관 · 탱크 용접, 반도체 공장의 크린룸 · CDA · PCW 배관까지. 규모 있는 공사일수록 업체를 나누지 않고 한 팀이 턴키로 맡습니다. 진단부터 마감까지, 필요하면 정기 관리 계약까지.',
     primaryCta: '빠른 견적 받기',
     secondaryCta: '개보수 범위 보기',
     stats: [
@@ -119,44 +131,47 @@ export const DEFAULT_HOME: HomeContent = {
       { value: 'ZERO', label: '불필요한 가동 중단 — 구간별 시공' },
       { value: 'ONE STOP', label: '건축부터 설비 · 장비까지 전 공종 시공 가능' },
     ],
-    ticker: ['반도체 설비', '크린룸 · 방음', '공압 · 냉각수', '철골 · 지붕', '벽체 · 판넬', '탱크 · 용접', '스텐 제작'],
+    ticker: ['개축 · 증축', '장비 이전 설치', '신설 배관', '고압배관 · 탱크 용접', '반도체 설비', '크린룸 · CDA · PCW', '철골 · 지붕', '정기 관리 계약'],
   },
   scope: {
     kicker: 'Scope of Work',
-    title: '공장 안에서 생기는 문제는\n전부 저희 일입니다.',
+    title: '규모 있는 공사부터,\n한 팀이 턴키로 끝냅니다.',
     description:
-      '철골 · 지붕 · 벽체 같은 건축 공사부터 고압 배관 수리, 탱크 용접 보수, 스텐 제작, 생산 장비 수리, 방음 · 흡음, 크린룸까지. 지붕 한 구간의 누수도, 공장 전체 리뉴얼도 한 곳에서 끝냅니다.',
+      '공장 개축 · 증축, 장비 · 중량물 이전 설치, 신설 배관과 공압설비, 스텐 고압배관 · 탱크 용접, 반도체 공장 설비까지. 여러 공종이 얽히는 공사일수록 업체를 나누지 않습니다. 물론 지붕 · 판넬 · 에폭시 같은 마감 공사도 같은 팀이 이어서 합니다.',
     items: [
       {
         n: '01',
-        title: '철골 · 지붕 · 벽체',
+        title: '개축 · 증축 · 철골',
         description:
-          '철골 트러스 제작과 양중, 캐노피·증축 골조, 노후 판넬·누수 지붕 보수, 외벽 마감과 실링. 건물의 골격부터 외피까지 직접 시공합니다.',
-        image: '/images/project-roof.png',
+          '철골 트러스 제작과 양중, 캐노피·증축 골조, 노후 공장 개축과 레이아웃 변경. 건물의 골격부터 외피까지 직접 시공합니다.',
+        image: '/images/gallery/g-truss-lift.jpg',
       },
       {
         n: '02',
-        title: '배관 · 탱크 · 용접',
+        title: '장비 · 중량물 이전 설치',
         description:
-          '공압·배관 설비 신설과 노후 배관 수리, 스텐 고압배관 제작, 탱크 용접 보수. 압력 손실과 누수는 증상만 막지 않고 원인부터 찾습니다.',
-        image: '/images/industrial.png',
+          '수십 톤 챔버·탱크의 회전 안착, 생산 장비 해체·이송·재설치, 레벨·앵커 고정과 배관·전기 재연결. 크레인 계획부터 시운전까지 한 팀이 맡습니다.',
+        image: '/images/factory/heavy-chamber-wide.jpg',
       },
       {
         n: '03',
-        title: '바닥 · 단열 · 도장',
+        title: '신설 배관 · 고압배관 · 용접',
         description:
-          '에폭시·우레탄 바닥과 라인 마킹, 내부 단열 보강, 외벽·철골 도장. 하중과 동선, 온도와 결로를 같이 잡습니다.',
-        image: '/images/factory-floor.png',
+          '공압·유틸리티 배관 신설과 이설, 스텐 고압배관 제작, 탱크·챔버 용접 보수. 압력 손실과 누수는 증상만 막지 않고 원인부터 찾습니다.',
+        image: '/images/factory/heavy-weld-seam.jpg',
       },
       {
         n: '04',
-        title: '크린룸 · 방음 · 흡음',
+        title: '반도체 설비 · 크린룸 · 마감',
         description:
-          '크린룸 구축과 보수, 방음·흡음 판넬 시공. 청정도와 소음 기준을 먼저 확인하고 라인을 세우는 시간을 최소로 잡습니다.',
-        image: '/images/insulation.png',
+          '크린룸 구축과 보수, CDA·PCW 배관, 방음·흡음. 큰 공사 뒤 지붕·판넬·에폭시 바닥 같은 마감까지 같은 팀이 이어서 끝냅니다.',
+        image: '/images/semiconductor/cleanroom-bay.webp',
       },
     ],
     extras: [
+      '공장 개축 · 증축',
+      '장비 · 중량물 이전 설치',
+      '신설 배관',
       '철골 트러스 제작',
       '지붕 · 판넬',
       '외벽 · 벽체',
@@ -277,63 +292,117 @@ export const DEFAULT_SERVICES: ServicesContent = {
     {
       slug: 'factory',
       name: '공장 개보수',
-      en: 'Factory Renovation',
-      summary: '설비 이전·수리와 공장 배관부터 철골·지붕·벽체, 반도체 공장 크린룸·공압·냉각수까지 한 팀이 맡습니다.',
+      en: 'Industrial Turnkey',
+      summary: '개축·증축, 장비 이전 설치, 신설 배관, 고압배관·탱크 용접까지. 산업시설 공사를 한 팀이 턴키로 맡습니다.',
       description:
-        '공장에서 생기는 수리는 범위를 나누지 않습니다. 생산 설비 이전과 재설치, 장비 수리, 공정·유틸리티 배관 신설·이설·수리, 그리고 철골 트러스 제작과 캐노피 증축, 지붕·외벽 판넬 교체, 바닥 재시공 같은 건축 공사부터 공압·배관 설비, 스텐 고압배관, 탱크 용접 보수, 생산 장비 수리, 방음·흡음, 크린룸 구축까지 함께 진행합니다. 반도체와 협력사 공장의 크린룸, 공압(CDA)·공정 냉각수(PCW)·유틸리티 배관도 맡습니다. 생산 일정에 맞춰 구간을 나눠 시공하고, 현장 진단 후 항목별로 명확한 견적을 제시합니다.',
-      image: '/images/hero-factory.png',
+        '엔엠솔루션은 산업시설 턴키 전문 회사입니다. 공장 개축·증축과 철골 트러스·캐노피 같은 규모 있는 공사, 생산 장비의 이전·설치, 공압·유틸리티 배관 신설, 스텐 고압배관 제작과 탱크 용접 보수, 반도체 공장의 크린룸·CDA·PCW 배관까지 진단부터 마감까지 한 팀이 진행합니다. 지붕·외벽 판넬, 에폭시 바닥, 방음 같은 마감 공사도 같은 팀이 이어서 합니다. 생산 일정에 맞춰 구간을 나눠 시공하고, 현장 진단 후 항목별로 명확한 견적을 제시합니다. 공장 시설을 통째로 맡기는 정기 관리 계약도 가능합니다.',
+      image: '/images/factory/heavy-chamber-wide.jpg',
       points: [
-        '생산 설비 이전 · 재설치 · 수리',
-        '공정 · 유틸리티 배관 신설 · 이설 · 누수 수리',
-        '철골 트러스 제작 · 양중 · 캐노피 증축',
-        '지붕 · 외벽 판넬 교체 및 누수 보수',
-        '에폭시 · 우레탄 바닥 · 내부 단열',
-        '공압설비 · 배관설비 · 배관 수리',
-        '스텐 고압배관 제작 · 탱크 용접 보수',
-        '생산 장비 정비 · 방음 · 흡음 · 크린룸',
+        '공장 개축 · 증축 · 철골 트러스 제작 · 양중 · 캐노피',
+        '생산 장비 · 중량물 이전 설치 · 회전 안착 · 재설치',
+        '공압설비 · 유틸리티 배관 신설 · 이설 · 배관 수리',
+        '스텐 고압배관 제작 · 탱크 · 챔버 용접 보수',
         '반도체 공장 크린룸 · 공압(CDA) · 냉각수(PCW) 배관',
-        '가동 중 · 주말 · 야간 시공 협의',
+        '지붕 · 외벽 판넬 교체 및 누수 보수',
+        '에폭시 · 우레탄 바닥 · 내부 단열 · 방음 · 흡음',
+        '가동 중 · 주말 · 야간 시공 협의 · 정기 관리 계약',
       ],
-      targets: ['반도체 · 협력사 공장', '제조 · 물류 · 식품공장', '창고 · 공장 부속 사무동', '노후 판넬 건축물'],
-      areasTitle: '설비 이전 · 배관부터\n반도체 공장 설비까지.',
+      targets: ['반도체 · 협력사 공장', '제조 · 물류 · 식품공장', '변압기 · 중공업 공장', '창고 · 공장 부속 사무동'],
+      areasTitle: '규모 있는 공사부터,\n한 팀이 턴키로.',
       areasDescription:
-        '반도체와 협력사 공장은 청정도, 진동, 온도, 유틸리티 공급 중 하나만 흔들려도 라인이 멈춥니다. 공장 개보수부터 크린룸, 방음, 공압, 냉각수, 배관설비까지 모두 시공 가능하니 문제마다 업체를 따로 찾지 않으셔도 됩니다. 가동 중인 라인은 셧다운 일정에 맞춰 구간별로 진행하고, 현장 반입 절차와 안전 기준을 먼저 확인한 뒤 들어갑니다.',
-      areasImage: '/images/semiconductor/cleanroom-corridor.webp',
+        '개축·증축과 장비 이전, 신설 배관처럼 여러 공종이 얽히는 공사일수록 업체를 나누면 일정과 책임이 흩어집니다. 엔엠솔루션은 철골·용접·배관·설비를 한 팀이 맡아 진단, 견적, 시공, 마감까지 이어서 진행합니다. 아래는 실제 현장 사진입니다.',
+      areasImage: '/images/factory/heavy-crane-yard.jpg',
       areas: [
         {
-          title: '설비 이전 · 수리',
-          description: '생산 설비와 장비의 해체·이송·재설치, 레벨·앵커 고정, 전기·배관 재연결까지. 이전 뒤 시운전과 고장 수리도 함께 봅니다.',
-          image: '/images/industrial.png',
+          title: '개축 · 증축 · 철골',
+          description: '철골 트러스 제작과 양중, 캐노피·증축 골조, 노후 공장 개축. 생산동 레이아웃 변경까지 라인 일정에 맞춰 구간별로 진행합니다.',
+          image: '/images/gallery/g-truss-lift.jpg',
         },
         {
-          title: '반도체 공장 개보수',
-          description: '생산동·유틸리티동의 철골, 지붕, 벽체, 바닥 보수와 레이아웃 변경. 라인 일정에 맞춰 구간별로 진행합니다.',
-          image: '/images/semiconductor/renovation.webp',
+          title: '장비 · 중량물 이전 설치',
+          description: '진공건조로 챔버 같은 수십 톤 중량물의 회전 안착, 생산 장비 해체·이송·재설치, 레벨·앵커 고정과 배관·전기 재연결, 시운전까지.',
+          image: '/images/factory/heavy-chamber-wide.jpg',
         },
         {
-          title: '크린룸',
-          description: '크린룸 판넬과 파티션, 출입부, 천장 구축과 보수. 요구 청정도와 기류를 먼저 확인하고 시공합니다.',
+          title: '신설 배관 · 공압설비',
+          description: 'CDA(압축공기)·유틸리티·배수 배관 신설과 증설, 설비 이전에 따른 배관 이설, 누수·파손 배관 수리. 서포트·랙까지 현장 치수에 맞춰 직접 제작합니다.',
+          image: '/images/gallery/g-pipe-line.jpg',
+        },
+        {
+          title: '고압배관 · 탱크 · 챔버 용접',
+          description: '스텐 고압배관 제작, 탱크·챔버의 균열·누설부 용접 보수와 보강 프레임 제작. 용접부는 사진으로 전후를 남겨 드립니다.',
+          image: '/images/factory/heavy-weld-seam.jpg',
+        },
+        {
+          title: '반도체 공장 크린룸 · CDA · PCW',
+          description: '크린룸 판넬·파티션·천장 구축과 보수, 공압(CDA) 메인·분기 배관, 공정 냉각수(PCW) 순환 배관 신설·교체. 셧다운 일정에 맞춥니다.',
           image: '/images/semiconductor/cleanroom-bay.webp',
         },
         {
-          title: '방음 · 흡음',
-          description: '컴프레서·칠러·배기 설비 주변 소음을 줄이는 방음벽, 흡음 판넬, 설비 방음 커버를 시공합니다.',
-          image: '/images/semiconductor/acoustic.webp',
+          title: '지붕 · 판넬 · 바닥 · 방음',
+          description: '지붕·외벽 판넬 교체와 누수 보수, 에폭시·우레탄 바닥, 컴프레서·칠러 주변 방음·흡음. 큰 공사 뒤 마감까지 같은 팀이 끝냅니다.',
+          image: '/images/gallery/g-panel-hall.jpg',
+        },
+      ],
+      // 영상은 R2 버킷 nm-solution-media/factory/ (lib/clients/media.ts 와 같은 버킷). 원본은 kevin PC 금강변압기·신일공업 자료.
+      media: [
+        {
+          kind: 'video',
+          src: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/plan-aerial.mp4',
+          poster: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/plan-aerial.jpg',
+          title: '항공 촬영 기반 중량물 이전 계획',
+          caption: '현장을 드론으로 찍고 그 위에 크레인 위치, 양중 순서, 이동 경로를 그려 발주처와 먼저 합의합니다.',
         },
         {
-          title: '공압 설비',
-          description: 'CDA(압축공기) 메인 배관과 분기 배관 신설·증설, 드롭 배관과 레귤레이터, 압력 손실·누기 보수.',
-          image: '/images/semiconductor/pneumatic.webp',
+          kind: 'video',
+          src: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/plan-lift.mp4',
+          poster: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/plan-lift.jpg',
+          title: '수십 톤 챔버 양중 · 회전 안착 시뮬레이션',
+          caption: '100톤·60톤 크레인 2대로 챔버를 들어 올려 180° 회전해 안착시키는 과정을 3D 로 미리 검토합니다.',
         },
         {
-          title: '냉각수 배관',
-          description: '공정 냉각수(PCW)·냉각탑 순환 배관 신설과 교체, 보온, 누수 보수. 가동 중 라인은 셧다운 일정에 맞춥니다.',
-          image: '/images/semiconductor/cooling-water.webp',
+          kind: 'photo',
+          src: '/images/factory/heavy-chamber-wide.jpg',
+          title: '진공건조로 챔버 · 현장 실측',
+          caption: '겐트리 크레인 아래에서 챔버 치수와 무게 중심, 용접 보수 범위를 실측했습니다.',
         },
         {
-          title: '배관설비 · 배관 수리',
-          description: '스텐 고압배관, 유틸리티·배수 배관 제작과 설치, 설비 이전에 따른 배관 이설, 누수·파손 배관 수리와 서포트·랙 제작까지 현장 치수에 맞춰 직접 합니다.',
-          image: '/images/semiconductor/piping.webp',
+          kind: 'photo',
+          src: '/images/factory/heavy-weld-seam.jpg',
+          title: '챔버 모서리 용접부 점검',
+          caption: '기존 용접선의 균열·부식 부위를 확인하고 재용접·보강 범위를 정합니다.',
+        },
+        {
+          kind: 'video',
+          src: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/chamber-rotate.mp4',
+          poster: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/chamber-rotate.jpg',
+          title: '챔버 회전 안착 · 용접면 개념도',
+          caption: '어느 면을 바닥으로 놓고 어디를 용접할지, 현장 사진을 바탕으로 자세를 미리 정합니다.',
+        },
+        {
+          kind: 'photo',
+          src: '/images/factory/heavy-chamber-top.jpg',
+          title: '상부 보강 프레임 제작',
+          caption: '회전 중 변형을 막기 위해 개구부에 H형강 보강 프레임을 먼저 용접합니다.',
+        },
+        {
+          kind: 'video',
+          src: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/roof-aerial.mp4',
+          poster: 'https://pub-12315d6f651148cc9ed45ee6ffcc1d6b.r2.dev/factory/roof-aerial.jpg',
+          title: '공장 지붕 교체 전 드론 점검',
+          caption: '올라가지 않고도 지붕 전면의 부식과 이음부 상태를 항공 영상으로 확인하고 교체 범위를 잡습니다.',
+        },
+        {
+          kind: 'photo',
+          src: '/images/gallery/g-truss-lift.jpg',
+          title: '철골 트러스 양중',
+          caption: '공장 증축 골조. 제작한 트러스를 현장에서 들어 올려 조립합니다.',
+        },
+        {
+          kind: 'photo',
+          src: '/images/gallery/g-tank-weld.jpg',
+          title: '스텐 탱크 용접',
+          caption: '스텐 탱크·배관 제작과 용접 보수.',
         },
       ],
     },

@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { ArrowDown, ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
 import { QuoteForm } from '@/components/quote-form'
+import { ServiceMediaSection } from '@/components/service-media'
+import { OTHER_SERVICES } from '@/components/brand'
 import { TrackLink } from '@/components/track-link'
 import { MultilineText } from '@/components/multiline-text'
 import { getContent } from '@/lib/content/get'
@@ -158,22 +160,25 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
               </a>
             </div>
 
-            <div className="flex flex-col gap-3 border border-border p-6">
-              <p className="text-kicker text-muted-foreground">Other Solutions</p>
-              <ul className="flex flex-col divide-y divide-border">
-                {others.map((s) => (
-                  <li key={s.slug}>
-                    <Link
-                      href={`/services/${s.slug}`}
-                      className="flex items-center justify-between py-3 text-sm font-medium transition-colors hover:text-electric"
-                    >
-                      {s.name}
-                      <ArrowRight className="size-4 text-muted-foreground" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* 다른 사업부 목록: 2026-10-25 사업주 요청으로 메뉴와 함께 숨김. 사업소개(/services) 아래쪽에만 남긴다 */}
+            {OTHER_SERVICES.length > 0 && (
+              <div className="flex flex-col gap-3 border border-border p-6">
+                <p className="text-kicker text-muted-foreground">Other Solutions</p>
+                <ul className="flex flex-col divide-y divide-border">
+                  {others.map((s) => (
+                    <li key={s.slug}>
+                      <Link
+                        href={`/services/${s.slug}`}
+                        className="flex items-center justify-between py-3 text-sm font-medium transition-colors hover:text-electric"
+                      >
+                        {s.name}
+                        <ArrowRight className="size-4 text-muted-foreground" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </aside>
         </div>
       </section>
@@ -219,6 +224,9 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           </div>
         </section>
       )}
+
+      {/* 현장 기록: 실제 사진·영상 (media 가 있는 사업만) */}
+      <ServiceMediaSection items={item.media ?? []} name={item.name} />
 
       {/* 견적폼: 홈으로 보내지 않고 이 페이지에서 바로 받는다 */}
       <section className="border-t border-border bg-navy py-16 text-navy-foreground lg:py-24">

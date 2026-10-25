@@ -5,7 +5,7 @@ import { MultilineText } from './multiline-text'
 import type { ServiceItem } from '@/lib/content/defaults'
 
 /**
- * 공장 개보수의 세부 분야(반도체 공장 설비) 블록.
+ * 공장 개보수의 세부 분야(산업시설 턴키: 개축·증축, 장비 이전, 신설 배관, 용접, 반도체 설비) 블록.
  * 메인 페이지 개보수 범위 섹션 안에 들어가며, 사업소개의 공장 개보수(factory) 항목 값을 그대로 쓴다.
  */
 export function SemiconductorFeature({ item }: { item: ServiceItem }) {
@@ -18,7 +18,7 @@ export function SemiconductorFeature({ item }: { item: ServiceItem }) {
         <div className="flex flex-col gap-6 lg:col-span-5">
           <p className="text-kicker flex items-center gap-3 text-navy-foreground/60">
             <span className="h-px w-8 bg-electric" aria-hidden />
-            Semiconductor Fab
+            Industrial Turnkey
           </p>
           {item.areasTitle && (
             <h3 className="text-balance text-3xl font-black leading-[1.15] tracking-[-0.025em] sm:text-4xl">
@@ -35,7 +35,7 @@ export function SemiconductorFeature({ item }: { item: ServiceItem }) {
               href="#quote"
               className="group inline-flex h-12 items-center justify-center gap-3 bg-electric px-6 text-sm font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"
             >
-              반도체 설비 상담
+              턴키 공사 상담
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </a>
             <Link
@@ -52,7 +52,7 @@ export function SemiconductorFeature({ item }: { item: ServiceItem }) {
           <div className="relative aspect-[4/3] overflow-hidden lg:col-span-7">
             <Image
               src={item.areasImage}
-              alt="반도체 공장 크린룸 예시 이미지"
+              alt={item.areasTitle?.replace(/\n/g, ' ') ?? item.name}
               fill
               sizes="(min-width: 1024px) 55vw, 100vw"
               className="object-cover"

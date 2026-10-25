@@ -33,7 +33,7 @@ export function SiteFooter({ settings }: { settings: SettingsContent }) {
                 </li>
               ))}
             </ul>
-            <p className="text-kicker mb-4 mt-8 text-muted-foreground">Other Solutions</p>
+            {OTHER_SERVICES.length > 0 && <p className="text-kicker mb-4 mt-8 text-muted-foreground">Other Solutions</p>}
             <ul className="grid grid-cols-2 gap-2 lg:grid-cols-1">
               {OTHER_SERVICES.map((s) => (
                 <li key={s.label}>

@@ -8,7 +8,7 @@ import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KE
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
-import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
+import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -218,6 +218,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV2_KEY, () => refreshAtotech('모터 전원 케이블 F-CV 6sq 4C 교체·전기 기술자 추가'))
       await seedOnce(ATOTECH_REV3_KEY, () => refreshAtotech('제안 1·2 서플라이 경로 단순화, 리턴 넘는 구간만 올림'))
       await seedOnce(ATOTECH_REV4_KEY, () => refreshAtotech('전원 케이블·전기 기술자·경비를 펌프 교체 공종에 넣음'))
+      await seedOnce(ATOTECH_REV5_KEY, () => refreshAtotech('펌프 설치 배관 절단 없이, 앵커 작업 포함, 제안서 문구 점검'))
     })().catch((e) => {
       ready = null
       throw e

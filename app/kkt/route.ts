@@ -2,7 +2,8 @@ import { KKT_COOKIE, KKT_COOKIE_MAX_AGE, hasKktAccess, isKktPassword, kktToken }
 import { PAGE_HTML } from './page-html'
 import { NO_STORE, cookieValue } from './http'
 import { logoSvg } from '@/lib/brand-logo'
-import { withBrandLogo } from '@/lib/clients/proposal'
+import { withBrandFont } from '@/lib/clients/proposal'
+import { PRETENDARD_CSS } from '@/lib/clients/quote'
 
 /**
  * 금강변압기 공사제안서 페이지 (대표 주소 /kkt). 예전 /금강변압기 링크는 proxy.ts 가 여기로 넘긴다.
@@ -19,10 +20,10 @@ function lockPage(error: boolean): Response {
   const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive"><title>비밀번호 입력 | 엔엠솔루션</title>
-<style>
+<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>
 :root{--navy:#0e1b3d;--electric:#2c5ce6;--line:#e2e5ea;--muted:#6b7280}
 *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:#f4f5f7;color:#1b1f27;
-font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:20px}
+font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:20px}
 form{width:100%;max-width:360px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:28px 24px}
 .mark{height:30px}
 h1{font-size:20px;font-weight:900;color:var(--navy);margin:16px 0 6px;letter-spacing:-.02em}p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.6}
@@ -47,7 +48,7 @@ ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' :
 
 export async function GET(req: Request) {
   if (!(await hasKktAccess(cookieValue(req)))) return lockPage(false)
-  return new Response(withBrandLogo(PAGE_HTML), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
+  return new Response(withBrandFont(PAGE_HTML), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }
 
 export async function POST(req: Request) {

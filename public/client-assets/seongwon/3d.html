@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>2층 창고 바닥 철골 구조 3D | (주)성원냉동기계 | 엔엠솔루션</title>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 화면 전체 3D 캔버스 + 왼쪽 위 정보 패널 + 아래 조작 막대 */
+:root{
+  --bg:#e9edf1; --panel:#ffffff; --fg:#14202e; --muted:#5b6876; --line:#d3dae2;
+  --navy:#0f2a44; --accent:#e8742a; --chip:#eef2f6;
+  --sky-top:#dfe6ee; --ground:#c9ced4;
+  --sans:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161d; --panel:#18212b; --fg:#e6ebf1; --muted:#9aa7b5; --line:#2a3644; --navy:#9fc0e6; --chip:#202b37;
+  --sky-top:#1a232d; --ground:#2a3138; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161d; --panel:#18212b; --fg:#e6ebf1; --muted:#9aa7b5; --line:#2a3644; --navy:#9fc0e6; --chip:#202b37;
+  --sky-top:#1a232d; --ground:#2a3138; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);overflow:hidden}
+#app{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.panel{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));
+  width:min(330px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;
+  box-shadow:0 6px 24px rgba(0,0,0,.12);max-height:calc(100% - 150px);overflow:auto}
+.panel h1{margin:0 0 2px;font-size:17px;line-height:1.3;text-wrap:balance}
+.panel .sub{margin:0 0 10px;color:var(--muted);font-size:12.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--mono);font-size:12px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:10px;font-size:12px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:2px;flex:none;border:1px solid rgba(0,0,0,.15)}
+.note{margin-top:10px;font-size:11.5px;color:var(--muted);line-height:1.5}
+.toggle-panel{display:none}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;pointer-events:none}
+.bar .grp{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+button{font:600 13px var(--sans);color:var(--fg);background:transparent;border:0;border-radius:4px;padding:7px 11px;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--chip)}
+button[aria-pressed="true"]{background:var(--navy);color:var(--panel)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(12px + env(safe-area-inset-top,0px));background:var(--panel);border:1px solid var(--line);
+  border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);max-width:260px;line-height:1.5}
+.hint b{color:var(--fg)}
+.bar .move{display:none}
+.bar.walk .move{display:flex}
+@media (max-width:640px){
+  .panel{padding:10px 12px;max-height:40%}
+  .panel .kv,.panel .note{display:none}
+  .legend{grid-template-columns:1fr 1fr 1fr;font-size:11px}
+  .hint{display:none}
+  button{padding:7px 8px;font-size:12px}
+}
+</style>
+
+
+</head>
+<body>
+<div id="app" aria-label="2층 창고 철골 구조 3D 모델">
+  <canvas id="c"></canvas>
+  <section class="panel" aria-label="모델 정보">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:8px"><h1>2층 창고 바닥 철골 구조</h1><button id="fold" aria-expanded="true" style="padding:3px 8px;font-size:12px;border:1px solid var(--line)">접기</button></div>
+    <p class="sub">성원냉동기계 안성 공장 · 예비 설계 (구조기술사 확인 후 확정)</p>
+    <div id="more">
+    <dl class="kv">
+      <dt>외벽선</dt><dd>19,800 × 10,000</dd>
+      <dt>2층 바닥</dt><dd>FL +4,504 · 약 155㎡</dd>
+      <dt>1층 높이</dt><dd>4,000 (연속보 하단)</dd>
+      <dt>연속보</dt><dd>H-400×200</dd>
+      <dt>벽보·가로보</dt><dd>H-300×150</dd>
+      <dt>새 기둥 C1</dt><dd>H-250×250 · 11본</dd>
+      <dt>장선·바닥</dt><dd>□100×50 @300 · 4.0t</dd>
+      <dt>허용 적재</dt><dd>약 900kg/㎡ (설계)</dd>
+    </dl>
+    <div class="legend" aria-label="색 구분">
+      <span><i style="background:#0f2a44"></i>벽보</span>
+      <span><i style="background:#e8742a"></i>연속보</span>
+      <span><i style="background:#2e6ba8"></i>가로보</span>
+      <span><i style="background:#3d4a5c"></i>새 기둥 C1</span>
+      <span><i style="background:#8a9096"></i>기존 기둥</span>
+      <span><i style="background:#2e8b57"></i>고정 난간</span>
+      <span><i style="background:#c8372d"></i>여닫는 난간</span>
+      <span><i style="background:#e8b88a"></i>화장실 (1층)</span>
+    </div>
+    <p class="note">빨간 점선 테두리 기둥(A열 4~5칸)은 계단·화장실과 겹쳐 위치를 현장에서 확인함. 외벽 높이는 표현용(6m)임.</p>
+    </div>
+  </section>
+  <div class="hint" id="hint"></div>
+  <div class="bar" id="bar">
+    <div class="grp" role="group" aria-label="보기 방식">
+      <button id="mOrbit" aria-pressed="true">둘러보기</button>
+      <button id="tPan" aria-pressed="false" title="켜면 한 손가락·왼쪽 버튼으로 끌어서 화면을 옮김">손 이동</button>
+      <button id="mWalk1" aria-pressed="false">1층 안 보기</button>
+      <button id="mWalk2" aria-pressed="false">2층 걷기</button>
+    </div>
+    <div class="grp" role="group" aria-label="표시">
+      <button id="tPlate" aria-pressed="true">바닥판</button>
+      <button id="tWall" aria-pressed="true">외벽</button>
+      <button id="tGate" aria-pressed="false">난간 열기</button>
+    </div>
+    <div class="grp" role="group" aria-label="빠른 시점">
+      <button id="vIso">전체</button>
+      <button id="vTop">위에서</button>
+      <button id="vStair">계단</button>
+      <button id="vOpen">개구부</button>
+      <button id="vUnder">밑에서</button>
+    </div>
+    <div class="grp move" role="group" aria-label="이동">
+      <button id="left" aria-label="왼쪽으로 돌기">◀</button>
+      <button id="fwd" aria-label="앞으로">▲ 앞</button>
+      <button id="back" aria-label="뒤로">▼ 뒤</button>
+      <button id="right" aria-label="오른쪽으로 돌기">▶</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+// ---------- 치수 (m), geom.py 와 같음. x = 길이 19.8, z = 폭 10 (A열 z=0), y = 높이 ----------
+const LX=19.8, LY=10.0, PANEL=0.155, WALL_H=6.0;
+const COL_X=[PANEL+0.0875,4.95,9.9,14.85,LX-PANEL-0.0875], YA=0.33, YD=LY-0.33;
+const XG0=PANEL+0.122, XG1=LX-XG0, SD_Y=[2.75,7.25];
+const YIN_A=0.505, YIN_D=9.495, XIN0=0.399, XIN1=19.401;
+const WA=0.58, WD=9.42, WG0=0.474, WG1=19.326, YC=5.0;
+const MIDC=[6.732,13.066];
+const OPX0=9.9, OPX1=14.85, OPY1=2.75;
+const WC=[17.395,0.155,19.645,2.405];
+const ST_W=0.9, RISE=4.504/23, TREAD=0.24;
+const STX1=17.35, STX0=16.45, STY0=0.55, STY1=1.45, F1N=7, F1X0=STX0-F1N*TREAD, F2N=14, F2Y1=STY1+F2N*TREAD;
+const SOX0=16.30, SOX1=17.45, SOY1=4.9;
+const CXA=[2.775,5.15,7.525,9.9,12.375,14.85,SOX0,SOX1], CXD=[2.775,5.15,7.525,9.9,12.375,14.85,17.125];
+const WBCOLS=[[2.475,WA],[7.425,WA],[17.52,WA],[2.475,WD],[7.425,WD],[12.375,WD],[17.325,WD],[WG0,YC],[WG1,YC]];
+const TBD=[17.52,WA];
+const FL=4.504;
+
+const canvas=document.getElementById('c');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true}); }
+catch(e){ document.getElementById('hint').textContent='이 브라우저에서 3D를 열 수 없음 (WebGL 꺼짐)'; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(50,1,0.05,300);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function applyTheme(){ scene.background=new THREE.Color(css('--sky-top')||'#dfe6ee'); groundMat.color.set(css('--ground')||'#c9ced4'); }
+
+// 평면 좌표(x 1→5열, z A→D열)를 그대로 쓰되 도면과 같은 방향으로 보이게 z를 뒤집음
+const world=new THREE.Group(); world.scale.z=-1; scene.add(world);
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a8f96,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.75); sun.position.set(-8,20,-12); scene.add(sun);
+const sun2=new THREE.DirectionalLight(0xffffff,0.25); sun2.position.set(20,10,18); scene.add(sun2);
+
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+const mat={
+  wb:M(0x0f2a44), cg:M(0xe8742a), xb:M(0x2e6ba8), b2:M(0xc8372d), c1:M(0x3d4a5c), tbd:M(0xc8372d),
+  col:M(0x8a9096), br:M(0xe8742a), jo:M(0x9aa3ab), stair:M(0x4a5560), tread:M(0x6f7a85),
+  rail:M(0x2e8b57), gate:M(0xc8372d), toe:M(0x2e8b57),
+  plate:new THREE.MeshLambertMaterial({color:0x7d878f,transparent:true,opacity:0.9,side:THREE.DoubleSide}),
+  panel:new THREE.MeshLambertMaterial({color:0xc4ccd4,transparent:true,opacity:0.28,side:THREE.DoubleSide,depthWrite:false}),
+  wc:new THREE.MeshLambertMaterial({color:0xe8b88a,transparent:true,opacity:0.75}),
+  door:new THREE.MeshLambertMaterial({color:0xd8a090,transparent:true,opacity:0.35,side:THREE.DoubleSide,depthWrite:false}),
+};
+const groundMat=new THREE.MeshLambertMaterial({color:0xc9ced4});
+// 상자: x0..x1, y0..y1 (높이), z0..z1
+function box(x0,x1,y0,y1,z0,z1,m,parent){
+  const g=new THREE.BoxGeometry(Math.abs(x1-x0),Math.abs(y1-y0),Math.abs(z1-z0));
+  const o=new THREE.Mesh(g,m); o.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2); (parent||world).add(o); return o;
+}
+// H형강 (보): axis 'x' 또는 'z', 하단 높이 yb, 춤 d, 폭 b
+function hbeam(axis,a0,a1,c,yb,d,b,tf,tw,m,parent){
+  const g=new THREE.Group();
+  if(axis==='x'){
+    box(a0,a1,yb,yb+tf,c-b/2,c+b/2,m,g); box(a0,a1,yb+d-tf,yb+d,c-b/2,c+b/2,m,g); box(a0,a1,yb+tf,yb+d-tf,c-tw/2,c+tw/2,m,g);
+  }else{
+    box(c-b/2,c+b/2,yb,yb+tf,a0,a1,m,g); box(c-b/2,c+b/2,yb+d-tf,yb+d,a0,a1,m,g); box(c-tw/2,c+tw/2,yb+tf,yb+d-tf,a0,a1,m,g);
+  }
+  (parent||world).add(g); return g;
+}
+// H형강 기둥: 중심 (x,z), 높이 0..h, 춤 방향 'x' 또는 'z'
+function hcol(x,z,h,d,b,tf,tw,dir,m,parent){
+  const g=new THREE.Group();
+  if(dir==='z'){ box(x-b/2,x+b/2,0,h,z-d/2,z-d/2+tf,m,g); box(x-b/2,x+b/2,0,h,z+d/2-tf,z+d/2,m,g); box(x-tw/2,x+tw/2,0,h,z-d/2+tf,z+d/2-tf,m,g); }
+  else{ box(x-d/2,x-d/2+tf,0,h,z-b/2,z+b/2,m,g); box(x+d/2-tf,x+d/2,0,h,z-b/2,z+b/2,m,g); box(x-d/2+tf,x+d/2-tf,0,h,z-tw/2,z+tw/2,m,g); }
+  (parent||world).add(g); return g;
+}
+function cyl(a,b,r,m,parent){ // a,b: [x,y,z]
+  const va=new THREE.Vector3(...a), vb=new THREE.Vector3(...b), L=va.distanceTo(vb);
+  const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,10),m);
+  o.position.copy(va).add(vb).multiplyScalar(0.5);
+  o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vb.clone().sub(va).normalize());
+  (parent||world).add(o); return o;
+}
+
+// ---------- 바닥·외벽 ----------
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,50),groundMat); ground.rotation.x=-Math.PI/2; ground.position.set(LX/2,-0.001,LY/2); world.add(ground);
+const grid=new THREE.GridHelper(40,40,0x9aa3ab,0xb3bac1); grid.position.set(LX/2,0.002,LY/2); grid.material.transparent=true; grid.material.opacity=0.35; world.add(grid);
+const walls=new THREE.Group(); world.add(walls);
+box(0,LX,0,WALL_H,LY-PANEL,LY,mat.panel,walls);              // D열
+box(0,PANEL,0,WALL_H,PANEL,LY-PANEL,mat.panel,walls);          // 1열 박공
+box(LX-PANEL,LX,0,WALL_H,PANEL,LY-PANEL,mat.panel,walls);      // 5열 박공
+box(0,10.4,0,WALL_H,0,PANEL,mat.panel,walls); box(14.4,LX,0,WALL_H,0,PANEL,mat.panel,walls); box(10.4,14.4,4.0,WALL_H,0,PANEL,mat.panel,walls);
+box(10.4,14.4,0,4.0,0,0.04,mat.door,walls);                    // 행거도어 (열린 칸 표시)
+// 기존 기둥
+for(const x of COL_X){ for(const z of [YA,YD]) hcol(x,z,WALL_H,0.35,0.175,0.011,0.007,'z',mat.col); }
+for(const x of [XG0,XG1]){ for(const z of SD_Y) hcol(x,z,WALL_H,0.244,0.175,0.011,0.007,'x',mat.col); }
+// 화장실
+box(WC[0],WC[2],0,2.4,WC[1],WC[3],mat.wc);
+
+// ---------- 골조 ----------
+// 벽보 H-300×150, 하단 4.1
+hbeam('x',WG0-0.075,WG1+0.075,WD,4.1,0.3,0.15,0.009,0.0065,mat.wb);
+hbeam('x',WG0-0.075,OPX0,WA,4.1,0.3,0.15,0.009,0.0065,mat.wb);
+hbeam('x',OPX1,WG1+0.075,WA,4.1,0.3,0.15,0.009,0.0065,mat.wb);
+hbeam('z',WA+0.075,WD-0.075,WG0,4.1,0.3,0.15,0.009,0.0065,mat.wb);
+hbeam('z',WA+0.075,WD-0.075,WG1,4.1,0.3,0.15,0.009,0.0065,mat.wb);
+// 연속보 H-400×200, 하단 4.0
+hbeam('x',WG0+0.075,WG1-0.075,YC,4.0,0.4,0.2,0.013,0.008,mat.cg);
+// 가로보 H-300×150
+for(const x of CXA){ const z0=(x>OPX0&&x<OPX1)?OPY1+0.075:WA+0.075; hbeam('z',z0,YC-0.1,x,4.1,0.3,0.15,0.009,0.0065,mat.xb); }
+for(const x of CXD){ hbeam('z',YC+0.1,WD-0.075,x,4.1,0.3,0.15,0.009,0.0065,mat.xb); }
+hbeam('x',OPX0,OPX1,OPY1,4.1,0.3,0.15,0.009,0.0065,mat.b2);
+// 브래킷 (받침 + 경사재)
+function bracket(x,z,dirx,dirz){
+  const s=0.35;
+  if(dirz){ box(x-0.075,x+0.075,3.8,4.1,z,z+dirz*s,mat.br); cyl([x,3.25,z],[x,3.8,z+dirz*0.29],0.05,mat.br); }
+  else{ box(x,x+dirx*s,3.8,4.1,z-0.075,z+0.075,mat.br); cyl([x,3.25,z],[x+dirx*0.29,3.8,z],0.05,mat.br); }
+}
+for(const x of COL_X){ bracket(x,YIN_A,0,1); bracket(x,YIN_D,0,-1); }
+for(const z of SD_Y){ bracket(XIN0,z,1,0); bracket(XIN1,z,-1,0); }
+// 새 기둥 C1 H-250×250
+for(const x of MIDC) hcol(x,YC,4.0,0.25,0.25,0.014,0.009,'z',mat.c1);
+for(const [x,z] of WBCOLS){ const t=(x===TBD[0]&&z===TBD[1]); hcol(x,z,4.1,0.25,0.25,0.014,0.009,'z',t?mat.tbd:mat.c1); }
+// 장선 □100×50 @300 (높이 4.4~4.5)
+const joists=new THREE.Group(); world.add(joists);
+for(let z=WA; z<=WD+1e-6; z+=0.3){
+  let segs=[[WG0,WG1]];
+  if(z<OPY1) segs=[[WG0,OPX0],[OPX1,SOX0],[SOX1,WG1]];
+  else if(z<SOY1) segs=[[WG0,SOX0],[SOX1,WG1]];
+  for(const [a,b] of segs) box(a,b,4.4,4.5,z-0.025,z+0.025,mat.jo,joists);
+}
+// 바닥판 4.0t (구멍 제외)
+const plate=new THREE.Group(); world.add(plate);
+const P0=WG0-0.075, P1=WG1+0.075, PZ0=WA-0.075, PZ1=WD+0.075, H0=SOX0+0.075, H1=SOX1-0.075;
+box(P0,P1,4.5,4.504,SOY1,PZ1,mat.plate,plate);
+box(P0,H0,4.5,4.504,OPY1,SOY1,mat.plate,plate); box(H1,P1,4.5,4.504,OPY1,SOY1,mat.plate,plate);
+box(P0,OPX0,4.5,4.504,PZ0,OPY1,mat.plate,plate); box(OPX1,H0,4.5,4.504,PZ0,OPY1,mat.plate,plate); box(H1,P1,4.5,4.504,PZ0,OPY1,mat.plate,plate);
+
+// ---------- 계단 ----------
+// 1구간: x F1X0→STX0 (z STY0~STY1), 8단. 참 약 +1.567. 2구간: z STY1→F2Y1 (x STX0~STX1), 15단. 단높이 약 196·디딤 240
+for(let i=0;i<F1N;i++){ const y=(i+1)*RISE; box(F1X0+i*TREAD,F1X0+(i+1)*TREAD,y-0.045,y,STY0,STY1,mat.tread); }
+const yl=(F1N+1)*RISE; box(STX0,STX1,yl-0.1,yl,STY0,STY1,mat.tread);
+for(const [x,z] of [[STX0+0.05,STY0+0.05],[STX1-0.05,STY0+0.05],[STX0+0.05,STY1-0.05],[STX1-0.05,STY1-0.05]]) box(x-0.05,x+0.05,0,yl-0.1,z-0.05,z+0.05,mat.stair);
+for(let i=0;i<F2N;i++){ const y=yl+(i+1)*RISE; box(STX0,STX1,y-0.045,y,STY1+i*TREAD,STY1+(i+1)*TREAD,mat.tread); }
+// 옆판 (기울어진 판)
+function stringer(a,b,zOff,axis){ // a,b 시작·끝 점 [x,y,z]
+  const o=cyl(a,b,0.001,mat.stair); world.remove(o);
+  const va=new THREE.Vector3(...a), vb=new THREE.Vector3(...b), L=va.distanceTo(vb);
+  const g=new THREE.BoxGeometry(L,0.2,0.012); const m=new THREE.Mesh(g,mat.stair);
+  m.position.copy(va).add(vb).multiplyScalar(0.5);
+  const d=vb.clone().sub(va).normalize(); m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),d); world.add(m);
+}
+for(const z of [STY0+0.006,STY1-0.006]) stringer([F1X0,0.05,z],[STX0,yl-0.05,z]);
+for(const x of [STX0+0.006,STX1-0.006]) stringer([x,yl-0.05,STY1],[x,FL-0.15,F2Y1]);
+// 핸드레일 H900 (양쪽), 손잡이 + 중간대 + 기둥
+const hr=0.9;
+for(const z of [STY0+0.03,STY1-0.04]){
+  for(const h of [hr,hr/2]) cyl([F1X0,RISE+h,z],[STX0,yl+h,z],0.024,mat.rail);
+  for(let i=0;i<=F1N;i+=3){ const x=F1X0+i*TREAD, y=(i+1)*RISE; cyl([x,y,z],[x,y+hr,z],0.024,mat.rail); }
+}
+cyl([STX0,yl+hr,STY0+0.03],[STX1-0.03,yl+hr,STY0+0.03],0.024,mat.rail);
+for(const x of [STX0+0.04,STX1-0.03]){
+  for(const h of [hr,hr/2]) cyl([x,yl+RISE+h,STY1],[x,FL+h,F2Y1],0.024,mat.rail);
+  for(let i=0;i<=F2N;i+=4){ const z=STY1+i*TREAD, y=yl+(i+1)*RISE; cyl([x,y,z],[x,y+hr,z],0.024,mat.rail); }
+}
+cyl([STX1-0.03,yl,STY0+0.03],[STX1-0.03,yl+hr,STY0+0.03],0.024,mat.rail);
+
+// ---------- 2층 난간 ----------
+const RH=1.1;
+function fixedRail(a,b){ // a,b: [x,z]
+  for(const h of [RH,RH/2]) cyl([a[0],FL+h,a[1]],[b[0],FL+h,b[1]],0.024,mat.rail);
+  box(Math.min(a[0],b[0])-0.003,Math.max(a[0],b[0])+0.003,FL,FL+0.1,Math.min(a[1],b[1])-0.003,Math.max(a[1],b[1])+0.003,mat.toe);
+}
+function post(x,z){ box(x-0.0375,x+0.0375,FL,FL+RH,z-0.0375,z+0.0375,mat.rail); }
+const gates=[];
+function gate(hx,hz,len,axis,dir,swingSign){ // 경첩 (hx,hz), 길이, 닫힌 방향 axis, 열림 회전 부호
+  const piv=new THREE.Group(); piv.position.set(hx,FL,hz); world.add(piv);
+  const inner=new THREE.Group(); piv.add(inner);
+  const L=len-0.12, o=0.06;
+  const P=(t,h)=> axis==='x'? [dir*(o+t),h,0] : [0,h,dir*(o+t)];
+  for(const h of [0.02,0.55,1.08]) cyl(P(0,h),P(L,h),0.022,mat.gate,inner);
+  for(const t of [0,L]) cyl(P(t,0.02),P(t,1.08),0.022,mat.gate,inner);
+  const a=P(0,0.02), b=P(L,0.12);
+  box(Math.min(a[0],b[0]),Math.max(a[0],b[0])+0.004,0.02,0.12,Math.min(a[2],b[2]),Math.max(a[2],b[2])+0.004,mat.gate,inner);
+  gates.push({piv,target:0,cur:0,sign:swingSign});
+}
+const GW=(OPX1-OPX0)/3, YL0=WA+0.075;
+for(let i=0;i<=3;i++) post(OPX0+i*GW,OPY1);
+post(OPX0,YL0); post(OPX0,OPY1-1.5); post(OPX1,YL0);
+for(let i=0;i<3;i++) gate(OPX0+i*GW,OPY1,GW,'x',1,1);          // 정면 3짝: 2층 쪽(북)으로 열림
+gate(OPX0,OPY1,1.5,'z',-1,-1);                                  // 왼쪽 1짝: 서쪽으로 열림
+fixedRail([OPX0,YL0],[OPX0,OPY1-1.5]);
+fixedRail([OPX1,YL0],[OPX1,OPY1]);
+// 계단 구멍 둘레
+fixedRail([SOX0+0.03,YIN_A],[SOX0+0.03,SOY1-0.9]); fixedRail([SOX1-0.03,YIN_A],[SOX1-0.03,SOY1-0.2]);
+for(const z of [YIN_A+0.05,(YIN_A+SOY1-0.9)/2,SOY1-0.9]) post(SOX0+0.03,z);
+for(const z of [YIN_A+0.05,(YIN_A+SOY1-0.2)/2,SOY1-0.2]) post(SOX1-0.03,z);
+
+// ---------- 카메라·조작 ----------
+const target=new THREE.Vector3(LX/2,2.4,LY/2);
+const orbit={r:27,theta:-0.75,phi:1.05};
+const walk={x:4,z:3.0,yaw:0.55,pitch:-0.05,eye:1.6,level:1};
+let mode='orbit';
+const EYE_MIN=0.3;   // 둘러보기에서 카메라가 1층 바닥 밑으로 내려가지 않게 함
+function setOrbitCam(){ const s=Math.sin(orbit.phi);
+  const off=new THREE.Vector3(orbit.r*s*Math.sin(orbit.theta), orbit.r*Math.cos(orbit.phi), -orbit.r*s*Math.cos(orbit.theta));
+  if(target.y+off.y<EYE_MIN && off.y<0) off.multiplyScalar((target.y-EYE_MIN)/-off.y);
+  camera.position.set(target.x+off.x, target.y+off.y, -(target.z+off.z)); camera.lookAt(target.x,target.y,-target.z); }
+function setWalkCam(){ const y=(walk.level===2?FL:0)+walk.eye;
+  camera.position.set(walk.x,y,-walk.z);
+  const d=new THREE.Vector3(Math.cos(walk.pitch)*Math.sin(walk.yaw),Math.sin(walk.pitch),-Math.cos(walk.pitch)*Math.cos(walk.yaw));
+  camera.lookAt(camera.position.clone().add(d)); }
+function update(){ mode==='orbit'?setOrbitCam():setWalkCam(); }
+function clampWalk(){ walk.x=Math.min(XIN1-0.3,Math.max(XIN0+0.3,walk.x)); walk.z=Math.min(YIN_D-0.3,Math.max(YIN_A+0.2,walk.z));
+  if(walk.level===2){ walk.z=Math.max(WA+0.3,walk.z); } }
+function moveFwd(d){ walk.x+=Math.sin(walk.yaw)*d; walk.z+=Math.cos(walk.yaw)*d; clampWalk(); }
+
+const hint=document.getElementById('hint');
+function setHint(){ hint.innerHTML= mode==='orbit'
+  ? '<b>둘러보기</b> · 끌어서 회전, 스크롤·두 손가락으로 가리킨 곳 확대. 오른쪽 버튼·두 손가락 끌기·<b>손 이동</b>으로 옮김. 두 번 누른 곳이 회전 중심(주황 점)이 됨'
+  : '<b>'+(walk.level===2?'2층':'1층')+' 안</b> · 스크롤이나 ▲▼로 앞뒤 이동, 끌거나 ◀▶로 고개 돌리기, 방향키·WASD도 됨'; }
+setHint();
+
+// ---- 둘러보기: 원하는 곳으로 옮기고, 그 점을 중심으로 확대·회전 ----
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+const pivot=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12),new THREE.MeshBasicMaterial({color:0xe8742a,depthTest:false}));
+pivot.renderOrder=10; pivot.visible=false; scene.add(pivot); let pivotT=0;
+function shown(o){ for(;o;o=o.parent) if(!o.visible) return false; return true; }
+function toPlan(v){ return new THREE.Vector3(v.x,v.y,-v.z); }
+// 화면 점 아래의 부재(반투명 외벽은 건너뜀). 없으면 회전 중심 높이의 수평면과 만나는 점. 평면 좌표로 돌려줌
+function pickPlan(cx,cy){ const b=canvas.getBoundingClientRect();
+  ndc.set((cx-b.left)/b.width*2-1,-(cy-b.top)/b.height*2+1); ray.setFromCamera(ndc,camera);
+  const hit=ray.intersectObjects(world.children,true).find(h=>h.object.isMesh&&shown(h.object)&&!(h.object.material.transparent&&h.object.material.opacity<0.5));
+  if(hit) return toPlan(hit.point);
+  const v=new THREE.Vector3(); return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-target.y),v)?toPlan(v):target.clone(); }
+function showPivot(){ pivot.position.set(target.x,target.y,-target.z); pivot.visible=true; pivotT=performance.now(); }
+function pan(dx,dy){ const d=camera.position.distanceTo(new THREE.Vector3(target.x,target.y,-target.z));
+  const s=2*d*Math.tan(camera.fov*Math.PI/360)/(canvas.clientHeight||innerHeight);
+  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
+  right.z*=-1; up.z*=-1; target.addScaledVector(right,-dx*s).addScaledVector(up,dy*s); showPivot(); }
+// 손가락·마우스가 가리키는 점은 제자리에 두고 확대·축소
+function zoomAt(cx,cy,k){ const nr=Math.min(80,Math.max(1.2,orbit.r*k)); k=nr/orbit.r; if(k===1) return;
+  const p=pickPlan(cx,cy); target.sub(p).multiplyScalar(k).add(p); orbit.r=nr; }
+// 회전 중심을 p로 옮기되 카메라는 제자리
+function recenter(p){ const c=toPlan(camera.position); target.copy(p); const o=c.sub(p);
+  orbit.r=Math.max(1.2,o.length()); orbit.phi=Math.min(2.6,Math.max(0.08,Math.acos(o.y/orbit.r))); orbit.theta=Math.atan2(o.x,-o.z); showPivot(); }
+const panB=document.getElementById('tPan');
+const panMode=()=>panB.getAttribute('aria-pressed')==='true';
+
+let drag=null; const pts=new Map();
+canvas.addEventListener('pointerdown',e=>{ canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  drag={x:e.clientX,y:e.clientY,btn:e.button,pinch:null,mid:null}; });
+canvas.addEventListener('pointermove',e=>{ if(!drag||!pts.has(e.pointerId)) return;
+  const prev=pts.get(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===2){ const [a,b]=[...pts.values()]; const dd=Math.hypot(a.x-b.x,a.y-b.y), mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    if(drag.pinch!=null){
+      if(mode==='orbit'){ pan(mx-drag.mid[0],my-drag.mid[1]); zoomAt(mx,my,drag.pinch/dd); }   // 두 손가락: 끌면 이동, 벌리면 확대
+      else moveFwd((dd-drag.pinch)*0.03); }
+    drag.pinch=dd; drag.mid=[mx,my]; update(); return; }
+  const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
+  if(mode==='orbit'){
+    if(drag.btn===2||drag.btn===1||e.shiftKey||panMode()) pan(dx,dy);
+    else { orbit.theta-=dx*0.006; orbit.phi=Math.min(2.6,Math.max(0.08,orbit.phi-dy*0.006)); showPivot(); }
+  } else { walk.yaw-=dx*0.005; walk.pitch=Math.min(1.45,Math.max(-1.2,walk.pitch+dy*0.004)); }   // 화면을 손으로 잡아 끄는 방향으로 돎
+  update(); });
+function endPtr(e){ pts.delete(e.pointerId); if(pts.size===0) drag=null; else if(drag) drag.pinch=null; }
+canvas.addEventListener('pointerup',endPtr); canvas.addEventListener('pointercancel',endPtr);
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('dblclick',e=>{ if(mode!=='orbit') return; recenter(pickPlan(e.clientX,e.clientY)); update(); });
+canvas.addEventListener('wheel',e=>{ e.preventDefault();
+  if(mode==='orbit') zoomAt(e.clientX,e.clientY,Math.exp(e.deltaY*0.0012));
+  else moveFwd(-e.deltaY*0.004);
+  update(); },{passive:false});
+const keys=new Set();
+window.addEventListener('keydown',e=>{ if(mode!=='orbit'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(e.code)){ keys.add(e.code); e.preventDefault(); } });
+window.addEventListener('keyup',e=>keys.delete(e.code));
+let hold=0, turn=0;
+const fwdB=document.getElementById('fwd'), backB=document.getElementById('back');
+for(const [b,v] of [[fwdB,1],[backB,-1]]){
+  b.addEventListener('pointerdown',()=>hold=v); b.addEventListener('pointerup',()=>hold=0); b.addEventListener('pointerleave',()=>hold=0); }
+for(const [id,v] of [['left',1],['right',-1]]){ const b=document.getElementById(id);
+  b.addEventListener('pointerdown',()=>turn=v); b.addEventListener('pointerup',()=>turn=0); b.addEventListener('pointerleave',()=>turn=0); }
+
+function press(ids,on){ ids.forEach(id=>document.getElementById(id).setAttribute('aria-pressed',String(id===on))); }
+function setMode(m,level){
+  mode=m; const bar=document.getElementById('bar');
+  bar.classList.toggle('walk',m==='walk');
+  if(m==='walk'){ walk.level=level;
+    if(level===1){ walk.x=12.4; walk.z=0.9; walk.yaw=-0.75; walk.pitch=0.3; }   // 행거도어 안쪽에서 1층 안을 봄
+    else { walk.x=3.0; walk.z=7.8; walk.yaw=1.9; walk.pitch=-0.15; }
+    press(['mOrbit','mWalk1','mWalk2'],level===1?'mWalk1':'mWalk2');
+    if(fold.getAttribute('aria-expanded')==='true') fold.click();
+  } else press(['mOrbit','mWalk1','mWalk2'],'mOrbit');
+  camera.fov=m==='walk'?68:50; camera.updateProjectionMatrix();
+  setHint(); update(); }
+const fold=document.getElementById('fold'); fold.onclick=()=>{ const open=fold.getAttribute('aria-expanded')!=='true'; fold.setAttribute('aria-expanded',String(open)); document.getElementById('more').hidden=!open; fold.textContent=open?'접기':'펼치기'; };
+if(innerWidth<640||window.self!==window.top){ fold.click(); }
+document.getElementById('mOrbit').onclick=()=>setMode('orbit');
+document.getElementById('mWalk1').onclick=()=>setMode('walk',1);
+document.getElementById('mWalk2').onclick=()=>setMode('walk',2);
+function toggle(id,fn){ const b=document.getElementById(id); b.onclick=()=>{ const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',String(on)); fn(on); }; }
+toggle('tPlate',on=>{ plate.visible=on; });
+toggle('tPan',()=>{});
+toggle('tWall',on=>{ walls.visible=on; });
+toggle('tGate',on=>{ gates.forEach(g=>g.target=on?1:0); });
+function view(t,th,ph,r){ setMode('orbit'); target.set(...t); orbit.theta=th; orbit.phi=ph; orbit.r=r; update(); }
+document.getElementById('vIso').onclick=()=>view([LX/2,2.4,LY/2],-0.75,1.05,27);
+document.getElementById('vTop').onclick=()=>view([LX/2,4.5,LY/2],0.0001,0.09,24);
+document.getElementById('vStair').onclick=()=>view([16.2,1.9,1.4],-1.75,1.3,8);
+document.getElementById('vUnder').onclick=()=>view([LX/2,4.4,LY/2],-0.6,2.3,9);   // 1층 바닥에서 2층 밑면을 올려다봄
+document.getElementById('vOpen').onclick=()=>view([12.4,4.6,2.2],0.25,1.0,10);
+
+function resize(){ const w=canvas.clientWidth||innerWidth, h=canvas.clientHeight||innerHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize);
+const mq=matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener&&mq.addEventListener('change',applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now();
+function loop(now){ const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(mode==='walk'){ let f=hold, t=turn;
+    if(keys.has('ArrowUp')||keys.has('KeyW')) f+=1; if(keys.has('ArrowDown')||keys.has('KeyS')) f-=1;
+    if(keys.has('ArrowLeft')||keys.has('KeyA')) t+=1; if(keys.has('ArrowRight')||keys.has('KeyD')) t-=1;
+    if(f) moveFwd(f*2.2*dt); if(t) walk.yaw-=t*1.4*dt; if(f||t) update(); }
+  for(const g of gates){ if(g.cur!==g.target){ const s=reduce?1:dt*1.6; g.cur=g.target>g.cur?Math.min(g.target,g.cur+s):Math.max(g.target,g.cur-s);
+    g.piv.rotation.y=g.sign*g.cur*Math.PI/2*(-1); } }
+  if(pivot.visible&&now-pivotT>1200) pivot.visible=false;
+  renderer.render(scene,camera); requestAnimationFrame(loop); }
+applyTheme(); resize(); update(); requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>

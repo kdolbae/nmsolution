@@ -10,7 +10,7 @@ import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
-import { SEONGWON_CLIENT, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
+import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -246,6 +246,7 @@ export function ensureClients(): Promise<void> {
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
       })
+      await seedOnce(SEONGWON_REV2_KEY, () => refreshSeongwon('H빔 길이 지정(연속보 20m·벽보 58m·가로보 48m), 가운데 기둥 H-250×250 8m 추가'))
     })().catch((e) => {
       ready = null
       throw e
@@ -280,6 +281,20 @@ async function refreshAtotech(summary: string) {
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = ATOTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 성원냉동기계 견적·업체 메모를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호·제안서 유지). */
+async function refreshSeongwon(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [SEONGWON_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), SEONGWON_CLIENT.memo])
+  const quote = seongwonQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  await applyChange(Number(row.id), 'system', 'system', (cur) => ({ proposalHtml: cur.proposalHtml, quote, summary }))
 }
 
 /**

@@ -1,7 +1,7 @@
 import { logoSvg } from '@/lib/brand-logo'
 import { PRETENDARD_CSS, QUOTE_CSS, renderQuote } from './quote'
 import { quoteSummaryHtml } from './quote-summary'
-import { esc, withBrandLogo } from './proposal'
+import { esc, withBrandFont } from './proposal'
 import { getClientBySlug } from './table'
 import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie, validShareKey } from './portal'
 import { verifyPortalPassword } from './portal-password'
@@ -27,10 +27,10 @@ function loginPage(title: string, error: boolean): Response {
   const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive"><title>로그인 | 엔엠솔루션</title>
-<style>
+<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>
 :root{--navy:#0e1b3d;--electric:#2c5ce6;--line:#e2e5ea;--muted:#6b7280}
 *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:#f4f5f7;color:#1b1f27;
-font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:20px}
+font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:20px}
 form{width:100%;max-width:360px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:28px 24px}
 .mark{height:30px}
 h1{font-size:20px;font-weight:900;color:var(--navy);margin:16px 0 6px;letter-spacing:-.02em}p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.6}
@@ -81,12 +81,12 @@ export function portalPageHtml(client: NonNullable<Awaited<ReturnType<typeof get
   const sheet = `<div class="quote-sheet">${renderQuote(client.quote, client)}</div>`
   const hasSummarySlot = client.proposalHtml.includes('<!--NM:QUOTE-SUMMARY-->')
 
-  let html = withBrandLogo(client.proposalHtml)
+  let html = withBrandFont(client.proposalHtml)
     .split('{{QUOTE_NO}}')
     .join(esc(client.quote.number))
     .replace('<!--NM:QUOTE-SUMMARY-->', () => summary)
     .replace('<!--NM:QUOTE-->', () => (hasSummarySlot ? sheet : summary + sheet))
-  const head = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
+  const head = `<style>${QUOTE_CSS}</style>`
   html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, () => `${head}</head>`) : head + html
   html = keepInside(html)
   html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${FIT_QUOTE}${PDF_BUTTON}</body>`) : html + FIT_QUOTE + PDF_BUTTON
@@ -103,7 +103,7 @@ window.addEventListener('resize',fit);if(document.readyState!=='loading')fit();e
  * PDF 저장 버튼(오른쪽 아래 고정). 누르면 서버가 만든 PDF 파일(?pdf=1)을 바로 내려받는다. 인쇄물에는 버튼이 안 나온다.
  * 인쇄 CSS: 휴대폰 폭 맞춤 축소를 풀고, 제목이 쪽 끝에 홀로 남지 않게 한다.
  */
-const PDF_BUTTON = `<style>.nm-pdf{position:fixed;right:16px;bottom:16px;z-index:50;display:inline-flex;align-items:center;gap:8px;font-family:Pretendard,'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;padding:12px 18px;border-radius:999px;background:#0F2A44;color:#fff!important;text-decoration:none!important;box-shadow:0 6px 18px rgba(15,42,68,.28)}
+const PDF_BUTTON = `<style>.nm-pdf{position:fixed;right:16px;bottom:16px;z-index:50;display:inline-flex;align-items:center;gap:8px;font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:14px;font-weight:700;padding:12px 18px;border-radius:999px;background:#0F2A44;color:#fff!important;text-decoration:none!important;box-shadow:0 6px 18px rgba(15,42,68,.28)}
 .nm-pdf:hover{background:#163a5c}.nm-pdf svg{width:18px;height:18px}.nm-pdf[aria-busy=true]{opacity:.7;pointer-events:none}
 @media print{h1,h2,h3,h4{break-after:avoid-page}figure,tr{break-inside:avoid}.nm-pdf,.quote-fit-hint{display:none!important}.quote-sheet .nmq{zoom:1!important;min-width:0!important}}</style>
 <a class="nm-pdf" href="?pdf=1" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>PDF 다운로드</span></a>

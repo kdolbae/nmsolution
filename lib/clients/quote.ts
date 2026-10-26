@@ -325,7 +325,12 @@ function fmtQty(n: number) {
   return Number.isInteger(n) ? won(n) : n.toLocaleString('ko-KR', { maximumFractionDigits: 3 })
 }
 
-export const PRETENDARD_CSS = 'https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css'
+/**
+ * 공식 폰트 Pretendard (디자인 규격). public/fonts/pretendard/ 에 자체 호스팅한 파일을 쓴다.
+ * 외부 CDN 을 거치지 않아 서버 PDF(크로미움, 한글 글꼴 없음)에서도 같은 글꼴이 확실히 들어간다.
+ * 주소는 사이트 기준 경로라 업체 페이지·관리자 iframe(srcDoc)·PDF(<base>) 어디서든 같은 파일을 받는다.
+ */
+export const PRETENDARD_CSS = '/fonts/pretendard/pretendard.css'
 
 /**
  * 견적서 본문 CSS. 제안서와 한 문서로 인쇄할 때 제안서 CSS(table, th, h2 등 전역 선택자)와

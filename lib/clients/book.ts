@@ -26,11 +26,11 @@ html,body{margin:0;padding:0;background:#d9dde3;-webkit-print-color-adjust:exact
 .pg{width:210mm;height:297mm;box-sizing:border-box;padding:15mm 14mm 0;position:relative;overflow:hidden;background:#fff;margin:0 0 6mm;break-after:page;page-break-after:always}
 .pg:last-child{margin-bottom:0}
 .pg-body{height:calc(297mm - 15mm - 17mm);overflow:hidden}
-.pg-foot{position:absolute;left:14mm;right:14mm;bottom:7mm;display:flex;justify-content:space-between;align-items:center;font:500 8.5pt/1 Pretendard,'Noto Sans KR',sans-serif;color:#8a94a3;letter-spacing:.02em}
+.pg-foot{position:absolute;left:14mm;right:14mm;bottom:7mm;display:flex;justify-content:space-between;align-items:center;font:500 8.5pt/1 Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#8a94a3;letter-spacing:.02em}
 .pg-foot .no{font-weight:700;color:#0f2a44}
 .pg.even .pg-foot{flex-direction:row}
 .pg.odd .pg-foot{flex-direction:row-reverse}
-.pg-run{position:absolute;top:7mm;left:14mm;right:14mm;font:600 8pt/1 Pretendard,'Noto Sans KR',sans-serif;color:#e8742a;letter-spacing:.12em;text-transform:uppercase}
+.pg-run{position:absolute;top:7mm;left:14mm;right:14mm;font:600 8pt/1 Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#e8742a;letter-spacing:.12em;text-transform:uppercase}
 .pg.odd .pg-run{text-align:right}
 @media print{html,body{background:#fff}.pg{margin:0}}
 /* 쪽 안에서는 웹페이지용 여백·배경을 걷어 낸다 */
@@ -51,7 +51,7 @@ html,body{margin:0;padding:0;background:#d9dde3;-webkit-print-color-adjust:exact
 .pg-body .nm-flow .steps,.pg-body .nm-flow .step{gap:12px!important}
 .pg-body .nm-flow .step{padding:10px 0!important}
 /* 표지·목차·메모·뒤표지 */
-.nmb{font-family:Pretendard,'Noto Sans KR',sans-serif;color:#1d2430;letter-spacing:-.01em}
+.nmb{font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#1d2430;letter-spacing:-.01em}
 .nmb-cover{height:100%;display:flex;flex-direction:column}
 .nmb-cover .logo{height:13mm}
 .nmb-cover .kicker{margin-top:52mm;font-size:11pt;font-weight:700;letter-spacing:.24em;color:#e8742a}
@@ -435,7 +435,7 @@ export function bookShellHtml(frameUrl: string, title: string): string {
 <html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <link rel="stylesheet" href="${PRETENDARD_CSS}">
 <style>
-body{margin:0;background:#c9ced6;font-family:Pretendard,'Noto Sans KR',sans-serif}
+body{margin:0;background:#c9ced6;font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
 .bar{position:sticky;top:0;z-index:2;display:flex;gap:12px;align-items:center;justify-content:center;padding:10px 16px;background:#0f2a44;color:#fff;font-size:14px}
 .bar button{font:inherit;font-weight:700;border:0;background:#e8742a;color:#fff;padding:7px 16px;cursor:pointer}
 .bar span{color:#cfd8e4}

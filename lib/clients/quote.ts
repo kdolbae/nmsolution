@@ -87,6 +87,8 @@ export type Quote = {
   validDays: number
   /** 견적서 수신란. biz = 업체명·사업자번호·현장, contact = 업체명·담당자·연락처·현장(예전 양식) */
   recipientFields?: 'biz' | 'contact'
+  /** 수신란 대표 이름. biz 양식에서 값이 있을 때만 사업자번호 아래에 찍는다 */
+  recipientCeo?: string
   /** 선택 항목 표의 이름. 없으면 '선택 항목' (예: '상황에 따라 추가되는 비용') */
   optionLabel?: string
   /** 감액 표의 이름. 없으면 '필요 없을 경우 감액' */
@@ -486,7 +488,7 @@ ${
     <tr><th>업체명</th><td><b>${esc(to.name)}</b> 귀중</td></tr>
     ${
       q.recipientFields === 'biz'
-        ? `<tr><th>사업자번호</th><td>${esc(to.bizNumber)}</td></tr>`
+        ? `<tr><th>사업자번호</th><td>${esc(to.bizNumber)}</td></tr>${q.recipientCeo ? `<tr><th>대표</th><td>${esc(q.recipientCeo)}</td></tr>` : ''}`
         : `<tr><th>담당자</th><td>${esc(to.contactPerson)}</td></tr>
     <tr><th>연락처</th><td>${esc(to.phone)}</td></tr>`
     }

@@ -10,7 +10,7 @@ import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
-import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
+import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -249,6 +249,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(SEONGWON_REV2_KEY, () => refreshSeongwon('H빔 길이 지정(연속보 20m·벽보 58m·가로보 48m), 가운데 기둥 H-250×250 8m 추가'))
       await seedOnce(SEONGWON_REV3_KEY, () => refreshSeongwon('벽보·가로보 적산 물량으로 되돌림'))
       await seedOnce(SEONGWON_REV4_KEY, () => refreshSeongwon('프레임·바닥판·계단·도장·공통을 한 공종으로 합침'))
+      await seedOnce(SEONGWON_REV5_KEY, () => refreshSeongwon('기둥 11본 새로 구매, 팀장 40만, 조공 공정마다 1명 추가'))
     })().catch((e) => {
       ready = null
       throw e

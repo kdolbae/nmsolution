@@ -1,9 +1,11 @@
 'use client'
 
 import { useMemo, useRef, useState, useTransition } from 'react'
-import { ChevronDown, ChevronRight, Copy, FileSearch, Loader2, Pencil, Plus, Ruler, Save, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Copy, FileSearch, LayoutGrid, Loader2, Pencil, Plus, Ruler, Save, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NumInput, TextIn } from '@/components/admin/inputs'
+import { PlanEditor } from '@/components/admin/plan-panel'
+import { DEFAULT_PLAN, PLAN_BLOCK, planBlock, type Plan } from '@/lib/clients/plan'
 import { cn } from '@/lib/utils'
 import { deleteTakeoffTemplate, saveTakeoffTemplate } from '@/app/actions/takeoff'
 import { ITEM_KINDS, newId, won, type ItemKind, type QuoteSection } from '@/lib/clients/quote'
@@ -54,8 +56,11 @@ export function TakeoffPanel({
   templates: initialTemplates,
   onChange,
   onApply,
+  title,
 }: {
   value: Takeoff | undefined
+  /** 도면 제목 (업체·현장 이름) */
+  title?: string
   sections: QuoteSection[]
   templates: TakeoffTemplate[]
   onChange: (t: Takeoff) => void
@@ -75,9 +80,18 @@ export function TakeoffPanel({
   const [pending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const [planOpen, setPlanOpen] = useState(!!t.plan)
   const setBlocks = (blocks: TakeoffBlock[]) => {
-    onChange({ blocks })
+    onChange({ ...t, blocks })
     setMsg('')
+  }
+  const setPlan = (plan: Plan) => onChange({ ...t, plan })
+  const planToTakeoff = () => {
+    if (!t.plan) return
+    const b = planBlock(t.plan, '도면 수량')
+    const at = t.blocks.findIndex((x) => x.id === PLAN_BLOCK)
+    setBlocks(at >= 0 ? t.blocks.map((x, i) => (i === at ? { ...b, name: x.name || b.name } : x)) : [b, ...t.blocks])
+    setMsg(at >= 0 ? "'도면 수량' 블록을 도면 값으로 바꿈" : "'도면 수량' 블록을 추가함")
   }
   const setBlock = (id: string, patch: Partial<TakeoffBlock>) => setBlocks(t.blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)))
 
@@ -160,6 +174,27 @@ export function TakeoffPanel({
 
       {open && (
         <div className="flex flex-col gap-5 border-t border-border p-5">
+          <div className="ring-1 ring-border">
+            <button
+              type="button"
+              onClick={() => {
+                if (!t.plan) setPlan({ ...DEFAULT_PLAN })
+                setPlanOpen(!planOpen)
+              }}
+              className="flex w-full items-center gap-2 bg-secondary p-3 text-left text-sm"
+            >
+              {planOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+              <LayoutGrid className="size-4" />
+              <span className="font-semibold">도면 작성</span>
+              <span className="text-xs text-muted-foreground">치수를 넣으면 재료별 도면(판넬·천장틀·스레드로드·조명·문)과 수량이 같이 나옴</span>
+            </button>
+            {planOpen && t.plan && (
+              <div className="border-t border-border p-3">
+                <PlanEditor plan={t.plan} onChange={setPlan} title={title} onToTakeoff={planToTakeoff} />
+              </div>
+            )}
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium">템플릿으로 블록 추가</p>

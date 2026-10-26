@@ -10,6 +10,8 @@ import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
+import { SEONGWON_CLIENT, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
+import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -226,6 +228,24 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV10_KEY, () => refreshAtotech('실제 투입 인원·단가로 노무비 조정, 일반관리비 10%·이윤 15%'))
       await seedOnce(ATOTECH_REV11_KEY, () => refreshAtotech('일반관리비 8%, 간접노무비 직접노무비 × 15% 추가'))
       await seedOnce(ATOTECH_REV12_KEY, () => refreshAtotech('반입 고급기능공 추가, 고급 35만·중급 28만·전기 35만'))
+      // 성원냉동기계: 안성 공장 2층 창고 바닥 철골 구조. 담당자·업체용 비밀번호는 관리자 업체 정보에서 정한다
+      await seedOnce(SEONGWON_SEED_KEY, async () => {
+        const c = SEONGWON_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = seongwonQuote(today())
+        const proposal = SEONGWON_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+      })
     })().catch((e) => {
       ready = null
       throw e

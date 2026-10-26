@@ -15,6 +15,8 @@ export const ATOTECH_REV3_KEY = 'atotech-pump-2610-v3-simple-supply'
 export const ATOTECH_REV4_KEY = 'atotech-pump-2610-v4-elec-in-pump'
 /** 2026-10-26 kevin: 펌프 설치는 배관 절단 없이, 앵커 작업과 같이 */
 export const ATOTECH_REV5_KEY = 'atotech-pump-2610-v5-no-cut-anchor'
+/** 2026-10-26 kevin: 제안 2 설명에 장기 관리 취지 추가 */
+export const ATOTECH_REV6_KEY = 'atotech-pump-2610-v6-option2-note'
 
 export const ATOTECH_CLIENT = {
   name: '아토텍코리아(주)',
@@ -104,7 +106,7 @@ export function atotechQuote(date: string): Quote {
       {
         id: newId('s'),
         name: '제안 2 선택 시 추가 (리턴 배관 내림)',
-        desc: '리턴을 EL+650 수평으로 내려 올라갔다 내려오는 구간을 없앰. 서플라이는 리턴 넘는 구간만 EL+1000',
+        desc: '리턴을 EL+650 수평으로 내려 올라갔다 내려오는 구간을 없앰. 현장 작업은 같고 사전작업만 늘어나며, 배관 모양을 정리해 장기 관리가 쉬워짐',
         option: true,
         items: items([
           ['재료비', '스테인리스 배관', 'STS304 100A SCH10S, 6m', 1, '본', 380000, ''],

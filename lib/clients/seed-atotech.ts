@@ -25,8 +25,8 @@ export const ATOTECH_REV8_KEY = 'atotech-pump-2610-v8b-p9-pipe-split'
 export const ATOTECH_REV9_KEY = 'atotech-pump-2610-v9d-pre-measure'
 /** 2026-10-26 kevin: 실제 투입 인원·단가(고급기능공 30만, 중급기능공 25만, 용접 50만, 플랜트배관공 40만, 전기 1인), 관리 인력은 일반관리비(5→10%, 이윤 15%)로. 사전 치수는 펌프 교체 치수 같이 함 */
 export const ATOTECH_REV10_KEY = 'atotech-pump-2610-v10c-actual-crew'
-/** 2026-10-26 kevin: 일반관리비 6%, 현장 관리자는 간접노무비 = 직접노무비 × 15% (2026 조달청 건축·산업환경설비 10억 미만·6개월 이하) */
-export const ATOTECH_REV11_KEY = 'atotech-pump-2610-v11b-indirect-labor'
+/** 2026-10-26 kevin: 일반관리비 8%(조달청 5억 미만), 현장 관리자는 간접노무비 = 직접노무비 × 15% (2026 조달청 건축·산업환경설비 10억 미만·6개월 이하) */
+export const ATOTECH_REV11_KEY = 'atotech-pump-2610-v11c-indirect-labor'
 
 export const ATOTECH_CLIENT = {
   name: '아토텍코리아(주)',
@@ -139,7 +139,7 @@ export function atotechQuote(date: string): Quote {
       },
     ],
     costCalc: true,
-    rates: { ...DEFAULT_RATES, overhead: 6, profit: 15 },
+    rates: { ...DEFAULT_RATES, overhead: 8, profit: 15 },
     truncate: true,
     notes: [
       '공사 기간: 작업일 4일 (사전작업 1~2일차, 냉수 정지 현장 작업 3~4일차). 착공일은 협의로 정함',

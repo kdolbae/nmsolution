@@ -225,7 +225,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV9_KEY, () => refreshAtotech('사전 치수 작업 고급기술자 1명·제관사 1명 추가'))
       await seedOnce(ATOTECH_REV10_KEY, () => refreshAtotech('실제 투입 인원·단가로 노무비 조정, 일반관리비 10%·이윤 15%'))
       await seedOnce(ATOTECH_REV11_KEY, () => refreshAtotech('일반관리비 8%, 간접노무비 직접노무비 × 15% 추가'))
-      await seedOnce(ATOTECH_REV12_KEY, () => refreshAtotech('반입 고급기능공 추가, 고급 35만·중급 28만·전기 35만, 안전관리비 4%'))
+      await seedOnce(ATOTECH_REV12_KEY, () => refreshAtotech('반입 고급기능공 추가, 고급 35만·중급 28만·전기 35만'))
     })().catch((e) => {
       ready = null
       throw e

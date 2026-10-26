@@ -28,7 +28,7 @@ export const ATOTECH_REV10_KEY = 'atotech-pump-2610-v10c-actual-crew'
 /** 2026-10-26 kevin: 일반관리비 8%(조달청 5억 미만), 현장 관리자는 간접노무비 = 직접노무비 × 15% (2026 조달청 건축·산업환경설비 10억 미만·6개월 이하) */
 export const ATOTECH_REV11_KEY = 'atotech-pump-2610-v11c-indirect-labor'
 /** 2026-10-26 kevin: 반입 고급기능공 1명 추가, 고급 35만·중급 28만·전기 35만, 안전관리비 상향(4%) */
-export const ATOTECH_REV12_KEY = 'atotech-pump-2610-v12-rates'
+export const ATOTECH_REV12_KEY = 'atotech-pump-2610-v12b-rates'
 
 export const ATOTECH_CLIENT = {
   name: '아토텍코리아(주)',
@@ -142,7 +142,7 @@ export function atotechQuote(date: string): Quote {
       },
     ],
     costCalc: true,
-    rates: { ...DEFAULT_RATES, overhead: 8, profit: 15, safety: 4 },
+    rates: { ...DEFAULT_RATES, overhead: 8, profit: 15 },
     truncate: true,
     notes: [
       '공사 기간: 작업일 4일 (사전작업 1~2일차, 냉수 정지 현장 작업 3~4일차). 착공일은 협의로 정함',

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import {
   Bold,
   Check,
+  ChevronDown,
+  ChevronUp,
   Code,
   Copy,
   Download,
@@ -676,6 +678,14 @@ function QuotePanel({
         s.id === sid ? { ...s, items: s.items.map((i) => (i.id === iid ? { ...i, ...patch } : i)) } : s,
       ),
     })
+  // 같은 공종 안에서 줄을 한 칸 위(-1)나 아래(1)로 옮긴다
+  const moveItem = (sid: string, idx: number, dir: -1 | 1) => {
+    const sec = q.sections.find((x) => x.id === sid)
+    if (!sec || idx + dir < 0 || idx + dir >= sec.items.length) return
+    const items = [...sec.items]
+    ;[items[idx], items[idx + dir]] = [items[idx + dir], items[idx]]
+    updateSection(sid, { items })
+  }
 
   const save = () =>
     startTransition(async () => {
@@ -791,11 +801,11 @@ function QuotePanel({
                       <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
                       <th className="px-2 py-2 text-left font-medium">비고</th>
                       <th className="w-12 px-1 py-2 text-center font-medium" title="견적금액에 넣되, 필요 없으면 빼는 줄 (견적서 끝 감액 표)">감액</th>
-                      <th className="w-8" />
+                      <th className="w-20" />
                     </tr>
                   </thead>
                   <tbody>
-                    {s.items.map((i) => (
+                    {s.items.map((i, ii) => (
                       <tr key={i.id} className="border-t border-border">
                         <td className="px-1 py-1">
                           <select
@@ -818,7 +828,13 @@ function QuotePanel({
                         <td className="px-1 py-1 text-center">
                           <input type="checkbox" checked={!!i.deduct} onChange={(e) => updateItem(s.id, i.id, { deduct: e.target.checked })} />
                         </td>
-                        <td className="px-1 py-1">
+                        <td className="flex items-center px-1 py-1">
+                          <Button variant="ghost" size="icon-xs" title="줄 위로" disabled={ii === 0} onClick={() => moveItem(s.id, ii, -1)}>
+                            <ChevronUp />
+                          </Button>
+                          <Button variant="ghost" size="icon-xs" title="줄 아래로" disabled={ii === s.items.length - 1} onClick={() => moveItem(s.id, ii, 1)}>
+                            <ChevronDown />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon-xs"

@@ -23,8 +23,8 @@ export const ATOTECH_REV7_KEY = 'atotech-pump-2610-v7-flange-return-av'
 export const ATOTECH_REV8_KEY = 'atotech-pump-2610-v8b-p9-pipe-split'
 /** 2026-10-26 kevin: 사전 치수 작업으로 제관사 1명·고급기술자 1명 추가 */
 export const ATOTECH_REV9_KEY = 'atotech-pump-2610-v9d-pre-measure'
-/** 2026-10-26 kevin: 실제 투입 인원·단가(고급기능공 30만, 중급기능공 25만, 용접 50만, 플랜트배관공 40만, 전기 1인), 관리 인력은 일반관리비(5→8%)로 */
-export const ATOTECH_REV10_KEY = 'atotech-pump-2610-v10-actual-crew'
+/** 2026-10-26 kevin: 실제 투입 인원·단가(고급기능공 30만, 중급기능공 25만, 용접 50만, 플랜트배관공 40만, 전기 1인), 관리 인력은 일반관리비(5→10%, 이윤 15%)로. 사전 치수는 펌프 교체 치수 같이 함 */
+export const ATOTECH_REV10_KEY = 'atotech-pump-2610-v10b-actual-crew'
 
 export const ATOTECH_CLIENT = {
   name: '아토텍코리아(주)',
@@ -110,7 +110,7 @@ export function atotechQuote(date: string): Quote {
           ['재료비', '용접 부자재', 'TIG 용가재·아르곤·백퍼징, 배관 서포트', 1, '식', 220000, ''],
           ['노무비', '플랜트배관공', '배관 해체·취부·플랜지 체결', 3, '인·일', 400000, '1명 × 3일'],
           ['노무비', '용접사', '스테인리스 배관 TIG 용접', 3, '인·일', 500000, '1명 × 3일'],
-          ['노무비', '플랜트배관공 (사전 치수)', '배관·펌프 받침 사전 치수 실측, 제작도 확정', 1, '인·일', 400000, '1일차 사전 치수 작업'],
+          ['노무비', '플랜트배관공 (사전 치수)', '배관 구조 변경·펌프 교체 사전 치수 실측, 제작도 확정', 1, '인·일', 400000, '1일차 사전 치수 작업 (펌프 교체 치수 포함)'],
           ['노무비', '중급기능공 (사전 치수)', '사전 치수 실측 보조', 2, '인·일', 250000, '1일차 사전 치수 작업, 2명'],
           ['경비', '현장 경비', '식대·교통·소모품', 9, '인·일', 50000, '투입 인·일 기준'],
         ]),
@@ -133,7 +133,7 @@ export function atotechQuote(date: string): Quote {
       },
     ],
     costCalc: true,
-    rates: { ...DEFAULT_RATES, overhead: 8 },
+    rates: { ...DEFAULT_RATES, overhead: 10, profit: 15 },
     truncate: true,
     notes: [
       '공사 기간: 작업일 4일 (사전작업 1~2일차, 냉수 정지 현장 작업 3~4일차). 착공일은 협의로 정함',

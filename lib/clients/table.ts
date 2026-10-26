@@ -223,7 +223,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV7_KEY, () => refreshAtotech('펌프 상대 플랜지 제외, P9 흡입·토출 배관 조정, 제안 1 리턴 에어벤트, 제안 1 요청안·제안 2 당사 의견'))
       await seedOnce(ATOTECH_REV8_KEY, () => refreshAtotech('펌프 4대 유닛만 교체, P9 배관 절단·100×65A 레듀서·65A 플랜지·단열 복구, P9 자재 세분화'))
       await seedOnce(ATOTECH_REV9_KEY, () => refreshAtotech('사전 치수 작업 고급기술자 1명·제관사 1명 추가'))
-      await seedOnce(ATOTECH_REV10_KEY, () => refreshAtotech('실제 투입 인원·단가로 노무비 조정, 일반관리비 8%'))
+      await seedOnce(ATOTECH_REV10_KEY, () => refreshAtotech('실제 투입 인원·단가로 노무비 조정, 일반관리비 10%·이윤 15%'))
     })().catch((e) => {
       ready = null
       throw e

@@ -9,6 +9,8 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
 export const ATOTECH_SEED_KEY = 'atotech-pump-2610-v1'
 /** 2026-10-25 kevin: 모터 전원 케이블(F-CV 6sq 4C 약 40m)·전기 기술자 추가 */
 export const ATOTECH_REV2_KEY = 'atotech-pump-2610-v2-electrical'
+/** 2026-10-26 kevin: 제안 1·2 서플라이 경로 단순화(첫 플랜지 높이에서 꺾어 일직선, 리턴 넘는 곳만 올림) */
+export const ATOTECH_REV3_KEY = 'atotech-pump-2610-v3-simple-supply'
 
 export const ATOTECH_CLIENT = {
   name: '아토텍코리아(주)',
@@ -88,10 +90,10 @@ export function atotechQuote(date: string): Quote {
       {
         id: newId('s'),
         name: '배관 구조 변경 (제안 1)',
-        desc: '열교환기 출수(서플라이) 배관을 리턴보다 높게 올리고 최고점에 자동 에어벤트 설치. 사전작업 2일, 현장 작업 2일',
+        desc: '열교환기 출수(서플라이) 배관을 첫 플랜지 높이에서 꺾어 열교환기 출수 배관과 일직선으로 잇고, 리턴을 넘는 구간만 올려 최고점에 자동 에어벤트 설치. 사전작업 2일, 현장 작업 2일',
         items: items([
           ['재료비', '스테인리스 배관', 'STS304 100A SCH10S, 6m', 1, '본', 380000, ''],
-          ['재료비', '엘보', 'STS304 100A SCH10S 90° LR', 4, '개', 28000, ''],
+          ['재료비', '엘보', 'STS304 100A SCH10S 90° LR', 5, '개', 28000, ''],
           ['재료비', '플랜지', 'STS304 100A 10K SORF', 2, '개', 42000, ''],
           ['재료비', '개스킷', 'EPDM 100A 10K', 2, '개', 5000, ''],
           ['재료비', '볼트·너트·와셔', 'STS304 M16 × 70', 16, '세트', 2200, '플랜지당 8세트'],
@@ -107,11 +109,11 @@ export function atotechQuote(date: string): Quote {
       {
         id: newId('s'),
         name: '제안 2 선택 시 추가 (리턴 배관 내림)',
-        desc: '서플라이를 기존 리턴 높이로 올리고 리턴을 기존 서플라이 높이로 내려 정리',
+        desc: '리턴을 EL+650 수평으로 내려 올라갔다 내려오는 구간을 없앰. 서플라이는 리턴 넘는 구간만 EL+1000',
         option: true,
         items: items([
           ['재료비', '스테인리스 배관', 'STS304 100A SCH10S, 6m', 1, '본', 380000, ''],
-          ['재료비', '엘보', 'STS304 100A SCH10S 90° LR', 4, '개', 28000, ''],
+          ['재료비', '엘보', 'STS304 100A SCH10S 90° LR', 2, '개', 28000, ''],
           ['재료비', '플랜지', 'STS304 100A 10K SORF', 2, '개', 42000, ''],
           ['재료비', '개스킷', 'EPDM 100A 10K', 2, '개', 5000, ''],
           ['재료비', '볼트·너트·와셔', 'STS304 M16 × 70', 16, '세트', 2200, '플랜지당 8세트'],

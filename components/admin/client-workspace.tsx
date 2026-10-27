@@ -321,9 +321,18 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
             </p>
           )}
         </div>
-        <Button variant="outline" size="sm" className="rounded-none" onClick={() => setOpen((v) => !v)}>
-          <Pencil /> 업체 정보
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* 접속·행동 기록은 따로 연다(어드민 전용, 프레젠테이션 화면에는 안 나옴) */}
+          <a
+            href={`/admin/clients/${client.id}/access`}
+            className="inline-flex h-8 items-center border border-border px-2.5 text-xs text-muted-foreground hover:bg-muted"
+          >
+            기록
+          </a>
+          <Button variant="outline" size="sm" className="rounded-none" onClick={() => setOpen((v) => !v)}>
+            <Pencil /> 업체 정보
+          </Button>
+        </div>
       </div>
       {open && (
         <div className="mt-5 flex flex-col gap-4 border-t border-border pt-5">

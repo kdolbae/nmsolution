@@ -3,6 +3,8 @@ import { PAGE_HTML } from './page-html'
 import { NO_STORE, cookieValue } from './http'
 import { logoSvg } from '@/lib/brand-logo'
 import { withBrandLogo } from '@/lib/clients/proposal'
+import { logAccess, trackedHtml } from '@/lib/clients/access-log'
+import { after } from 'next/server'
 
 /**
  * 금강변압기 공사제안서 페이지 (대표 주소 /kkt). 예전 /금강변압기 링크는 proxy.ts 가 여기로 넘긴다.
@@ -46,14 +48,19 @@ ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' :
 }
 
 export async function GET(req: Request) {
-  if (!(await hasKktAccess(cookieValue(req)))) return lockPage(false)
-  return new Response(withBrandLogo(PAGE_HTML), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
+  if (!(await hasKktAccess(cookieValue(req)))) {
+    after(() => logAccess(req.headers, null, 'login_page', { slug: 'kkt' }))
+    return lockPage(false)
+  }
+  return new Response(trackedHtml(withBrandLogo(PAGE_HTML), req.headers, 'kkt'), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }
 
 export async function POST(req: Request) {
   const form = await req.formData().catch(() => null)
   const input = String(form?.get('password') ?? '')
-  if (!(await isKktPassword(input))) {
+  const ok = await isKktPassword(input)
+  after(() => logAccess(req.headers, null, ok ? 'login_ok' : 'login_fail', { slug: 'kkt' }))
+  if (!ok) {
     // 네 자리 비밀번호라 연속 대입을 늦춘다
     await new Promise((r) => setTimeout(r, 1500))
     return lockPage(true)

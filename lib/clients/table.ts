@@ -10,7 +10,7 @@ import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
-import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
+import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -251,6 +251,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(SEONGWON_REV4_KEY, () => refreshSeongwon('프레임·바닥판·계단·도장·공통을 한 공종으로 합침'))
       await seedOnce(SEONGWON_REV5_KEY, () => refreshSeongwon('기둥 11본 새로 구매, 팀장 40만, 조공 공정마다 1명 추가'))
       await seedOnce(SEONGWON_REV6_KEY, () => refreshSeongwon('인원 팀장급 기공 1·용접 기공 2·중급 기공 3 × 10일'))
+      await seedOnce(SEONGWON_REV7_KEY, () => refreshSeongwon('인원 기능공·조공·도장공 구성으로 되돌림'))
     })().catch((e) => {
       ready = null
       throw e

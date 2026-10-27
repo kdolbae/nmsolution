@@ -1,6 +1,8 @@
 import { printHtml } from '@/lib/clients/print'
 import { bookFrameHtml, bookShellHtml } from '@/lib/clients/book'
 import { approvedClientId, portalDocs } from '@/lib/portal/access'
+import { logAccess } from '@/lib/clients/access-log'
+import { after } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +14,7 @@ export async function GET(req: Request) {
   if (!client) return new Response('없는 업체', { status: 404 })
   const url = new URL(req.url)
   const docs = url.searchParams.get('docs') ?? 'both'
+  if (url.searchParams.get('frame') !== '1') after(() => logAccess(req.headers, client, 'portal_print', { details: { docs } }))
   const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' }
   if (docs === 'book') {
     const title = `${client.name} 제안서·견적서 제본용${client.label ? ` ${client.label}` : ''}`

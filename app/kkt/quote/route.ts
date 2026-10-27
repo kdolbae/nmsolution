@@ -2,6 +2,8 @@ import { hasKktAccess, isKktPassword } from '@/lib/kkt-access'
 import { cookieValue, NO_STORE } from '../http'
 import { publicQuoteHtml } from '@/lib/clients/kkt-public-quote'
 import { KKT_QUOTE } from '@/lib/clients/seed-kkt'
+import { logAccess } from '@/lib/clients/access-log'
+import { after } from 'next/server'
 
 /**
  * 견적서 본문. 페이지 맨 아래 잠금 칸에서 비밀번호를 넣을 때마다 POST 로 받아 간다.
@@ -15,7 +17,9 @@ export async function POST(req: Request) {
     return new Response('Not Found', { status: 404, headers: NO_STORE })
   }
   const form = await req.formData().catch(() => null)
-  if (!(await isKktPassword(String(form?.get('password') ?? '')))) {
+  const ok = await isKktPassword(String(form?.get('password') ?? ''))
+  after(() => logAccess(req.headers, null, ok ? 'quote_open' : 'login_fail', { slug: 'kkt', details: { what: '견적서 잠금 칸' } }))
+  if (!ok) {
     await new Promise((r) => setTimeout(r, 1500))
     return new Response('', { status: 401, headers: NO_STORE })
   }

@@ -6,6 +6,8 @@ import { getClientBySlug } from './table'
 import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie, validShareKey } from './portal'
 import { verifyPortalPassword } from './portal-password'
 import { htmlToPdf, pdfResponse } from './pdf'
+import { logAccess, trackedHtml } from './access-log'
+import { after } from 'next/server'
 
 /**
  * 업체용 링크 (예: app/sinil/route.ts → nm-solution.co.kr/sinil).
@@ -62,14 +64,19 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   // 임시 링크(?k=)면 로그인 없이 열고, 사진도 보이도록 남은 기간만큼 쿠키를 준다
   const shareLeft = await validShareKey(slug, new URL(req.url).searchParams.get('k'), client.shareHash, client.shareExpires)
   const shareToken = shareLeft ? await portalToken(slug) : null
-  if (!shareToken && !(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) return loginPage(`${client.name} 공사 자료`, false)
+  // 접속 기록(lib/clients/access-log.ts)은 응답 뒤에 남겨 업체 화면을 늦추지 않는다
+  if (!shareToken && !(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) {
+    after(() => logAccess(req.headers, client, 'login_page', { slug }))
+    return loginPage(`${client.name} 공사 자료`, false)
+  }
 
   // ?pdf=1: 이 페이지 그대로 PDF 파일로 내려받는다 (PDF 저장 버튼)
   if (!shareToken && new URL(req.url).searchParams.get('pdf') === '1') {
+    after(() => logAccess(req.headers, client, 'pdf', { slug }))
     const pdf = await htmlToPdf(portalPageHtml(client), req)
     return pdfResponse(pdf, `${client.name} 제안서·견적서 ${client.quote.number}.pdf`)
   }
-  const html = portalPageHtml(client)
+  const html = trackedHtml(portalPageHtml(client), req.headers, slug, { client, kind: shareToken ? 'share_view' : 'view' })
   const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
   if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
   return new Response(html, { headers })
@@ -126,6 +133,7 @@ export async function portalPost(req: Request, slug: string): Promise<Response> 
   const password = String(form?.get('password') ?? '').trim()
   const ok = !!password && (await verifyPortalPassword(password, client.portalPasswordHash))
   const token = ok ? await portalToken(slug) : null
+  after(() => logAccess(req.headers, client, token ? 'login_ok' : 'login_fail', { slug }))
   if (!token) {
     // 비밀번호가 짧을 수 있어 연속 대입을 늦춘다
     await new Promise((r) => setTimeout(r, 1500))

@@ -1,4 +1,8 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
+import { after } from 'next/server'
+import Script from 'next/script'
+import { logAccess } from '@/lib/clients/access-log'
 import { PortalHeader } from '@/components/portal/portal-header'
 import { PortalDocs } from '@/components/portal/portal-docs'
 import { clientFiles } from '@/lib/clients/files'
@@ -34,6 +38,10 @@ export default async function PortalHomePage() {
 
   const client = await portalDocs(membership.clientId)
   if (!client) redirect('/portal/login')
+  // 접속·행동 기록(어드민 업체 화면 '기록'에서만 봄)
+  const h = await headers()
+  const viewId = crypto.randomUUID()
+  after(() => logAccess(h, client, 'portal_view', { viewId, details: { member: membership.name } }))
   return (
     <>
       {header}
@@ -48,6 +56,7 @@ export default async function PortalHomePage() {
           files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
         />
       </main>
+      <Script src="/js/pv.js" data-v={viewId} strategy="afterInteractive" />
     </>
   )
 }

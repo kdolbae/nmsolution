@@ -433,30 +433,34 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
     .filter(Boolean)
   notes.push(`견적 유효기간: 견적일로부터 ${q.validDays}일`)
 
-  const costTable =
-    q.costCalc && multi
+  // 원가계산 견적은 공종이 하나여도 비목별 요약표를 위에 둔다(2026-10-27 kevin)
+  const costRows = (
+    [
+      ['재료비', 'mat'],
+      ['노무비', 'lab'],
+      ['경비', 'exp'],
+      ['산재·고용보험료', null],
+      ['산업안전보건관리비', 'safety'],
+      ['일반관리비', 'overhead'],
+      ['이윤', 'profit'],
+      ['단수정리', 'adjust'],
+    ] as const
+  )
+    .map(([label, key]) => ({ label, vals: mainIdx.map((i) => calc.sections[i]).map((c) => (key ? c[key] : c.injury + c.employment)) }))
+    .filter((r) => r.label !== '산업안전보건관리비' || r.vals.some((v) => v))
+  const costTable = !q.costCalc
+    ? ''
+    : multi
       ? `<h2 class="q-sub">공사원가 요약</h2>
 <table class="grid"><thead><tr><th>비목</th>${mainIdx.map((i) => `<th class="n">${esc(q.sections[i].name)}</th>`).join('')}<th class="n">합계</th></tr></thead><tbody>
-${(
-  [
-    ['재료비', 'mat'],
-    ['노무비', 'lab'],
-    ['경비', 'exp'],
-    ['산재·고용보험료', null],
-    ['산업안전보건관리비', 'safety'],
-    ['일반관리비', 'overhead'],
-    ['이윤', 'profit'],
-    ['단수정리', 'adjust'],
-  ] as const
-)
-  .map(([label, key]) => {
-    const vals = mainIdx.map((i) => calc.sections[i]).map((c) => (key ? c[key] : c.injury + c.employment))
-    return `<tr><td>${label}</td>${vals.map((v) => `<td class="n">${won(v)}</td>`).join('')}<td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`
-  })
-  .join('')}
+${costRows.map(({ label, vals }) => `<tr><td>${label}</td>${vals.map((v) => `<td class="n">${won(v)}</td>`).join('')}<td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`).join('')}
 <tr class="q-sum"><td>${withSummary ? '공정 합계' : '공급가액'}</td>${mainIdx.map((i) => `<td class="n">${won(calc.sections[i].total)}</td>`).join('')}<td class="n">${won(calc.works)}</td></tr>
 </tbody></table>`
-      : ''
+      : `<h2 class="q-sub">공사원가 요약</h2>
+<table class="grid"><thead><tr><th>비목</th><th class="n">금액</th></tr></thead><tbody>
+${costRows.map(({ label, vals }) => `<tr><td>${label}</td><td class="n">${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`).join('')}
+<tr class="q-sum"><td>${withSummary ? '공정 합계' : '공급가액'}</td><td class="n">${won(calc.works)}</td></tr>
+</tbody></table>`
 
   // 공정별 금액과 최종 금액은 내역과 떼어 총괄표 한 곳에 모은다
   const summary = `<h2 class="q-sub">견적 총괄표</h2>

@@ -251,7 +251,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(SEONGWON_REV4_KEY, () => refreshSeongwon('프레임·바닥판·계단·도장·공통을 한 공종으로 합침'))
       await seedOnce(SEONGWON_REV5_KEY, () => refreshSeongwon('기둥 11본 새로 구매, 팀장 40만, 조공 공정마다 1명 추가'))
       await seedOnce(SEONGWON_REV6_KEY, () => refreshSeongwon('인원 팀장급 기공 1·용접 기공 2·중급 기공 3 × 10일'))
-      await seedOnce(SEONGWON_REV7_KEY, () => refreshSeongwon('인원 기능공·조공·도장공 구성으로 되돌림'))
+      await seedOnce(SEONGWON_REV7_KEY, () => refreshSeongwon('인원 기능공·조공·도장공 구성으로 되돌림, 조공 1명을 초급 기공 20만으로'))
     })().catch((e) => {
       ready = null
       throw e

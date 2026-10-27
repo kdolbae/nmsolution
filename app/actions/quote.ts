@@ -7,6 +7,7 @@ import { headers } from 'next/headers'
 import { after } from 'next/server'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { sendToBoard } from '@/lib/board-sync'
+import { notifyAdmin } from '@/lib/notify/telegram'
 
 export type QuoteInput = {
   name: string
@@ -81,6 +82,24 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
     // 나노마스터 상황판으로 건수·시각만 보낸다(이름·연락처 원문은 안 나간다. lib/board-sync.ts)
     const page = pathOf(h.get('referer'))
     if (row) after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'quote', phone, source_page: page }]).then(() => undefined))
+    // 관리자 휴대폰(텔레그램)으로 문의 내용을 바로 알린다
+    if (row)
+      after(() =>
+        notifyAdmin(
+          [
+            `견적 문의 · ${name}`,
+            `연락처 ${phone}`,
+            input.company?.trim() ? `업체 ${input.company.trim()}` : '',
+            input.location?.trim() ? `위치 ${input.location.trim()}` : '',
+            categories.length ? `분야 ${categories.join(', ')}` : '',
+            message ? `\n${message.slice(0, 1500)}` : '',
+            page ? `\n들어온 페이지 ${page}` : '',
+            'https://nm-solution.co.kr/admin/quotes',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        ),
+      )
 
     return { ok: true }
   } catch (e) {

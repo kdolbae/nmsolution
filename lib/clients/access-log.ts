@@ -3,6 +3,7 @@ import { pool } from '@/lib/db'
 import { geoOf } from '@/lib/board-sync'
 import { getSessionFrom, isAdmin } from '@/lib/admin'
 import { KKT_CLIENT } from './seed-kkt'
+import { notifyAdmin } from '@/lib/notify/telegram'
 
 /**
  * 업체 페이지 접속 기록 (전 업체 공통). 화면은 어드민 업체 화면의 '접속 기록' 칸뿐이고 업체에는 보이지 않는다.
@@ -59,6 +60,17 @@ export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'sh
 
 /** 업체용 링크 주소가 없는 업체(금강변압기 /kkt 는 따로 만든 페이지)는 이름으로 묶는다 */
 const NAME_OF_SLUG: Record<string, string> = { kkt: KKT_CLIENT.name }
+
+/** 휴대폰 알림을 보내는 기록 (로그인 화면·로그인 성공은 열람 알림과 겹쳐서 뺀다) */
+const NOTIFY: Partial<Record<AccessKind, string>> = {
+  view: '견적 열람',
+  share_view: '임시 링크로 열람',
+  portal_view: '포털에서 열람',
+  pdf: 'PDF 다운로드',
+  portal_print: '포털에서 인쇄',
+  quote_open: '견적서 열기',
+  login_fail: '비밀번호 틀림',
+}
 
 const BOT = /bot|crawl|spider|slurp|yeti|daum|bingpreview|headless|lighthouse|facebookexternalhit|kakaotalk-scrap|preview/i
 
@@ -119,27 +131,58 @@ export async function logAccess(
     // 관리자 본인 접속인지. 확인이 안 되면 업체 접속으로 남긴다
     const session = await getSessionFrom(h).catch(() => null)
     const g = geoOf(h)
-    await pool.query(
-      `INSERT INTO client_access_log (client_id, slug, kind, view_id, ip, ua, device, country, region, city, referrer, is_admin, details)
-       VALUES (COALESCE($1::bigint, (SELECT id FROM clients WHERE portal_slug = $2 LIMIT 1), (SELECT id FROM clients WHERE name = $14 LIMIT 1)),
-               $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    const admin = !!(session?.user && isAdmin(session.user))
+    const ip = ipOf(h)
+    const { rows } = await pool.query<{ client_id: string | null; name: string | null }>(
+      `WITH ins AS (
+         INSERT INTO client_access_log (client_id, slug, kind, view_id, ip, ua, device, country, region, city, referrer, is_admin, details)
+         VALUES (COALESCE($1::bigint, (SELECT id FROM clients WHERE portal_slug = $2 LIMIT 1), (SELECT id FROM clients WHERE name = $14 LIMIT 1)),
+                 $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+         RETURNING client_id)
+       SELECT ins.client_id, c.name FROM ins LEFT JOIN clients c ON c.id = ins.client_id`,
       [
         client?.id ?? null,
         opts.slug ?? client?.portalSlug ?? null,
         kind,
         opts.viewId ?? null,
-        ipOf(h),
+        ip,
         ua.slice(0, 400),
         deviceOf(ua),
         g.country,
         g.region,
         g.city,
         (h.get('referer') || '').slice(0, 500) || null,
-        !!(session?.user && isAdmin(session.user)),
+        admin,
         opts.details ? JSON.stringify(opts.details) : null,
         NAME_OF_SLUG[opts.slug ?? ''] ?? null,
       ],
     )
+    // 업체가 견적을 열거나 PDF 를 받으면 관리자 휴대폰으로 바로 알린다 (관리자 본인 접속은 빼고)
+    if (!admin && NOTIFY[kind]) {
+      const r = rows[0]
+      const who = r?.name || opts.slug || '업체'
+      const when = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        month: 'numeric',
+        day: 'numeric',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(new Date())
+      const member = typeof opts.details?.member === 'string' ? ` (${opts.details.member})` : ''
+      await notifyAdmin(
+        [
+          `${who} · ${NOTIFY[kind]}${member}`,
+          when,
+          [deviceOf(ua), [g.region, g.city].filter(Boolean).join(' ')].filter(Boolean).join(' · '),
+          ip ? `IP ${ip}` : '',
+          r?.client_id ? `https://nm-solution.co.kr/admin/clients/${r.client_id}/access` : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      )
+    }
   } catch (e) {
     console.error('client_access_log', e)
   }

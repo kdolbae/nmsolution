@@ -10,7 +10,7 @@ import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
 import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
-import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_REV8_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
+import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_REV8_KEY, SEONGWON_REV9_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -253,6 +253,8 @@ export function ensureClients(): Promise<void> {
       await seedOnce(SEONGWON_REV6_KEY, () => refreshSeongwon('인원 팀장급 기공 1·용접 기공 2·중급 기공 3 × 10일'))
       await seedOnce(SEONGWON_REV7_KEY, () => refreshSeongwon('인원 용접기공·중급기공·조공·도장공 구성, 팀장 40만'))
       await seedOnce(SEONGWON_REV8_KEY, () => refreshSeongwon('PR #96 견적 기준, 용접기공 35만·고급기공(팀장) 40만, 강재 kg당 1,300원'))
+      // 등록 때 저장된 제안서에는 3D 섹션이 없어서 지금 페이지로 한 번 바꾼다(2026-10-27 kevin)
+      await seedOnce(SEONGWON_REV9_KEY, () => refreshSeongwon('제안서에 3D 모델(웹 회전 보기·사진 6컷) 추가'))
     })().catch((e) => {
       ready = null
       throw e
@@ -289,7 +291,7 @@ async function refreshAtotech(summary: string) {
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 
-/** 성원냉동기계 견적·업체 메모를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호·제안서 유지). */
+/** 성원냉동기계 견적·제안서·업체 메모를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). */
 async function refreshSeongwon(summary: string) {
   const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
     `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
@@ -300,7 +302,8 @@ async function refreshSeongwon(summary: string) {
   await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), SEONGWON_CLIENT.memo])
   const quote = seongwonQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
-  await applyChange(Number(row.id), 'system', 'system', (cur) => ({ proposalHtml: cur.proposalHtml, quote, summary }))
+  const proposal = SEONGWON_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 
 /**

@@ -21,6 +21,8 @@ export const SEONGWON_REV6_KEY = 'seongwon-mezzanine-2610-v6'
 export const SEONGWON_REV7_KEY = 'seongwon-mezzanine-2610-v7'
 /** 8차: PR #96 견적 기준, 용접기공 35만·고급기공(팀장) 40만, 강재 kg당 1,300원(kevin 2026-10-27) */
 export const SEONGWON_REV8_KEY = 'seongwon-mezzanine-2610-v8'
+/** 9차: 제안서를 3D 섹션이 들어간 지금 페이지로 바꿈(kevin 2026-10-27) */
+export const SEONGWON_REV9_KEY = 'seongwon-mezzanine-2610-v9'
 
 export const SEONGWON_CLIENT = {
   // 2026-10-26 kevin: 견적은 법인 앞으로, 대표 표기는 명함의 한홍규

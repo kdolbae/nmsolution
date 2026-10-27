@@ -414,7 +414,7 @@ export function renderQuote(q: Quote, to: QuoteRecipient): string {
       if (m === 'full') {
         out.push(sub('산재보험료', c.injury, `노무비 × ${r.injury}%`))
         out.push(sub('고용보험료', c.employment, `노무비 × ${r.employment}%`))
-        out.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
+        if (r.safety) out.push(sub('산업안전보건관리비', c.safety, `(재료비 + 노무비) × ${r.safety}%`))
       }
       out.push(sub('일반관리비', c.overhead, `${m === 'full' ? '순공사원가' : '(재료비 + 노무비 + 경비)'} × ${r.overhead}%`))
       if (m !== 'overhead') out.push(sub('이윤', c.profit, `(노무비 + 경비 + 일반관리비) × ${r.profit}%`))

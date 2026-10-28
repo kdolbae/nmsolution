@@ -8,7 +8,7 @@ import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KE
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
-import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
+import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_REV13_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_REV8_KEY, SEONGWON_REV9_KEY, SEONGWON_REV10_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
@@ -230,6 +230,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV10_KEY, () => refreshAtotech('실제 투입 인원·단가로 노무비 조정, 일반관리비 10%·이윤 15%'))
       await seedOnce(ATOTECH_REV11_KEY, () => refreshAtotech('일반관리비 8%, 간접노무비 직접노무비 × 15% 추가'))
       await seedOnce(ATOTECH_REV12_KEY, () => refreshAtotech('반입 고급기능공 추가, 고급 35만·중급 28만·전기 35만'))
+      await seedOnce(ATOTECH_REV13_KEY, () => refreshAtotech('펌프 교체 제외, 배관 구조 변경만 (제안 1 + 제안 2 선택)'))
       // 성원냉동기계: 안성 공장 2층 창고 바닥 철골 구조. 담당자·업체용 비밀번호는 관리자 업체 정보에서 정한다
       await seedOnce(SEONGWON_SEED_KEY, async () => {
         const c = SEONGWON_CLIENT

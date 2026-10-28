@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Camera, Check, ImagePlus, Loader2, Phone, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { track } from '@/lib/track'
+import { loadAttribution } from '@/lib/attribution'
+import { reportConversion } from '@/lib/tracking'
 
 const FIELD =
   'h-12 w-full rounded-none border border-border bg-background px-4 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-electric focus-visible:ring-2 focus-visible:ring-electric/30'
@@ -117,6 +119,8 @@ export function PhotoQuoteForm({
     for (const k of ['name', 'phone', 'location', 'message', 'website']) fd.set(k, String(form.get(k) ?? ''))
     fd.set('symptom', symptom)
     fd.set('from', from)
+    // 이 폼은 광고 랜딩에 붙어 있다. 어느 광고에서 온 방문인지 함께 보낸다.
+    fd.set('attribution', JSON.stringify(loadAttribution()))
     photos.forEach((p, i) => fd.append('photos', p.blob, `photo-${i + 1}.jpg`))
 
     setPending(true)
@@ -126,6 +130,7 @@ export function PhotoQuoteForm({
       if (res?.ok) {
         setDone(photos.length)
         track('quote_submitted', { categories: '누수 · 피해복구', from, photos: photos.length })
+        reportConversion('quote', { categories: '누수 · 피해복구', from })
       } else {
         setError(res?.error || '접수 중 문제가 발생했습니다. 전화나 카카오톡으로 사진을 보내 주세요.')
       }

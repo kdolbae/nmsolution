@@ -3,6 +3,7 @@ import { quoteRequests } from '@/lib/db/schema'
 import { after } from 'next/server'
 import { sendToBoard } from '@/lib/board-sync'
 import { isValidKoreanPhone } from '@/lib/quote'
+import { attributionValues, type Attribution } from '@/lib/attribution'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
 
@@ -46,6 +47,16 @@ export async function POST(req: Request) {
   const message = str(fd.get('message'), 4000)
   const from = str(fd.get('from'), 60) || 'leak_photo'
 
+  // 이 폼은 광고 랜딩(/leak)에 붙어 있다. 유입 출처를 여기서 안 받으면
+  // 광고로 들어온 문의가 출처 없이 남고, 나중에 소급해서 채울 수 없다.
+  let attribution: Partial<Attribution> | undefined
+  try {
+    const raw = str(fd.get('attribution'), 2000)
+    if (raw) attribution = JSON.parse(raw) as Partial<Attribution>
+  } catch {
+    // 망가진 값이면 유입만 비우고 접수는 계속한다
+  }
+
   if (!isValidKoreanPhone(phone)) return fail('연락처를 다시 확인해 주세요. 예: 010-1234-5678')
 
   const files = fd.getAll('photos').filter((f): f is File => typeof f === 'object' && f !== null && 'arrayBuffer' in f)
@@ -83,6 +94,7 @@ export async function POST(req: Request) {
         location,
         categories: '누수 · 피해복구',
         message: body,
+        ...attributionValues(attribution),
       })
       .returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
 

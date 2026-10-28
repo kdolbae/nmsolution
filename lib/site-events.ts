@@ -136,12 +136,43 @@ function send(type: Kind, extra: { label?: string; seconds?: number; scroll?: nu
 export const pageview = () => send('pageview')
 export const leave = (seconds: number, scroll: number) => send('leave', { seconds, scroll })
 
+// 버튼이 track('contact_click') 으로 이미 보낸 클릭을 아래 전체 감시가 한 번 더 세지 않게 한다
+let lastContact = 0
+
 /** Vercel Analytics 의 contact_click·quote_submitted 이름을 우리 전환 종류로 옮긴다. */
 export function conversion(name: string, props?: Record<string, unknown>) {
   const ch = String(props?.channel || '')
   const label = [ch, props?.from].filter(Boolean).join(' · ') || undefined
   if (name === 'quote_submitted') return send('form', { label: String(props?.from || '') || undefined })
   if (name !== 'contact_click') return
-  if (ch.startsWith('call')) send('call', { label })
-  else if (ch.startsWith('kakao')) send('kakao', { label })
+  if (ch.startsWith('call')) {
+    lastContact = Date.now()
+    send('call', { label })
+  } else if (ch.startsWith('kakao')) {
+    lastContact = Date.now()
+    send('kakao', { label })
+  }
+}
+
+/**
+ * 페이지 어디에 있든 전화(tel:)·카카오톡 링크를 누르면 기록한다.
+ * TrackLink·떠 있는 버튼이 아닌 본문·푸터의 그냥 링크도 많아서, 그쪽 전화는 그동안 빠졌다(2026-10-27 확인).
+ * 문서 끝(bubble)에서 들으므로 버튼의 onClick 이 먼저 돌고, 그게 방금 보냈으면 건너뛴다.
+ */
+export function watchContactLinks(): () => void {
+  const onClick = (e: MouseEvent) => {
+    const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    if (!a) return
+    const href = a.getAttribute('href') || ''
+    const kind: Kind | null = href.startsWith('tel:')
+      ? 'call'
+      : /^https?:\/\/(pf\.kakao\.com|open\.kakao\.com|qr\.kakao\.com)/.test(href)
+        ? 'kakao'
+        : null
+    if (!kind || Date.now() - lastContact < 1500) return
+    const num = kind === 'call' ? href.slice(4).replace(/[^0-9]/g, '') : ''
+    send(kind, { label: [kind === 'call' ? num : 'link', 'page_link'].filter(Boolean).join(' · ') })
+  }
+  document.addEventListener('click', onClick)
+  return () => document.removeEventListener('click', onClick)
 }

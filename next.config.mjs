@@ -14,6 +14,7 @@ const nextConfig = {
     '/adreaming': ['./node_modules/@sparticuz/chromium/bin/**/*'],
     '/sinil': ['./node_modules/@sparticuz/chromium/bin/**/*'],
     '/atotech': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    '/jstech': ['./node_modules/@sparticuz/chromium/bin/**/*'],
   },
   // 검색광고 상황판은 나노마스터 관리 화면의 같은 상황판으로 옮겼다 (lib/board-sync.ts)
   async redirects() {

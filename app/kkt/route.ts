@@ -3,7 +3,7 @@ import { PAGE_HTML } from './page-html'
 import { NO_STORE, cookieValue } from './http'
 import { logoSvg } from '@/lib/brand-logo'
 import { withBrandLogo } from '@/lib/clients/proposal'
-import { logAccess, trackedHtml } from '@/lib/clients/access-log'
+import { logAccess, trackedHtml, trackerTag } from '@/lib/clients/access-log'
 import { after } from 'next/server'
 
 /**
@@ -17,7 +17,7 @@ import { after } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-function lockPage(error: boolean): Response {
+function lockPage(error: boolean, viewId?: string): Response {
   const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive"><title>비밀번호 입력 | 엔엠솔루션</title>
@@ -40,7 +40,7 @@ button{width:100%;margin-top:12px;font:inherit;font-weight:700;font-size:15px;pa
 <input name="password" type="password" inputmode="numeric" autocomplete="off" autofocus required aria-label="비밀번호">
 ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' : ''}
 <button type="submit">열기</button>
-</form></body></html>`
+</form>${viewId ? trackerTag(viewId) : ''}</body></html>`
   return new Response(html, {
     status: error ? 401 : 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE },
@@ -49,8 +49,9 @@ ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' :
 
 export async function GET(req: Request) {
   if (!(await hasKktAccess(cookieValue(req)))) {
-    after(() => logAccess(req.headers, null, 'login_page', { slug: 'kkt' }))
-    return lockPage(false)
+    const viewId = crypto.randomUUID()
+    after(() => logAccess(req.headers, null, 'login_page', { slug: 'kkt', viewId }))
+    return lockPage(false, viewId)
   }
   return new Response(trackedHtml(withBrandLogo(PAGE_HTML), req.headers, 'kkt'), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }
@@ -59,11 +60,12 @@ export async function POST(req: Request) {
   const form = await req.formData().catch(() => null)
   const input = String(form?.get('password') ?? '')
   const ok = await isKktPassword(input)
-  after(() => logAccess(req.headers, null, ok ? 'login_ok' : 'login_fail', { slug: 'kkt' }))
+  const viewId = ok ? undefined : crypto.randomUUID()
+  after(() => logAccess(req.headers, null, ok ? 'login_ok' : 'login_fail', { slug: 'kkt', viewId }))
   if (!ok) {
     // 네 자리 비밀번호라 연속 대입을 늦춘다
     await new Promise((r) => setTimeout(r, 1500))
-    return lockPage(true)
+    return lockPage(true, viewId)
   }
   const token = (await kktToken())!
   return new Response(null, {

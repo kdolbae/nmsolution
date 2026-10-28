@@ -29,6 +29,9 @@
   }, true)
   document.addEventListener('copy', function () { ev('복사: ' + String(getSelection()).replace(/\s+/g, ' ').slice(0, 80)) })
   document.addEventListener('contextmenu', function (e) { ev('우클릭: ' + txt(e.target)) })
+  var typed = false
+  document.addEventListener('input', function (e) { if (!typed && e.target && e.target.type === 'password') { typed = true; ev('비밀번호 입력 시작') } }, true)
+  document.addEventListener('submit', function () { ev('열기 누름'); send() }, true)
   addEventListener('beforeprint', function () { ev('인쇄') })
   document.addEventListener('play', function (e) { ev('영상 재생: ' + txt(e.target)) }, true)
   document.addEventListener('visibilitychange', function () { ev(document.visibilityState === 'visible' ? '다시 봄' : '다른 화면으로') ; if (document.visibilityState === 'hidden') send() })

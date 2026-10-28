@@ -1,5 +1,7 @@
 import { getSession, getSessionFrom, isAdmin } from '@/lib/admin'
-import { getClient, getVersion, type ClientRow } from '@/lib/clients/table'
+import { getClient, type ClientRow } from '@/lib/clients/table'
+import { isPortalHidden, latestSend } from '@/lib/clients/sends'
+import { emptyQuote } from '@/lib/clients/quote'
 import { getMembership, type Membership } from './members'
 
 /** 로그인한 협력업체 관계자와 그 업체. 관리자이거나 로그인 안 했으면 user/membership 이 비어 있다 */
@@ -19,17 +21,15 @@ export async function approvedClientId(h: Headers): Promise<number | null> {
 }
 
 /**
- * 업체가 보는 제안서·견적서: 최종본을 확정했으면 그 버전, 아니면 지금 저장된 최신본.
- * label 은 화면·PDF 이름에 붙는 버전 표시.
+ * 업체가 보는 제안서·견적서: 고객 발송본(lib/clients/sends.ts) 중 최신 것만. 내부 작업 버전은 보이지 않는다.
+ * 발송본이 없으면 빈 견적과 '준비 중' 안내를 돌려준다. label 은 화면·PDF 이름에 붙는 발송 견적번호.
  */
 export async function portalDocs(clientId: number): Promise<(ClientRow & { label: string }) | null> {
   const client = await getClient(clientId)
   if (!client) return null
-  if (client.finalized) {
-    const v = await getVersion(client.id, client.finalized.version)
-    if (v) return { ...client, proposalHtml: v.proposalHtml, quote: v.quote, label: `v${v.no} 최종본` }
-  }
-  return { ...client, label: '' }
+  const send = (await isPortalHidden(client.id)) ? null : await latestSend(client.id)
+  if (!send) return { ...client, proposalHtml: '<p>견적서를 준비하고 있음. 준비가 끝나면 이 화면에서 볼 수 있음.</p>', quote: emptyQuote(), label: '' }
+  return { ...client, proposalHtml: send.proposalHtml, quote: send.quote, updatedAt: send.sentAt, finalized: null, label: send.number }
 }
 
 export type { Membership }

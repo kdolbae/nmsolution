@@ -8,10 +8,12 @@ import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KE
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
 import { ADREAMING_PAGE_HTML } from './adreaming-page'
-import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
+import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, ATOTECH_REV5_KEY, ATOTECH_REV6_KEY, ATOTECH_REV7_KEY, ATOTECH_REV8_KEY, ATOTECH_REV9_KEY, ATOTECH_REV10_KEY, ATOTECH_REV11_KEY, ATOTECH_REV12_KEY, ATOTECH_REV13_KEY, ATOTECH_REV14_KEY, ATOTECH_SEED_KEY, atotechQuote } from './seed-atotech'
 import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_REV8_KEY, SEONGWON_REV9_KEY, SEONGWON_REV10_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
+import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
+import { JSTECH_PAGE_HTML } from './jstech-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -231,6 +233,8 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV10_KEY, () => refreshAtotech('실제 투입 인원·단가로 노무비 조정, 일반관리비 10%·이윤 15%'))
       await seedOnce(ATOTECH_REV11_KEY, () => refreshAtotech('일반관리비 8%, 간접노무비 직접노무비 × 15% 추가'))
       await seedOnce(ATOTECH_REV12_KEY, () => refreshAtotech('반입 고급기능공 추가, 고급 35만·중급 28만·전기 35만'))
+      await seedOnce(ATOTECH_REV13_KEY, () => refreshAtotech('펌프 교체 제외, 배관 구조 변경만 (제안 1 + 제안 2 선택)'))
+      await seedOnce(ATOTECH_REV14_KEY, () => refreshAtotech('사전 제작 배관공 대신 조공, 현장 주말 2일 용접사 1·배관공 1, 에어벤트 서플라이 1세트'))
       // 성원냉동기계: 안성 공장 2층 창고 바닥 철골 구조. 담당자·업체용 비밀번호는 관리자 업체 정보에서 정한다
       await seedOnce(SEONGWON_SEED_KEY, async () => {
         const c = SEONGWON_CLIENT
@@ -259,6 +263,26 @@ export function ensureClients(): Promise<void> {
       // 등록 때 저장된 제안서에는 3D 섹션이 없어서 지금 페이지로 한 번 바꾼다(2026-10-27 kevin)
       await seedOnce(SEONGWON_REV9_KEY, () => refreshSeongwon('제안서에 3D 모델(웹 회전 보기·사진 6컷) 추가'))
       await seedOnce(SEONGWON_REV10_KEY, () => refreshSeongwon('일반관리비 6%, 산업안전보건관리비 제외'))
+      // 제이에스테크: 수원 공장 승강기 타워 외벽 하부 파손 보수. 업체 링크 비밀번호는 담당자 연락처 뒷번호 4자리(2026-10-28)
+      await seedOnce(JSTECH_SEED_KEY, async () => {
+        const c = JSTECH_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = jstechQuote(today())
+        const proposal = JSTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login, portal_password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin, await hashPortalPassword(c.portalPassword)],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+      })
+      await seedOnce(JSTECH_REV2_KEY, () => refreshJstech('색상을 못 맞출 때 보정 도장 20만 원 선택 항목 추가'))
+      await seedOnce(JSTECH_REV3_KEY, () => refreshJstech('안쪽 방화보드 3×6 5장·조공 1명 추가'))
     })().catch((e) => {
       ready = null
       throw e
@@ -307,6 +331,21 @@ async function refreshSeongwon(summary: string) {
   const quote = seongwonQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = SEONGWON_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 제이에스테크 견적·제안서·업체 메모를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). */
+async function refreshJstech(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [JSTECH_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), JSTECH_CLIENT.memo])
+  const quote = jstechQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = JSTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

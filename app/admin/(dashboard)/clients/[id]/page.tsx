@@ -1,34 +1,58 @@
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
-import { ClientWorkspace } from '@/components/admin/client-workspace'
-import { ClientPortal } from '@/components/admin/client-portal'
-import { formatCode, getPortalInfo } from '@/lib/portal/members'
-import { mailEnabled } from '@/lib/mail'
-import { clientFiles } from '@/lib/clients/files'
-import { clientVideos } from '@/lib/clients/media'
-import { getClient, getVersion, listQuoteSet, listVersions, quoteLabelOf } from '@/lib/clients/table'
-import { calcQuote } from '@/lib/clients/quote'
-import { QuoteSet } from '@/components/admin/quote-set'
-import { getTakeoffTemplates } from '@/lib/clients/takeoff-templates'
-import { ClientIntel, ClientSchedule } from '@/components/admin/client-intel'
-import { listCards } from '@/lib/clients/cards'
-import { getProfile } from '@/lib/clients/profile'
-import { getSchedule, listScheduleLog, stepsFromQuote } from '@/lib/clients/schedule'
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import { ClientWorkspace } from "@/components/admin/client-workspace";
+import { ClientPortal } from "@/components/admin/client-portal";
+import { ClientSends } from "@/components/admin/client-sends";
+import { getQuoteCodes, isPortalHidden, listSends } from "@/lib/clients/sends";
+import { formatCode, getPortalInfo } from "@/lib/portal/members";
+import { mailEnabled } from "@/lib/mail";
+import { clientFiles } from "@/lib/clients/files";
+import { clientVideos } from "@/lib/clients/media";
+import {
+  getClient,
+  getVersion,
+  listQuoteSet,
+  listVersions,
+  quoteLabelOf,
+} from "@/lib/clients/table";
+import { calcQuote } from "@/lib/clients/quote";
+import { QuoteSet } from "@/components/admin/quote-set";
+import { getTakeoffTemplates } from "@/lib/clients/takeoff-templates";
+import { ClientIntel, ClientSchedule } from "@/components/admin/client-intel";
+import { listCards } from "@/lib/clients/cards";
+import { getProfile } from "@/lib/clients/profile";
+import {
+  getSchedule,
+  listScheduleLog,
+  stepsFromQuote,
+} from "@/lib/clients/schedule";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function AdminClientPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>
-  searchParams: Promise<{ tab?: string; v?: string }>
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string; v?: string }>;
 }) {
-  const [{ id }, { tab, v }] = await Promise.all([params, searchParams])
-  const client = await getClient(Number(id))
-  if (!client) notFound()
-  const [versions, portal, takeoffTemplates, cards, profile, schedule, scheduleLog, quoteSet] = await Promise.all([
+  const [{ id }, { tab, v }] = await Promise.all([params, searchParams]);
+  const client = await getClient(Number(id));
+  if (!client) notFound();
+  const [
+    versions,
+    portal,
+    takeoffTemplates,
+    cards,
+    profile,
+    schedule,
+    scheduleLog,
+    quoteSet,
+    sends,
+    codes,
+    portalHidden,
+  ] = await Promise.all([
     listVersions(client.id),
     // 업체용 링크·협력업체 포털은 본 견적(업체)에만 있다
     client.parentId ? null : getPortalInfo(client.id),
@@ -39,17 +63,29 @@ export default async function AdminClientPage({
     getSchedule(client.id),
     listScheduleLog(client.id),
     listQuoteSet(client.id),
-  ])
+    listSends(client.id, { withWithdrawn: true }),
+    getQuoteCodes(client.id),
+    isPortalHidden(client.id),
+  ]);
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
-  const picked = v && Number(v) !== versions[0]?.no ? await getVersion(client.id, Number(v)) : null
+  const picked =
+    v && Number(v) !== versions[0]?.no
+      ? await getVersion(client.id, Number(v))
+      : null;
 
   return (
     <>
-      <Link href="/admin/clients" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        href="/admin/clients"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ChevronLeft className="size-4" /> 업체 목록
       </Link>
       <div className="mb-5">
-        <ClientIntel clientId={client.parentId ?? client.id} initial={{ cards, profile }} />
+        <ClientIntel
+          clientId={client.parentId ?? client.id}
+          initial={{ cards, profile }}
+        />
       </div>
       <QuoteSet
         currentId={client.id}
@@ -69,12 +105,44 @@ export default async function AdminClientPage({
             code={formatCode(portal.code)}
             open={portal.open}
             mail={mailEnabled()}
-            members={portal.members.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() }))}
+            members={portal.members.map((m) => ({
+              ...m,
+              createdAt: m.createdAt.toISOString(),
+            }))}
+          />
+        </div>
+      )}
+      {/* 고객 발송본: 업체 페이지·포털은 이것만 보여 준다(내부 버전과 따로). 추가 견적서는 업체 페이지에 안 나간다 */}
+      {!client.parentId && (
+        <div className="mb-5">
+          <ClientSends
+            clientId={client.id}
+            portalSlug={client.portalSlug}
+            codes={codes}
+            portalHidden={portalHidden}
+            quoteDate={client.quote.date}
+            quoteNumber={client.quote.number}
+            versions={versions.map((x) => ({
+              no: x.no,
+              summary: x.summary,
+              supply: x.supply,
+            }))}
+            sends={sends.map((s) => ({
+              no: s.no,
+              number: s.number,
+              version: s.version,
+              title: s.title,
+              supply: s.supply,
+              note: s.note,
+              sentAt: s.sentAt.toISOString(),
+              sentBy: s.sentBy,
+              withdrawnAt: s.withdrawnAt ? s.withdrawnAt.toISOString() : null,
+            }))}
           />
         </div>
       )}
       <ClientWorkspace
-        initialTab={tab === 'quote' ? 'quote' : 'proposal'}
+        initialTab={tab === "quote" ? "quote" : "proposal"}
         client={{
           id: client.id,
           name: client.name,
@@ -90,11 +158,19 @@ export default async function AdminClientPage({
         }}
         proposalHtml={client.proposalHtml}
         quote={client.quote}
-        files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
+        files={(clientFiles(client.name)?.files ?? []).map((f) => ({
+          file: f.file,
+          label: f.label,
+        }))}
         videos={clientVideos(client.name)}
         takeoffTemplates={takeoffTemplates}
         versions={versions.map((x) => ({ ...x, at: x.at.toISOString() }))}
-        finalized={client.finalized && { ...client.finalized, at: client.finalized.at.toISOString() }}
+        finalized={
+          client.finalized && {
+            ...client.finalized,
+            at: client.finalized.at.toISOString(),
+          }
+        }
         view={
           picked && {
             no: picked.no,
@@ -106,8 +182,13 @@ export default async function AdminClientPage({
         }
       />
       <div className="mt-5">
-        <ClientSchedule clientId={client.id} initial={schedule} log={scheduleLog} fromQuote={stepsFromQuote(client.quote)} />
+        <ClientSchedule
+          clientId={client.id}
+          initial={schedule}
+          log={scheduleLog}
+          fromQuote={stepsFromQuote(client.quote)}
+        />
       </div>
     </>
-  )
+  );
 }

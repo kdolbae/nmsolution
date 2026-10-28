@@ -12,7 +12,7 @@ import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, A
 import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_REV8_KEY, SEONGWON_REV9_KEY, SEONGWON_REV10_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
-import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
+import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
 import { JSTECH_PAGE_HTML } from './jstech-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -277,6 +277,7 @@ export function ensureClients(): Promise<void> {
         )
       })
       await seedOnce(JSTECH_REV2_KEY, () => refreshJstech('색상을 못 맞출 때 보정 도장 20만 원 선택 항목 추가'))
+      await seedOnce(JSTECH_REV3_KEY, () => refreshJstech('안쪽 방화보드 3×6 5장·조공 1명 추가'))
     })().catch((e) => {
       ready = null
       throw e

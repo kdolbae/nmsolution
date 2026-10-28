@@ -150,7 +150,7 @@ export function sendNumber(base: string, earlierWithSameBase: number): string {
 }
 
 /** 제안서 안에 찍힌 견적번호를 발송 견적번호로 바꾼다(뒤에 -… 가 이어지는 다른 번호는 건드리지 않음) */
-function stampNumber(html: string, base: string, number: string): string {
+export function stampNumber(html: string, base: string, number: string): string {
   if (!base || base === number) return html
   const re = new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![-\\w])`, 'g')
   return html.replace(re, number)
@@ -345,4 +345,22 @@ async function bootstrapAtotech(): Promise<boolean> {
   if (!v) return false
   await insertSend(id, 'system', { version: v.version_no, sentAt: v.created_at, note: '펌프 교체 포함 견적 (2026-10-26 메일 발송본)', legacyNumber: true })
   return true
+}
+
+/**
+ * 어드민 인쇄·PDF용: 내부 버전(없으면 최신 버전)이 고객에게 발송된 버전이면 그 발송 견적번호를 견적서·제안서에 찍는다.
+ * 발송 취소한 발송본은 보지 않는다. 발송 전 버전은 내부 번호 그대로 둔다.
+ */
+export async function withSentNumber<T extends { id: number; quote: Quote; proposalHtml: string }>(client: T, version?: number): Promise<T> {
+  await ensureSends()
+  const { rows } = await pool.query<{ quote_number: string }>(
+    `SELECT quote_number FROM client_sends
+      WHERE client_id = $1 AND withdrawn_at IS NULL
+        AND version_no = COALESCE($2::int, (SELECT MAX(version_no) FROM client_versions WHERE client_id = $1))
+      ORDER BY send_no DESC LIMIT 1`,
+    [client.id, version ?? null],
+  )
+  const number = rows[0]?.quote_number
+  if (!number || number === client.quote.number) return client
+  return { ...client, proposalHtml: stampNumber(client.proposalHtml, client.quote.number, number), quote: { ...client.quote, number } }
 }

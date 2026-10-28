@@ -2,7 +2,7 @@
 
 import { requireAdmin } from '@/lib/admin'
 import { revalidatePath } from 'next/cache'
-import { createSend, restoreSend, withdrawSend } from '@/lib/clients/sends'
+import { createSend, restoreSend, setQuoteCodes, withdrawSend } from '@/lib/clients/sends'
 
 /** 고객 발송본 (lib/clients/sends.ts). 오류 문구는 화면에 보여 주려고 값으로 돌려준다 */
 async function shown<T>(run: () => Promise<T>): Promise<({ ok: true } & T) | { ok: false; error: string }> {
@@ -43,6 +43,17 @@ export async function undoCancelSend(clientId: number, no: number) {
   await requireAdmin()
   const res = await shown(async () => {
     await restoreSend(clientId, no)
+    return {}
+  })
+  revalidatePath('/admin/clients', 'layout')
+  return res
+}
+
+/** 발송 견적번호 재료: 업체 영문 이니셜, 대표 공종 코드 */
+export async function saveQuoteCodes(clientId: number, code: string, work: string) {
+  await requireAdmin()
+  const res = await shown(async () => {
+    await setQuoteCodes(clientId, code, work)
     return {}
   })
   revalidatePath('/admin/clients', 'layout')

@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import { ClientWorkspace } from '@/components/admin/client-workspace'
 import { ClientPortal } from '@/components/admin/client-portal'
 import { ClientSends } from '@/components/admin/client-sends'
-import { listSends } from '@/lib/clients/sends'
+import { getQuoteCodes, listSends } from '@/lib/clients/sends'
 import { formatCode, getPortalInfo } from '@/lib/portal/members'
 import { mailEnabled } from '@/lib/mail'
 import { clientFiles } from '@/lib/clients/files'
@@ -24,11 +24,12 @@ export default async function AdminClientPage({
   const [{ id }, { tab, v }] = await Promise.all([params, searchParams])
   const client = await getClient(Number(id))
   if (!client) notFound()
-  const [versions, portal, takeoffTemplates, sends] = await Promise.all([
+  const [versions, portal, takeoffTemplates, sends, codes] = await Promise.all([
     listVersions(client.id),
     getPortalInfo(client.id),
     getTakeoffTemplates(),
     listSends(client.id, { withWithdrawn: true }),
+    getQuoteCodes(client.id),
   ])
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
   const picked = v && Number(v) !== versions[0]?.no ? await getVersion(client.id, Number(v)) : null
@@ -54,6 +55,9 @@ export default async function AdminClientPage({
         <ClientSends
           clientId={client.id}
           portalSlug={client.portalSlug}
+          codes={codes}
+          quoteDate={client.quote.date}
+          quoteNumber={client.quote.number}
           versions={versions.map((x) => ({ no: x.no, summary: x.summary, supply: x.supply }))}
           sends={sends.map((s) => ({
             no: s.no,

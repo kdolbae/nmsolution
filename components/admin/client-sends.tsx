@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Eye, FileDown, Loader2, Send, Undo2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { won } from '@/lib/clients/quote'
-import { cancelSend, confirmSend, undoCancelSend } from '@/app/actions/client-sends'
+import { cancelSend, confirmSend, saveQuoteCodes, undoCancelSend } from '@/app/actions/client-sends'
+import { WORK_CODES, cleanClientCode, quoteCodeNumber } from '@/lib/clients/quote-code'
 import { fmtAt } from '@/components/admin/client-versions'
 
 export type SendRow = {
@@ -30,9 +31,17 @@ export function ClientSends({
   portalSlug,
   sends,
   versions,
+  codes,
+  quoteDate,
+  quoteNumber,
 }: {
   clientId: number
   portalSlug: string
+  /** 발송 견적번호 재료: 업체 영문 이니셜, 공종 코드 */
+  codes: { code: string; work: string }
+  /** 지금 견적서의 견적일·번호 (다음 발송 견적번호 미리보기) */
+  quoteDate: string
+  quoteNumber: string
   sends: SendRow[]
   /** 내부 버전 번호 (최신이 먼저) */
   versions: { no: number; summary: string; supply: number }[]
@@ -45,12 +54,28 @@ export function ClientSends({
   const live = sends.filter((s) => !s.withdrawnAt)
   const shown = live[0]
   const behind = shown && shown.version !== null && latestVersion > shown.version
+  const [code, setCode] = useState(codes.code)
+  const [work, setWork] = useState(codes.work)
+  const codeDirty = code !== codes.code || work !== codes.work
+  const nextNumber =
+    cleanClientCode(code).length >= 2 && work
+      ? `${quoteCodeNumber(cleanClientCode(code), work, { number: quoteNumber, date: quoteDate })}${sends.length ? `-R${sends.length}` : ''}`
+      : ''
+
+  const saveCodes = () =>
+    startTransition(async () => {
+      const r = await saveQuoteCodes(clientId, code, work)
+      setMessage(r.ok ? '업체 코드·공종을 저장했습니다.' : r.error)
+      router.refresh()
+    })
 
   const send = () => {
     const v = versions.find((x) => x.no === pick)
     if (!v) return
+    if (codeDirty) return setMessage('업체 코드·공종을 먼저 저장해 주세요.')
+    if (!nextNumber) return setMessage('발송 견적번호에 쓸 업체 코드(영문 이니셜)와 공종을 먼저 정해 주세요.')
     const note = prompt(
-      `내부 v${v.no} (공급가 ${won(v.supply)}원)을 고객 발송본으로 확정할까요?\n확정하면 업체 페이지에 바로 최신 견적으로 보이고, 발송본은 나중에 고칠 수 없습니다.\n\n메모(관리자만 봄, 비워도 됨):`,
+      `내부 v${v.no} (공급가 ${won(v.supply)}원)을 고객 발송본으로 확정할까요?\n발송 견적번호는 ${nextNumber} 형식으로 붙습니다.\n확정하면 업체 페이지에 바로 최신 견적으로 보이고, 발송본은 나중에 고칠 수 없습니다.\n\n메모(관리자만 봄, 비워도 됨):`,
       '',
     )
     if (note === null) return
@@ -103,6 +128,37 @@ export function ClientSends({
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <label className="flex items-center gap-1.5">
+          업체 코드
+          <input
+            value={code}
+            onChange={(e) => setCode(cleanClientCode(e.target.value))}
+            placeholder="ATK"
+            className="h-8 w-20 border border-border bg-background px-2 font-mono uppercase"
+          />
+        </label>
+        <label className="flex items-center gap-1.5">
+          공종
+          <select value={work} onChange={(e) => setWork(e.target.value)} className="h-8 border border-border bg-background px-2">
+            <option value="">고르기</option>
+            {WORK_CODES.map((w) => (
+              <option key={w.code} value={w.code}>
+                {w.code} · {w.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {codeDirty && (
+          <Button size="sm" variant="outline" className="rounded-none" onClick={saveCodes} disabled={pending}>
+            저장
+          </Button>
+        )}
+        <span className="text-muted-foreground">
+          다음 발송 견적번호: <b className="font-mono text-foreground">{nextNumber || '업체 코드·공종을 정하면 나옴'}</b>
+        </span>
+      </div>
+
       <p className="text-sm">
         {shown ? (
           <>
@@ -116,7 +172,7 @@ export function ClientSends({
 
       {sends.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm whitespace-nowrap">
             <thead className="text-xs text-muted-foreground">
               <tr className="border-b border-border text-left">
                 <th className="py-1.5 pr-3 font-medium">차수</th>

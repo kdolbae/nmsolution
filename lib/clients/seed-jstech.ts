@@ -6,6 +6,8 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
  * 작업일 1일, 판넬·후레싱·부자재 단가는 시장 단가로 잡았다(kevin 확인 대기). 강재는 kg당 1,300원.
  */
 export const JSTECH_SEED_KEY = 'jstech-tower-2610-v1'
+/** 2차: 색상을 못 맞출 때 도장 20만 원 선택 항목, 기본 견적에는 넣지 않음(kevin 2026-10-28) */
+export const JSTECH_REV2_KEY = 'jstech-tower-2610-v2-paint-option'
 
 export const JSTECH_CLIENT = {
   // 정식 상호·사업자번호·공장 주소는 아직 받지 못함. 받으면 업체 정보에서 넣는다
@@ -27,6 +29,7 @@ export const JSTECH_CLIENT = {
 - 승강기 타워(검은 외장 판넬) 왼쪽 아래 모서리가 차량 충돌로 파손. 외장 판넬 3장 하부 찢김·심재 노출, 하단 프레임·스커트·코너커버 밀림, 안쪽 바닥 프레임 밀림
 - 공정(kevin): 파손부 위쪽 중간 절단 → 이음부 방수 → 코너케이스 씌움 → 밀린 안쪽 바닥 프레임 절단 교체 → 중간 이음부 프레임 추가 → 하단 의자 베이스 → 스커트 설치. 코너커버는 구부러진 곳 재단 후 이음(새것 교체는 선택 항목)
 - 범위 가로 2.5m × 높이 3m, 각파이프 □50×50, 기공 2명 × 40만, 폐기물 처리 포함 (kevin)
+- 색상을 못 맞출 때 도장 20만 원 선택 항목, 기본 견적 제외 (kevin 2026-10-28)
 - 가정값(kevin 확인 대기): 작업일 1일, 판넬 ㎡당 32,000, 후레싱 m당 12,000
 - 사진: 공유 폴더 jstech/site`,
 }
@@ -71,6 +74,14 @@ export function jstechQuote(date: string): Quote {
         option: true,
         items: items([['재료비', '코너커버', '0.5t 칼라강판 절곡 (기존 색상), 높이 3.0m', 3, 'm', 15000, '기존 코너커버 대신 새것']]),
       },
+      {
+        id: newId('s'),
+        name: '색상 보정 도장 (색상을 못 맞출 때)',
+        desc: '새 판넬·후레싱 색상을 기존 외벽과 맞추지 못할 때 보수 부위를 도장으로 맞추는 비용',
+        option: true,
+        flat: true,
+        items: items([['경비', '색상 보정 도장', '보수 부위 외장 판넬·후레싱 도장 (자재·인력 포함)', 1, '식', 200000, '색상을 못 맞출 때만']]),
+      },
     ],
     costCalc: true,
     rates: { ...DEFAULT_RATES, overhead: 8, profit: 15 },
@@ -81,13 +92,14 @@ export function jstechQuote(date: string): Quote {
       '보수 범위: 승강기 타워 왼쪽 아래 모서리 외벽, 가로 2.5m × 높이 3.0m',
       '파손 판넬은 위쪽 중간에서 잘라 아래만 교체하고, 이음부는 방수 처리 후 후레싱으로 덮음',
       '코너커버는 구부러진 곳을 재단해 이어 다시 씀. 새것으로 바꾸면 선택 항목 금액을 더함',
+      '색상: 기존 외벽과 같은 색상 판넬·후레싱을 씀. 색상을 맞추지 못하면 보정 도장(선택 항목)을 더함',
       '폐기물 처리 포함',
       '작업 중 승강기 운행 정지가 필요한지 착공 전 협의함',
-      '제외: 승강기 설비(레일·피트 설비) 보수, 판넬 색상 차이 보정 도장',
+      '제외: 승강기 설비(레일·피트 설비) 보수',
     ].join('\n'),
     validDays: 30,
     recipientFields: 'biz',
-    optionLabel: '코너커버 새것 교체 시 추가 금액',
+    optionLabel: '상황에 따라 추가되는 비용',
     discount: 0,
     discountLabel: DEFAULT_DISCOUNT_LABEL,
   }

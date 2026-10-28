@@ -21,6 +21,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return pdfResponse(await htmlToPdf(portalPageHtml(client, send), req), `${client.name} 제안서·견적서 ${send.number}.pdf`)
   }
   const sends = await listSends(base.id)
-  const html = portalPageHtml(client, send, base.portalSlug && sends.some((s) => s.no === send.no) ? { slug: base.portalSlug, sends } : undefined)
+  const html = portalPageHtml(client, send, sends.some((s) => s.no === send.no) ? { base: `/api/admin/clients/${base.id}/preview`, sends } : undefined)
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' } })
 }

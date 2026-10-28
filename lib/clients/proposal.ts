@@ -52,7 +52,7 @@ export function kktProposalHtml(page: string): string {
     )
 }
 
-type SiteContent = {
+export type SiteContent = {
   home: HomeContent
   services: ServicesContent
   about: AboutContent
@@ -66,22 +66,8 @@ function paragraphs(text: string) {
     .join('\n')
 }
 
-/** 새 업체의 기본 제안서. 홈페이지 내용(회사소개·사업 범위·진행 절차)으로 만들고, 제안 내용 칸은 비워 둔다 */
-export function defaultProposalHtml(client: { name: string; siteAddress?: string | null }, c: SiteContent): string {
-  const s = c.settings
-  const factory = c.services.items.find((i) => i.slug === 'factory')
-  const year = new Date().getFullYear()
-  return `<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow, noarchive">
-<title>${esc(client.name)} 공사제안서 | 엔엠솔루션</title>
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="${PRETENDARD_CSS}">
-<style>
-:root{--navy:#0f2a44;--accent:#e8742a;--ink:#1d2430;--muted:#5d6878;--line:#dde3ea;--bg:#f4f6f9;--max:1100px}
+/** 제안서 공통 스타일 (기본 제안서·AI 접수 제안서가 같이 씀) */
+export const PROPOSAL_CSS = `:root{--navy:#0f2a44;--accent:#e8742a;--ink:#1d2430;--muted:#5d6878;--line:#dde3ea;--bg:#f4f6f9;--max:1100px}
 *{box-sizing:border-box}
 body{margin:0;font-family:${FONT_STACK};color:var(--ink);font-size:16px;line-height:1.7;word-break:keep-all;letter-spacing:-.01em;background:#fff}
 img,video{max-width:100%;display:block}
@@ -128,7 +114,24 @@ footer{background:var(--navy);color:#cfd8e4;padding:40px 0;font-size:14px}
 footer b{color:#fff;font-size:18px}
 footer .phone{font-size:24px;font-weight:700;color:#fff}
 @media print{section{padding:24px 0}.hero{padding:32px 0}.card,.steps li,.ceo{break-inside:avoid}}
-</style>
+`
+
+/** 새 업체의 기본 제안서. 홈페이지 내용(회사소개·사업 범위·진행 절차)으로 만들고, 제안 내용 칸은 비워 둔다 */
+export function defaultProposalHtml(client: { name: string; siteAddress?: string | null }, c: SiteContent): string {
+  const s = c.settings
+  const factory = c.services.items.find((i) => i.slug === 'factory')
+  const year = new Date().getFullYear()
+  return `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>${esc(client.name)} 공사제안서 | 엔엠솔루션</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="${PRETENDARD_CSS}">
+<style>
+${PROPOSAL_CSS}</style>
 </head>
 <body>
 <div class="hero">

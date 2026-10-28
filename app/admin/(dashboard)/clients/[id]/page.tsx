@@ -11,6 +11,7 @@ import { clientFiles } from '@/lib/clients/files'
 import { clientVideos } from '@/lib/clients/media'
 import { getClient, getVersion, listVersions } from '@/lib/clients/table'
 import { getTakeoffTemplates } from '@/lib/clients/takeoff-templates'
+import { listQuoteCases } from '@/lib/clients/quote-cases-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,13 +25,14 @@ export default async function AdminClientPage({
   const [{ id }, { tab, v }] = await Promise.all([params, searchParams])
   const client = await getClient(Number(id))
   if (!client) notFound()
-  const [versions, portal, takeoffTemplates, sends, codes, portalHidden] = await Promise.all([
+  const [versions, portal, takeoffTemplates, sends, codes, portalHidden, quoteCases] = await Promise.all([
     listVersions(client.id),
     getPortalInfo(client.id),
     getTakeoffTemplates(),
     listSends(client.id, { withWithdrawn: true }),
     getQuoteCodes(client.id),
     isPortalHidden(client.id),
+    listQuoteCases(client.id),
   ])
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
   const picked = v && Number(v) !== versions[0]?.no ? await getVersion(client.id, Number(v)) : null
@@ -94,6 +96,7 @@ export default async function AdminClientPage({
         files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
         videos={clientVideos(client.name)}
         takeoffTemplates={takeoffTemplates}
+        quoteCases={quoteCases}
         versions={versions.map((x) => ({ ...x, at: x.at.toISOString() }))}
         finalized={client.finalized && { ...client.finalized, at: client.finalized.at.toISOString() }}
         view={

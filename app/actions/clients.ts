@@ -2,6 +2,8 @@
 
 import { requireAdmin } from '@/lib/admin'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { notifySbworks } from '@/lib/sbworks'
 import { getContent } from '@/lib/content/get'
 import { emptyQuote, normalizeQuote, type Quote } from '@/lib/clients/quote'
 import { defaultProposalHtml } from '@/lib/clients/proposal'
@@ -89,6 +91,7 @@ export async function createClient(input: ClientInfo, copyFrom?: number | null) 
     quote = emptyQuote()
   }
   const id = await insertClient(info, proposal, quote, who(user))
+  after(() => notifySbworks(id, 'company'))
   revalidatePath('/admin/clients')
   return { ok: true as const, id }
 }
@@ -97,6 +100,7 @@ export async function saveClientInfo(id: number, input: ClientInfo, portalPasswo
   await requireAdmin()
   await updateClientInfo(id, cleanInfo(input))
   await savePortalPassword(id, portalPassword)
+  after(() => notifySbworks(id, 'company'))
   revalidatePath('/admin/clients', 'layout')
   return { ok: true as const }
 }
@@ -106,6 +110,7 @@ export async function saveProposal(id: number, html: string) {
   if (typeof html !== 'string' || !html.trim()) throw new Error('제안서 내용이 비어 있습니다.')
   if (html.length > 2_000_000) throw new Error('제안서가 너무 큽니다. 이미지는 주소로 넣어 주세요.')
   const res = await shown(async () => ({ version: await updateProposal(id, html, who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'proposal'))
   revalidatePath('/admin/clients', 'layout')
   return res
 }
@@ -130,6 +135,7 @@ export async function resetProposal(id: number) {
 export async function saveQuote(id: number, quote: Quote) {
   const user = await requireAdmin()
   const res = await shown(async () => ({ version: await updateQuote(id, normalizeQuote(quote), who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'quote'))
   revalidatePath('/admin/clients', 'layout')
   return res
 }
@@ -138,6 +144,7 @@ export async function saveQuote(id: number, quote: Quote) {
 export async function finalizeClientVersion(id: number) {
   const user = await requireAdmin()
   const res = await shown(async () => ({ version: await finalizeClient(id, who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'quote'))
   revalidatePath('/admin/clients', 'layout')
   return res
 }
@@ -145,6 +152,7 @@ export async function finalizeClientVersion(id: number) {
 export async function deleteClient(id: number) {
   await requireAdmin()
   await removeClient(id)
+  after(() => notifySbworks(id, 'deleted'))
   revalidatePath('/admin/clients')
   return { ok: true as const }
 }

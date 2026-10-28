@@ -24,6 +24,10 @@ const KIND: Record<AccessRow['kind'], string> = {
   compare: '견적 비교',
 }
 
+/** 이 시각 뒤로는 로그인 화면에도 행동 기록 스크립트가 들어간다. 스크립트가 한 번도 안 돌았으면 사람 대신 메일 보안 검사·링크 미리보기가 연 것으로 본다 */
+const LOGIN_TRACKED_SINCE = '2026-10-28T08:00:00Z'
+const noScreen = (r: AccessRow) => (r.kind === 'login_page' || r.kind === 'login_fail') && r.seconds == null && r.at > LOGIN_TRACKED_SINCE
+
 const kst = (iso: string) =>
   new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
@@ -104,7 +108,9 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
                       {KIND[r.kind] ?? r.kind}
                       {r.isAdmin && <span className="ml-1 text-[10px] text-muted-foreground">관리자</span>}
                     </span>
-                    <span className="w-24 shrink-0 text-xs text-muted-foreground">{r.seconds != null ? `${dur(r.seconds)} · ${r.scroll ?? 0}%` : ''}</span>
+                    <span className="w-24 shrink-0 text-xs text-muted-foreground">
+                      {r.seconds != null ? `${dur(r.seconds)} · ${r.scroll ?? 0}%` : noScreen(r) ? '화면 안 띄움' : ''}
+                    </span>
                     <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                       {[r.details?.send && (r.details.to ? `${r.details.send} ↔ ${r.details.to}` : r.details.send), r.details?.member, r.device, r.place, r.ip].filter(Boolean).join(' · ')}
                     </span>
@@ -132,6 +138,7 @@ function Detail({ r }: { r: AccessRow }) {
           IP {r.ip ?? '-'} · {r.place ?? '-'}
         </p>
         <p>{r.device ?? '-'}</p>
+        {noScreen(r) && <p className="text-muted-foreground">브라우저에서 화면이 실제로 뜨지 않음. 메일 보안 검사나 메신저 링크 미리보기가 주소를 열어 본 것일 가능성이 큼.</p>}
         {r.referrer && <p className="break-all">들어온 곳 {r.referrer}</p>}
         {d.screen && <p>화면 {[d.screen, d.lang, d.tz].filter(Boolean).join(' · ')}</p>}
         {d.docs && <p>인쇄 범위 {d.docs}</p>}

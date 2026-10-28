@@ -6,7 +6,7 @@ import { getClientBySlug } from './table'
 import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCookie, validShareKey } from './portal'
 import { verifyPortalPassword } from './portal-password'
 import { htmlToPdf, pdfResponse } from './pdf'
-import { logAccess, trackedHtml } from './access-log'
+import { logAccess, trackedHtml, trackerTag } from './access-log'
 import { customerSends, getSend, type listSends, type Send } from './sends'
 import { compareHtml, historyBar, notReadyHtml } from './send-compare'
 import { after } from 'next/server'
@@ -29,7 +29,8 @@ const NO_STORE = {
   'Referrer-Policy': 'no-referrer',
 }
 
-function loginPage(title: string, error: boolean): Response {
+/** viewId 를 주면 로그인 화면에도 행동 기록 스크립트를 넣는다(사람이 실제로 화면을 띄웠는지, 비밀번호를 쳤는지 남김) */
+function loginPage(title: string, error: boolean, viewId?: string): Response {
   const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive"><title>로그인 | 엔엠솔루션</title>
@@ -54,7 +55,7 @@ button{width:100%;margin-top:16px;font:inherit;font-weight:700;font-size:15px;pa
 <input id="p" name="password" type="password" inputmode="text" autocomplete="current-password" required autofocus>
 ${error ? '<div class="err" role="alert">비밀번호가 맞지 않음.</div>' : ''}
 <button type="submit">열기</button>
-</form></body></html>`
+</form>${viewId ? trackerTag(viewId) : ''}</body></html>`
   return new Response(html, { status: error ? 401 : 200, headers: { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE } })
 }
 
@@ -71,8 +72,9 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   const shareToken = shareLeft ? await portalToken(slug) : null
   // 접속 기록(lib/clients/access-log.ts)은 응답 뒤에 남겨 업체 화면을 늦추지 않는다
   if (!shareToken && !(await hasPortalAccess(slug, readCookie(req, portalCookieName(slug))))) {
-    after(() => logAccess(req.headers, client, 'login_page', { slug }))
-    return loginPage(`${client.name} 공사 자료`, false)
+    const viewId = crypto.randomUUID()
+    after(() => logAccess(req.headers, client, 'login_page', { slug, viewId }))
+    return loginPage(`${client.name} 공사 자료`, false, viewId)
   }
   const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
   if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
@@ -207,11 +209,12 @@ export async function portalPost(req: Request, slug: string): Promise<Response> 
   const password = String(form?.get('password') ?? '').trim()
   const ok = !!password && (await verifyPortalPassword(password, client.portalPasswordHash))
   const token = ok ? await portalToken(slug) : null
-  after(() => logAccess(req.headers, client, token ? 'login_ok' : 'login_fail', { slug }))
+  const viewId = token ? undefined : crypto.randomUUID()
+  after(() => logAccess(req.headers, client, token ? 'login_ok' : 'login_fail', { slug, viewId }))
   if (!token) {
     // 비밀번호가 짧을 수 있어 연속 대입을 늦춘다
     await new Promise((r) => setTimeout(r, 1500))
-    return loginPage(`${client.name} 공사 자료`, true)
+    return loginPage(`${client.name} 공사 자료`, true, viewId)
   }
   return new Response(null, {
     status: 303,

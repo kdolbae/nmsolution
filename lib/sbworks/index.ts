@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto'
 import { calcQuote, itemAmount, type Quote } from '@/lib/clients/quote'
-import { getClient, listVersions, type ClientRow, type VersionMeta } from '@/lib/clients/table'
+import { getClient, listVersions, quoteLabelOf, type ClientRow, type VersionMeta } from '@/lib/clients/table'
 import { listCards, contactLabel } from '@/lib/clients/cards'
 import { getProfile } from '@/lib/clients/profile'
 import { getSchedule, listScheduleLog } from '@/lib/clients/schedule'
@@ -87,6 +87,10 @@ function companyView(c: ClientRow) {
     phone: c.phone,
     email: c.email,
     portalUrl: c.portalSlug ? `https://nm-solution.co.kr/${c.portalSlug}` : '',
+    adminUrl: `https://nm-solution.co.kr/admin/clients/${c.id}?tab=quote`,
+    // 추가 견적서(추가 공정 등)면 본 견적(업체) id. 한 업체 = 본 견적 1 + 추가 견적 여러 개 (kevin 2026-10-28)
+    parentId: c.parentId,
+    quoteLabel: quoteLabelOf(c),
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
   }
@@ -99,7 +103,16 @@ export async function clientSummary(c: ClientRow) {
   return {
     ...companyView(c),
     source: SOURCE_NAME,
-    quote: { number: c.quote.number, title: c.quote.title, supply: calc.supply, grand: calc.grand, version: versions[0]?.no ?? 0, finalizedVersion: c.finalized?.version ?? null },
+    quote: {
+      number: c.quote.number,
+      date: c.quote.date,
+      title: c.quote.title,
+      supply: calc.supply,
+      vat: calc.vat,
+      grand: calc.grand,
+      version: versions[0]?.no ?? 0,
+      finalizedVersion: c.finalized?.version ?? null,
+    },
     schedule: { revision: schedule.revision, updatedAt: schedule.updatedAt },
   }
 }
@@ -110,8 +123,8 @@ export async function clientDetail(id: number) {
   if (!c) return null
   const [versions, cards, profile, schedule, scheduleLog] = await Promise.all([
     listVersions(id),
-    listCards(id),
-    getProfile(id),
+    listCards(c.parentId ?? id),
+    getProfile(c.parentId ?? id),
     getSchedule(id),
     listScheduleLog(id),
   ])

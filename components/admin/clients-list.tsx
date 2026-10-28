@@ -22,6 +22,8 @@ type Item = {
   finalizedVersion: number | null
   /** 협력업체 포털 가입 승인 대기 인원 */
   waiting: number
+  /** 같은 업체의 추가 견적서 */
+  extra: { id: number; label: string; quoteNumber: string; supply: number; finalizedVersion: number | null }[]
 }
 
 const EMPTY = { name: '', bizNumber: '', portalSlug: '', portalLogin: '', contactPerson: '', phone: '', email: '', siteAddress: '', memo: '' }
@@ -128,7 +130,7 @@ export function ClientsList({ clients }: { clients: Item[] }) {
       {clients.length > 0 && (
         <ul className="divide-y divide-border bg-background ring-1 ring-border">
           {clients.map((c) => (
-            <li key={c.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+            <li key={c.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center">
               <Link href={`/admin/clients/${c.id}`} className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-base font-bold hover:text-electric">{c.name}</span>
@@ -140,7 +142,7 @@ export function ClientsList({ clients }: { clients: Item[] }) {
                   )}
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  {[c.contactPerson, c.phone, `견적 ${c.quoteNumber}`, `수정 ${c.updatedAt.slice(0, 10)}`]
+                  {[c.contactPerson, c.phone, `견적 ${c.quoteNumber}`, c.extra.length ? `견적서 ${c.extra.length + 1}개` : '', `수정 ${c.updatedAt.slice(0, 10)}`]
                     .filter(Boolean)
                     .join(' · ')}
                 </div>
@@ -162,6 +164,23 @@ export function ClientsList({ clients }: { clients: Item[] }) {
                   <Calculator className="size-4" strokeWidth={1.75} /> 견적서
                 </Link>
               </div>
+              {c.extra.length > 0 && (
+                <ul className="flex flex-col gap-1 border-l-2 border-border pl-3 sm:basis-full">
+                  {c.extra.map((x) => (
+                    <li key={x.id}>
+                      <Link href={`/admin/clients/${x.id}?tab=quote`} className="flex items-center gap-2 text-sm hover:text-electric">
+                        <span className="shrink-0 text-xs text-muted-foreground">추가 견적</span>
+                        <span className="min-w-0 flex-1 truncate font-medium">{x.label}</span>
+                        {x.finalizedVersion && (
+                          <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">최종본 v{x.finalizedVersion}</span>
+                        )}
+                        <span className="shrink-0 text-xs text-muted-foreground">{x.quoteNumber}</span>
+                        <span className="w-32 shrink-0 text-right font-mono tabular-nums">{x.supply ? `${won(x.supply)}원` : '—'}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>

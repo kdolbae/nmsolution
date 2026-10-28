@@ -53,7 +53,10 @@ export function ensureClients(): Promise<void> {
         ADD COLUMN IF NOT EXISTS portal_login text,
         ADD COLUMN IF NOT EXISTS portal_password_hash text,
         ADD COLUMN IF NOT EXISTS portal_share_hash text,
-        ADD COLUMN IF NOT EXISTS portal_share_expires timestamptz`)
+        ADD COLUMN IF NOT EXISTS portal_share_expires timestamptz,
+        ADD COLUMN IF NOT EXISTS parent_id bigint REFERENCES clients(id) ON DELETE CASCADE,
+        ADD COLUMN IF NOT EXISTS quote_label text`)
+      await pool.query(`CREATE INDEX IF NOT EXISTS clients_parent_idx ON clients (parent_id) WHERE parent_id IS NOT NULL`)
       await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS clients_portal_slug_key ON clients (portal_slug) WHERE portal_slug IS NOT NULL`)
       await pool.query(`CREATE TABLE IF NOT EXISTS client_versions (
         id            bigint generated always as identity primary key,
@@ -83,7 +86,7 @@ export function ensureClients(): Promise<void> {
          ON CONFLICT DO NOTHING`,
       )
       // 저장된 금강변압기 제안서·견적서를 최신 결정에 맞춘다 (seed-kkt.ts upgradeKkt). 확정된 업체는 건드리지 않는다
-      const kkt = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND finalized_at IS NULL`, [KKT_CLIENT.name])
+      const kkt = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND finalized_at IS NULL AND parent_id IS NULL`, [KKT_CLIENT.name])
       if (kkt.rows.length) {
         const { PAGE_HTML } = await import('@/app/kkt/page-html')
         for (const r of kkt.rows) {
@@ -98,7 +101,7 @@ export function ensureClients(): Promise<void> {
         const c = SINIL_CLIENT
         const quote = sinilQuote(today())
         const proposal = SINIL_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
-        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE name = $1`, [c.name])
+        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE name = $1 AND parent_id IS NULL`, [c.name])
         if (found.rows[0]) {
           const id = Number(found.rows[0].id)
           await pool.query(
@@ -428,6 +431,10 @@ export type ClientRow = ClientInfo & {
   finalized: { version: number; at: Date; by: string } | null
   /** 업체용 링크 비밀번호가 정해져 있는지 */
   portalPasswordSet: boolean
+  /** 추가 견적서면 본 견적(업체) id. 본 견적이면 null (kevin 2026-10-28 "업체 별 공정, 견적서 추가가 가능해야 함") */
+  parentId: number | null
+  /** 견적서 이름 (예: 본 공사, 추가 공정: 배관 보온). 비면 본 견적은 '본 견적' */
+  quoteLabel: string
 }
 
 type DbRow = {
@@ -451,6 +458,8 @@ type DbRow = {
   finalized_version: number | null
   finalized_at: Date | null
   finalized_by: string | null
+  parent_id?: string | null
+  quote_label?: string | null
 }
 
 function toClient(r: DbRow): ClientRow {
@@ -471,7 +480,27 @@ function toClient(r: DbRow): ClientRow {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     finalized: r.finalized_at ? { version: r.finalized_version ?? 0, at: r.finalized_at, by: r.finalized_by ?? '' } : null,
+    parentId: r.parent_id ? Number(r.parent_id) : null,
+    quoteLabel: r.quote_label ?? '',
   }
+}
+
+/** 견적서 이름. 추가 견적인데 이름이 비었으면 '추가 견적' */
+export function quoteLabelOf(c: Pick<ClientRow, 'parentId' | 'quoteLabel'>) {
+  return c.quoteLabel.trim() || (c.parentId ? '추가 견적' : '본 견적')
+}
+
+/** 한 업체의 견적서 전부: 본 견적(업체) 먼저, 추가 견적은 만든 순서 */
+export async function listQuoteSet(id: number): Promise<ClientRow[]> {
+  if (!Number.isSafeInteger(id)) return []
+  await ensureClients()
+  const { rows } = await pool.query<DbRow>(
+    `SELECT * FROM clients WHERE id = (SELECT COALESCE(parent_id, id) FROM clients WHERE id = $1)
+        OR parent_id = (SELECT COALESCE(parent_id, id) FROM clients WHERE id = $1)
+     ORDER BY parent_id NULLS FIRST, id`,
+    [id],
+  )
+  return rows.map(toClient)
 }
 
 export async function listClients(): Promise<ClientRow[]> {
@@ -503,20 +532,35 @@ export async function getClientBySlug(
     : null
 }
 
-export async function insertClient(info: ClientInfo, proposalHtml: string, quote: Quote, by: string): Promise<number> {
+export async function insertClient(
+  info: ClientInfo,
+  proposalHtml: string,
+  quote: Quote,
+  by: string,
+  extra: { parentId?: number | null; quoteLabel?: string } = {},
+): Promise<number> {
   await ensureClients()
   const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO clients (name, contact_person, phone, email, site_address, memo, proposal_html, quote, biz_number, portal_slug, portal_login)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULLIF($10, ''), $11) RETURNING id`,
-    [info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, proposalHtml, JSON.stringify(quote), info.bizNumber, info.portalSlug, info.portalLogin],
+    `INSERT INTO clients (name, contact_person, phone, email, site_address, memo, proposal_html, quote, biz_number, portal_slug, portal_login, parent_id, quote_label)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULLIF($10, ''), $11, $12, NULLIF($13, '')) RETURNING id`,
+    [
+      info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, proposalHtml, JSON.stringify(quote),
+      info.bizNumber, info.portalSlug, info.portalLogin, extra.parentId ?? null, extra.quoteLabel ?? '',
+    ],
   )
   const id = Number(rows[0].id)
   await pool.query(
     `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
-     VALUES ($1, 1, 'init', '업체 등록', $2, $3, $4) ON CONFLICT DO NOTHING`,
-    [id, proposalHtml, JSON.stringify(quote), by],
+     VALUES ($1, 1, 'init', $5, $2, $3, $4) ON CONFLICT DO NOTHING`,
+    [id, proposalHtml, JSON.stringify(quote), by, extra.parentId ? '견적서 추가' : '업체 등록'],
   )
   return id
+}
+
+/** 견적서 이름 바꾸기 */
+export async function updateQuoteLabel(id: number, label: string) {
+  await ensureClients()
+  await pool.query(`UPDATE clients SET quote_label = NULLIF($2, ''), updated_at = now() WHERE id = $1`, [id, label])
 }
 
 export async function updateClientInfo(id: number, info: ClientInfo) {
@@ -526,6 +570,12 @@ export async function updateClientInfo(id: number, info: ClientInfo) {
        portal_slug = NULLIF($9, ''), portal_login = $10, updated_at = now()
      WHERE id = $1`,
     [id, info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.memo, info.bizNumber, info.portalSlug, info.portalLogin],
+  )
+  // 추가 견적서는 본 견적의 기업정보를 그대로 따라간다 (업체용 링크·메모는 본 견적에만)
+  await pool.query(
+    `UPDATE clients SET name = $2, contact_person = $3, phone = $4, email = $5, site_address = $6, biz_number = $7, updated_at = now()
+     WHERE parent_id = $1`,
+    [id, info.name, info.contactPerson, info.phone, info.email, info.siteAddress, info.bizNumber],
   )
 }
 

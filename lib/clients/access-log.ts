@@ -136,7 +136,7 @@ export async function logAccess(
     const { rows } = await pool.query<{ client_id: string | null; name: string | null }>(
       `WITH ins AS (
          INSERT INTO client_access_log (client_id, slug, kind, view_id, ip, ua, device, country, region, city, referrer, is_admin, details)
-         VALUES (COALESCE($1::bigint, (SELECT id FROM clients WHERE portal_slug = $2 LIMIT 1), (SELECT id FROM clients WHERE name = $14 LIMIT 1)),
+         VALUES (COALESCE($1::bigint, (SELECT id FROM clients WHERE portal_slug = $2 LIMIT 1), (SELECT id FROM clients WHERE name = $14 ORDER BY id LIMIT 1)),
                  $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
          RETURNING client_id)
        SELECT ins.client_id, c.name FROM ins LEFT JOIN clients c ON c.id = ins.client_id`,

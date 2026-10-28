@@ -2,7 +2,7 @@
 
 import { requireAdmin } from '@/lib/admin'
 import { revalidatePath } from 'next/cache'
-import { createSend, restoreSend, setQuoteCodes, withdrawSend } from '@/lib/clients/sends'
+import { createSend, restoreSend, setPortalHidden, setQuoteCodes, withdrawSend } from '@/lib/clients/sends'
 
 /** 고객 발송본 (lib/clients/sends.ts). 오류 문구는 화면에 보여 주려고 값으로 돌려준다 */
 async function shown<T>(run: () => Promise<T>): Promise<({ ok: true } & T) | { ok: false; error: string }> {
@@ -58,4 +58,12 @@ export async function saveQuoteCodes(clientId: number, code: string, work: strin
   })
   revalidatePath('/admin/clients', 'layout')
   return res
+}
+
+/** 업체 페이지 공개 켜기·끄기. 끄면 업체에는 '준비 중'만 보인다 */
+export async function savePortalHidden(clientId: number, hidden: boolean) {
+  await requireAdmin()
+  await setPortalHidden(clientId, !!hidden)
+  revalidatePath('/admin/clients', 'layout')
+  return { ok: true as const }
 }

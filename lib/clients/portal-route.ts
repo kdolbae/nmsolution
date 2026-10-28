@@ -7,7 +7,7 @@ import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCoo
 import { verifyPortalPassword } from './portal-password'
 import { htmlToPdf, pdfResponse } from './pdf'
 import { logAccess, trackedHtml } from './access-log'
-import { getSend, listSends, type Send } from './sends'
+import { customerSends, getSend, type listSends, type Send } from './sends'
 import { compareHtml, historyBar, notReadyHtml } from './send-compare'
 import { after } from 'next/server'
 
@@ -77,47 +77,68 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
   if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
 
-  // 고객에게 보이는 것은 발송본뿐(취소한 발송본 제외)
-  const sends = await listSends(client.id)
-  if (!sends.length) {
-    return new Response(trackedHtml(notReadyHtml(client.name), req.headers, slug, { client, kind: 'view', details: { send: null } }), { headers })
+  const view = await customerView(client, params, `/${slug}`)
+  if (view.type === 'redirect') return new Response(null, { status: 303, headers: { Location: view.to, ...NO_STORE } })
+  // ?pdf=1: 이 페이지 그대로 PDF 파일로 내려받는다 (PDF 저장 버튼)
+  if (view.type === 'page' && !shareToken && params.get('pdf') === '1') {
+    after(() => logAccess(req.headers, client, 'pdf', { slug, details: view.details }))
+    const pdf = await htmlToPdf(portalPageHtml(client, view.send), req)
+    return pdfResponse(pdf, `${client.name} 제안서·견적서 ${view.send.number}.pdf`)
   }
+  const kind = shareToken ? 'share_view' : view.kind
+  return new Response(trackedHtml(view.html, req.headers, slug, { client, kind, details: view.details }), { headers })
+}
+
+type PortalClient = NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>
+
+/**
+ * 고객이 보는 화면 하나를 만든다(업체 페이지와 관리자 미리보기가 같이 쓴다). 발송본만 읽는다.
+ * base 는 화면 안 링크의 주소(/atotech 또는 미리보기 주소). ?s=N 지난 발송본, ?cmp=N(&to=M) 비교.
+ */
+export async function customerView(
+  client: PortalClient,
+  params: URLSearchParams,
+  base: string,
+): Promise<
+  | { type: 'redirect'; to: string }
+  | { type: 'empty'; html: string; kind: 'view'; details: Record<string, unknown> }
+  | { type: 'compare'; html: string; kind: 'compare'; details: Record<string, unknown> }
+  | { type: 'page'; html: string; send: Send; kind: 'view' | 'send_view'; details: Record<string, unknown> }
+> {
+  // 고객에게 보이는 것은 발송본뿐(숨긴 발송본 제외, 업체 페이지 공개를 껐으면 없음)
+  const sends = await customerSends(client.id)
+  if (!sends.length) return { type: 'empty', html: notReadyHtml(client.name), kind: 'view', details: { send: null } }
   const latest = sends[0]
   const want = (k: string) => {
     const n = Number(params.get(k))
     return Number.isSafeInteger(n) && n > 0 ? sends.find((x) => x.no === n) ?? null : null
   }
-  // 없는(또는 취소한) 발송본 번호면 최신으로 보낸다
-  const back = () => new Response(null, { status: 303, headers: { Location: `/${slug}`, ...NO_STORE } })
+  // 없는(또는 숨긴) 발송본 번호면 최신으로 보낸다
+  const back = { type: 'redirect' as const, to: base }
 
   // ?cmp=N(&to=M): 지난 발송본과 최신(또는 M) 비교
   if (params.has('cmp')) {
     const a = want('cmp')
     const b = params.has('to') ? want('to') : latest
-    if (!a || !b) return back()
-    if (a.no === b.no) return back()
+    if (!a || !b || a.no === b.no) return back
     const [sa, sb] = await Promise.all([getSend(client.id, a.no), getSend(client.id, b.no)])
-    if (!sa || !sb) return back()
+    if (!sa || !sb) return back
     const [older, newer] = sa.no < sb.no ? [sa, sb] : [sb, sa]
-    const html = compareHtml(client.name, slug, older, newer, sends)
-    return new Response(trackedHtml(html, req.headers, slug, { client, kind: 'compare', details: { send: older.number, to: newer.number } }), { headers })
+    return { type: 'compare', html: compareHtml(client.name, base, older, newer, sends), kind: 'compare', details: { send: older.number, to: newer.number } }
   }
 
   const pick = params.has('s') ? want('s') : latest
-  if (!pick) return back()
+  if (!pick) return back
   const send = await getSend(client.id, pick.no)
-  if (!send) return back()
-
-  // ?pdf=1: 이 페이지 그대로 PDF 파일로 내려받는다 (PDF 저장 버튼)
-  if (!shareToken && params.get('pdf') === '1') {
-    after(() => logAccess(req.headers, client, 'pdf', { slug, details: { send: send.number, latest: send.no === latest.no } }))
-    const pdf = await htmlToPdf(portalPageHtml(client, send), req)
-    return pdfResponse(pdf, `${client.name} 제안서·견적서 ${send.number}.pdf`)
-  }
+  if (!send) return back
   const old = send.no !== latest.no
-  const page = portalPageHtml(client, send, { slug, sends })
-  const kind = shareToken ? 'share_view' : old ? 'send_view' : 'view'
-  return new Response(trackedHtml(page, req.headers, slug, { client, kind, details: { send: send.number, latest: !old } }), { headers })
+  return {
+    type: 'page',
+    html: portalPageHtml(client, send, { base, sends }),
+    send,
+    kind: old ? 'send_view' : 'view',
+    details: { send: send.number, latest: !old },
+  }
 }
 
 /**
@@ -125,9 +146,9 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
  * history 를 주면 맨 위에 견적번호·견적 이력 띠를 붙인다(PDF 에는 안 붙임).
  */
 export function portalPageHtml(
-  client: NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>,
+  client: PortalClient,
   send: Pick<Send, 'no' | 'proposalHtml' | 'quote'>,
-  history?: { slug: string; sends: Awaited<ReturnType<typeof listSends>> },
+  history?: { base: string; sends: Awaited<ReturnType<typeof listSends>> },
 ): string {
   const quote = send.quote
   const summary = quoteSummaryHtml(quote)
@@ -147,7 +168,7 @@ export function portalPageHtml(
   html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${FIT_QUOTE}${pdfButton}</body>`) : html + FIT_QUOTE + pdfButton
   const current = history?.sends.find((x) => x.no === send.no)
   if (history && current) {
-    const bar = historyBar(history.slug, history.sends, current)
+    const bar = historyBar(history.base, history.sends, current)
     html = /<body[^>]*>/i.test(html) ? html.replace(/<body[^>]*>/i, (m) => m + bar) : bar + html
   }
   return html

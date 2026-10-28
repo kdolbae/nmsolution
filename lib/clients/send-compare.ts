@@ -12,16 +12,16 @@ const day = (d: Date) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seou
 
 const signed = (n: number) => (n === 0 ? '-' : `${n > 0 ? '+' : '−'}${won(Math.abs(n))}`)
 
-/** 업체 페이지 맨 위 띠: 지금 보는 견적번호·발송일, 견적 이력 목록, 지난 견적이면 최신으로 가는 길 */
-export function historyBar(slug: string, sends: SendMeta[], current: SendMeta): string {
+/** 업체 페이지 맨 위 띠: 지금 보는 견적번호·발송일, 견적 이력 목록, 지난 견적이면 대표 견적으로 가는 길. base 는 업체 페이지 주소(/atotech) 또는 관리자 미리보기 주소. sends[0] 이 대표 견적 */
+export function historyBar(base: string, sends: SendMeta[], current: SendMeta): string {
   const latest = sends[0]
   const old = current.no !== latest.no
   const list = sends
     .map((s) => {
       const tag = s.no === latest.no ? '<span class="nmh-tag">최신</span>' : ''
       const here = s.no === current.no ? ' aria-current="true"' : ''
-      const view = s.no === latest.no ? `/${slug}` : `/${slug}?s=${s.no}`
-      const cmp = s.no === latest.no ? '' : `<a class="nmh-cmp" href="/${slug}?cmp=${s.no}">최신과 비교</a>`
+      const view = s.no === latest.no ? base : `${base}?s=${s.no}`
+      const cmp = s.no === latest.no ? '' : `<a class="nmh-cmp" href="${base}?cmp=${s.no}">최신과 비교</a>`
       return `<li${here}><a class="nmh-row" href="${view}"><b>${esc(s.number)}</b>${tag}<span>${day(s.sentAt)} 발송 · ${esc(s.title)}</span><span class="nmh-amt">공급가 ${won(s.supply)}원</span></a>${cmp}</li>`
     })
     .join('')
@@ -30,7 +30,7 @@ export function historyBar(slug: string, sends: SendMeta[], current: SendMeta): 
   <div class="nmh-in">
     <div class="nmh-now">${old ? '<span class="nmh-tag old">지난 견적</span>' : ''}견적번호 <b>${esc(current.number)}</b> · ${day(current.sentAt)} 발송</div>
     <div class="nmh-act">
-      ${old ? `<a href="/${slug}">최신 견적 ${esc(latest.number)} 보기</a><a href="/${slug}?cmp=${current.no}">최신과 비교</a>` : ''}
+      ${old ? `<a href="${base}">최신 견적 ${esc(latest.number)} 보기</a><a href="${base}?cmp=${current.no}">최신과 비교</a>` : ''}
       ${sends.length > 1 ? `<details class="nmh-list"><summary>견적 이력 ${sends.length}건</summary><ol>${list}<li class="nmh-note">지난 견적도 효력이 있음. 최신 견적과 나란히 비교할 수 있음.</li></ol></details>` : ''}
     </div>
   </div>
@@ -92,7 +92,7 @@ type Mark = 'same' | 'changed' | 'added' | 'removed'
 const MARK: Record<Mark, string> = { same: '', changed: '변경', added: '추가', removed: '삭제' }
 
 /** 두 발송본 비교 페이지 (a = 지난 견적, b = 비교 대상, 보통 최신) */
-export function compareHtml(clientName: string, slug: string, a: Send, b: Send, sends: SendMeta[]): string {
+export function compareHtml(clientName: string, base: string, a: Send, b: Send, sends: SendMeta[]): string {
   const ca = calcQuote(a.quote)
   const cb = calcQuote(b.quote)
   const secsA = new Map(a.quote.sections.map((s, i) => [secKey(s.name), { s, c: ca.sections[i] }]))
@@ -176,16 +176,16 @@ export function compareHtml(clientName: string, slug: string, a: Send, b: Send, 
     .map((s) => `<option value="${s.no}"${s.no === b.no ? ' selected' : ''}>${esc(s.number)} (${day(s.sentAt)})</option>`)
     .join('')
   const head = (s: Send, label: string) =>
-    `<div class="who"><div class="l">${label}</div><b>${esc(s.number)}</b><div class="s">${day(s.sentAt)} 발송 · ${esc(s.title)}</div><a href="/${slug}${s.no === sends[0].no ? '' : `?s=${s.no}`}">이 견적 보기</a></div>`
+    `<div class="who"><div class="l">${label}</div><b>${esc(s.number)}</b><div class="s">${day(s.sentAt)} 발송 · ${esc(s.title)}</div><a href="${base}${s.no === sends[0].no ? '' : `?s=${s.no}`}">이 견적 보기</a></div>`
 
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive"><title>견적 비교 ${esc(a.number)} ↔ ${esc(b.number)} | ${esc(clientName)}</title>
 <link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${CMP_CSS}</style></head><body>
-<header class="top"><div class="in"><span class="mark">${logoSvg('horizontal', { height: '100%' })}</span><a href="/${slug}">← 최신 견적으로</a></div></header>
+<header class="top"><div class="in"><span class="mark">${logoSvg('horizontal', { height: '100%' })}</span><a href="${base}">← 최신 견적으로</a></div></header>
 <main>
 <h1>견적 비교</h1>
 <p class="lead">${esc(clientName)} 앞으로 보낸 두 견적을 나란히 놓았음. 금액은 원(부가세 별도, 합계는 부가세 포함).</p>
-<form class="pick" method="get" action="/${slug}"><label>지난 견적 <select name="cmp">${pick}</select></label><label>비교 대상 <select name="to">${pickB}</select></label><button type="submit">비교</button></form>
+<form class="pick" method="get" action="${base}"><label>지난 견적 <select name="cmp">${pick}</select></label><label>비교 대상 <select name="to">${pickB}</select></label><button type="submit">비교</button></form>
 <div class="heads">${head(a, '지난 견적')}${head(b, b.no === sends[0].no ? '최신 견적' : '비교 대상')}</div>
 <h2>금액 비교</h2>
 <div class="scroll"><table class="sum"><thead><tr><th>구분</th><th class="n">${esc(a.number)}</th><th class="n">${esc(b.number)}</th><th class="n">증감</th></tr></thead><tbody>

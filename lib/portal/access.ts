@@ -1,6 +1,6 @@
 import { getSession, getSessionFrom, isAdmin } from '@/lib/admin'
 import { getClient, type ClientRow } from '@/lib/clients/table'
-import { latestSend } from '@/lib/clients/sends'
+import { isPortalHidden, latestSend } from '@/lib/clients/sends'
 import { emptyQuote } from '@/lib/clients/quote'
 import { getMembership, type Membership } from './members'
 
@@ -27,7 +27,7 @@ export async function approvedClientId(h: Headers): Promise<number | null> {
 export async function portalDocs(clientId: number): Promise<(ClientRow & { label: string }) | null> {
   const client = await getClient(clientId)
   if (!client) return null
-  const send = await latestSend(client.id)
+  const send = (await isPortalHidden(client.id)) ? null : await latestSend(client.id)
   if (!send) return { ...client, proposalHtml: '<p>견적서를 준비하고 있음. 준비가 끝나면 이 화면에서 볼 수 있음.</p>', quote: emptyQuote(), label: '' }
   return { ...client, proposalHtml: send.proposalHtml, quote: send.quote, updatedAt: send.sentAt, finalized: null, label: send.number }
 }

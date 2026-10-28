@@ -231,7 +231,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(ATOTECH_REV11_KEY, () => refreshAtotech('일반관리비 8%, 간접노무비 직접노무비 × 15% 추가'))
       await seedOnce(ATOTECH_REV12_KEY, () => refreshAtotech('반입 고급기능공 추가, 고급 35만·중급 28만·전기 35만'))
       await seedOnce(ATOTECH_REV13_KEY, () => refreshAtotech('펌프 교체 제외, 배관 구조 변경만 (제안 1 + 제안 2 선택)'))
-      await seedOnce(ATOTECH_REV14_KEY, () => refreshAtotech('사전 제작 배관공 대신 조공, 현장 주말 2일 용접사 1·배관공 1'))
+      await seedOnce(ATOTECH_REV14_KEY, () => refreshAtotech('사전 제작 배관공 대신 조공, 현장 주말 2일 용접사 1·배관공 1, 에어벤트 서플라이 1세트'))
       // 성원냉동기계: 안성 공장 2층 창고 바닥 철골 구조. 담당자·업체용 비밀번호는 관리자 업체 정보에서 정한다
       await seedOnce(SEONGWON_SEED_KEY, async () => {
         const c = SEONGWON_CLIENT

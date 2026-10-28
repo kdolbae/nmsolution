@@ -60,7 +60,7 @@ export function ensureSends(): Promise<void> {
         unique (client_id, send_no)
       )`)
       // 발송 견적번호 재료: 업체 영문 이니셜, 대표 공종 코드
-      await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+      await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text, ADD COLUMN IF NOT EXISTS portal_hidden boolean NOT NULL DEFAULT false`)
       await once('client-codes-v1', async () => {
         for (const [slug, code, work] of DEFAULT_CODES) {
           await pool.query(
@@ -241,7 +241,24 @@ export async function withdrawSend(clientId: number, no: number, by: string) {
   if (!rowCount) throw new Error('이미 취소했거나 없는 발송본입니다.')
 }
 
-/** 발송 취소를 되돌린다 */
+/** 업체 페이지 공개 여부. 끄면 업체 페이지·포털에 발송본도 안 보이고 '준비 중'만 보인다 */
+export async function isPortalHidden(clientId: number): Promise<boolean> {
+  await ensureSends()
+  const { rows } = await pool.query<{ portal_hidden: boolean }>(`SELECT portal_hidden FROM clients WHERE id = $1`, [clientId])
+  return !!rows[0]?.portal_hidden
+}
+
+export async function setPortalHidden(clientId: number, hidden: boolean) {
+  await ensureSends()
+  await pool.query(`UPDATE clients SET portal_hidden = $2 WHERE id = $1`, [clientId, hidden])
+}
+
+/** 고객에게 보이는 발송본 (최신이 먼저). 업체 페이지 공개를 껐으면 빈 목록 */
+export async function customerSends(clientId: number): Promise<SendMeta[]> {
+  return (await isPortalHidden(clientId)) ? [] : listSends(clientId)
+}
+
+/** 발송 취소(숨김)를 되돌린다 */
 export async function restoreSend(clientId: number, no: number) {
   await ensureSends()
   await pool.query(`UPDATE client_sends SET withdrawn_at = NULL, withdrawn_by = NULL WHERE client_id = $1 AND send_no = $2`, [clientId, no])

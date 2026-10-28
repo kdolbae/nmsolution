@@ -122,6 +122,16 @@ export function ClientSends({
               </option>
             ))}
           </select>
+          {pick ? (
+            <a
+              href={`/api/admin/clients/${clientId}/preview?v=${pick}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-8 items-center gap-1 border border-border px-2 text-xs hover:bg-muted"
+            >
+              <Eye className="size-3.5" /> 고객 화면 미리보기
+            </a>
+          ) : null}
           <Button size="sm" className="rounded-none" onClick={send} disabled={pending || !pick}>
             {pending ? <Loader2 className="animate-spin" /> : <Send />} 고객 발송본으로 확정
           </Button>

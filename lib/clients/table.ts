@@ -12,7 +12,7 @@ import { ATOTECH_CLIENT, ATOTECH_REV2_KEY, ATOTECH_REV3_KEY, ATOTECH_REV4_KEY, A
 import { ATOTECH_PAGE_HTML } from './atotech-page'
 import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KEY, SEONGWON_REV5_KEY, SEONGWON_REV6_KEY, SEONGWON_REV7_KEY, SEONGWON_REV8_KEY, SEONGWON_REV9_KEY, SEONGWON_REV10_KEY, SEONGWON_SEED_KEY, seongwonQuote } from './seed-seongwon'
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
-import { JSTECH_CLIENT, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
+import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
 import { JSTECH_PAGE_HTML } from './jstech-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -276,6 +276,8 @@ export function ensureClients(): Promise<void> {
           [rows[0].id, proposal, JSON.stringify(quote)],
         )
       })
+      await seedOnce(JSTECH_REV2_KEY, () => refreshJstech('색상을 못 맞출 때 보정 도장 20만 원 선택 항목 추가'))
+      await seedOnce(JSTECH_REV3_KEY, () => refreshJstech('안쪽 방화보드 3×6 5장·조공 1명 추가'))
     })().catch((e) => {
       ready = null
       throw e
@@ -324,6 +326,21 @@ async function refreshSeongwon(summary: string) {
   const quote = seongwonQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = SEONGWON_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 제이에스테크 견적·제안서·업체 메모를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). */
+async function refreshJstech(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [JSTECH_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), JSTECH_CLIENT.memo])
+  const quote = jstechQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = JSTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

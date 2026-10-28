@@ -29,6 +29,8 @@ import {
 import { Field } from '@/components/admin/form'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { TakeoffPanel } from '@/components/admin/takeoff-panel'
+import { CasePanel } from '@/components/admin/case-panel'
+import { refreshIndirect, type QuoteCase } from '@/lib/clients/quote-cases'
 import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -79,6 +81,7 @@ export function ClientWorkspace({
   files = [],
   videos = [],
   takeoffTemplates = [],
+  quoteCases = [],
   versions,
   finalized,
   view,
@@ -93,6 +96,8 @@ export function ClientWorkspace({
   videos?: { url: string; label: string }[]
   /** 적산 템플릿 (기본 + 저장한 것) */
   takeoffTemplates?: TakeoffTemplate[]
+  /** 지난 견적 사례 (다른 업체 지금 견적 + 고객 발송본, lib/clients/quote-cases-db.ts) */
+  quoteCases?: QuoteCase[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
@@ -223,6 +228,7 @@ export function ClientWorkspace({
               onContent={(html) => (live.current.quote = html)}
               onPresent={() => setPresent('quote')}
               takeoffTemplates={takeoffTemplates}
+              quoteCases={quoteCases}
             />
           </div>
         </>
@@ -647,6 +653,7 @@ function QuotePanel({
   onContent,
   onPresent,
   takeoffTemplates,
+  quoteCases,
 }: {
   client: ClientInfo
   initialQuote: Quote
@@ -656,6 +663,7 @@ function QuotePanel({
   onContent: (html: string) => void
   onPresent: () => void
   takeoffTemplates: TakeoffTemplate[]
+  quoteCases: QuoteCase[]
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -770,6 +778,8 @@ function QuotePanel({
             <Field label="공사명" value={q.title} onChange={(v) => update({ title: v })} />
           </div>
         </section>
+
+        <CasePanel cases={quoteCases} q={q} onApply={(quote) => update(quote)} />
 
         <TakeoffPanel
           value={q.takeoff}
@@ -904,6 +914,14 @@ function QuotePanel({
             onClick={() => update({ sections: [...q.sections, { id: newId('s'), name: '', desc: '', items: [emptyItem()] }] })}
           >
             <Plus /> 공종 추가
+          </Button>
+          <Button
+            variant="outline"
+            className="ml-2 rounded-none"
+            title="공종마다 간접노무비 줄을 직접노무비 × 15% 로 다시 맞춤 (간접노무비 줄이 있는 공종만)"
+            onClick={() => update({ sections: q.sections.map((s) => refreshIndirect(s)) })}
+          >
+            간접노무비 다시 계산
           </Button>
         </div>
 

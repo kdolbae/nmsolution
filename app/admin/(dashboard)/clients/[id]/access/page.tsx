@@ -20,6 +20,8 @@ const KIND: Record<AccessRow['kind'], string> = {
   portal_view: '포털 열람',
   portal_print: '포털 인쇄',
   quote_open: '견적서 열기',
+  send_view: '지난 견적 열람',
+  compare: '견적 비교',
 }
 
 const kst = (iso: string) =>
@@ -49,7 +51,7 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
   const showAdmin = sp.admin === '1'
   const rows = showAdmin ? all : all.filter((r) => !r.isAdmin)
   const outside = all.filter((r) => !r.isAdmin)
-  const views = outside.filter((r) => r.kind === 'view' || r.kind === 'share_view' || r.kind === 'portal_view')
+  const views = outside.filter((r) => r.kind === 'view' || r.kind === 'share_view' || r.kind === 'portal_view' || r.kind === 'send_view' || r.kind === 'compare')
   const stats = [
     ['열람', `${views.length}회`],
     ['마지막 열람', views[0] ? kst(views[0].at) : '-'],
@@ -104,7 +106,7 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
                     </span>
                     <span className="w-24 shrink-0 text-xs text-muted-foreground">{r.seconds != null ? `${dur(r.seconds)} · ${r.scroll ?? 0}%` : ''}</span>
                     <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                      {[r.details?.member, r.device, r.place, r.ip].filter(Boolean).join(' · ')}
+                      {[r.details?.send && (r.details.to ? `${r.details.send} ↔ ${r.details.to}` : r.details.send), r.details?.member, r.device, r.place, r.ip].filter(Boolean).join(' · ')}
                     </span>
                   </summary>
                   <Detail r={r} />

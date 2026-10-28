@@ -56,7 +56,7 @@ export function ensureAccessLog(): Promise<void> {
   return ready
 }
 
-export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open'
+export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare'
 
 /** 업체용 링크 주소가 없는 업체(금강변압기 /kkt 는 따로 만든 페이지)는 이름으로 묶는다 */
 const NAME_OF_SLUG: Record<string, string> = { kkt: KKT_CLIENT.name }
@@ -69,6 +69,8 @@ const NOTIFY: Partial<Record<AccessKind, string>> = {
   pdf: 'PDF 다운로드',
   portal_print: '포털에서 인쇄',
   quote_open: '견적서 열기',
+  send_view: '지난 견적 열람',
+  compare: '견적 비교',
   login_fail: '비밀번호 틀림',
 }
 
@@ -214,11 +216,11 @@ export function trackedHtml(
   return /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${tag}</body>`) : html + tag
 }
 
-/** 페이지 안 스크립트가 보낸 행동 기록으로 그 열람 줄을 덮어쓴다. 12시간 지난 열람은 받지 않는다 */
+/** 페이지 안 스크립트가 보낸 행동 기록으로 그 열람 줄을 덮어쓴다(서버가 남긴 send 같은 값은 남긴다). 12시간 지난 열람은 받지 않는다 */
 export async function updateView(viewId: string, seconds: number, scroll: number, details: Record<string, unknown>) {
   await ensureAccessLog()
   await pool.query(
-    `UPDATE client_access_log SET seconds = $2, scroll = $3, details = $4, updated_at = now()
+    `UPDATE client_access_log SET seconds = $2, scroll = $3, details = COALESCE(details, '{}'::jsonb) || $4::jsonb, updated_at = now()
       WHERE view_id = $1 AND created_at > now() - interval '12 hours'`,
     [viewId, seconds, scroll, JSON.stringify(details)],
   )
@@ -241,6 +243,9 @@ export type AccessRow = {
     events?: { t: number; label: string }[]
     member?: string
     docs?: string
+    /** 본 발송 견적번호 (비교면 to 와 함께) */
+    send?: string | null
+    to?: string
     total?: number
     screen?: string
     lang?: string

@@ -3,9 +3,13 @@
 import { requireAdmin } from '@/lib/admin'
 import { revalidatePath } from 'next/cache'
 import { getContent } from '@/lib/content/get'
-import { emptyQuote, normalizeQuote, type Quote } from '@/lib/clients/quote'
+import { emptyQuote, normalizeQuote, SUPPLIER, type Quote } from '@/lib/clients/quote'
 import { defaultProposalHtml } from '@/lib/clients/proposal'
 import { hashPortalPassword } from '@/lib/clients/portal-password'
+import { quoteDrafts } from '@/lib/clients/send-drafts'
+import { mailEnabled, sendMail } from '@/lib/mail'
+import { sendSms, smsEnabled } from '@/lib/notify/sms'
+import { notifyAdmin, telegramEnabled } from '@/lib/notify/telegram'
 import {
   finalizeClient,
   getClient,
@@ -147,4 +151,31 @@ export async function deleteClient(id: number) {
   await removeClient(id)
   revalidatePath('/admin/clients')
   return { ok: true as const }
+}
+
+/**
+ * 견적 안내 문자·메일 초안을 대표에게 보낸다(2026-10-28 kevin). 문자는 ADMIN_PHONE(없으면 010-2369-3691),
+ * 메일은 ADMIN_EMAIL(없으면 로그인한 관리자 메일)로. 텔레그램에도 같은 초안을 보낸다. 대표가 받은 초안을 업체에 전달한다.
+ */
+export async function sendQuoteDrafts(id: number, password: string) {
+  const user = await requireAdmin()
+  const c = await getClient(id)
+  if (!c) throw new Error('업체를 찾지 못했습니다.')
+  if (!c.portalSlug) throw new Error('업체용 링크 주소를 먼저 정해 주세요.')
+  const d = quoteDrafts(c, normalizeQuote(c.quote), String(password ?? '').slice(0, 40))
+  const phone = process.env.ADMIN_PHONE || SUPPLIER.phoneMobile
+  const email = process.env.ADMIN_EMAIL || user.email || ''
+  const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`)
+  const [sms, mail] = await Promise.all([
+    smsEnabled() ? sendSms({ to: phone, text: d.sms, subject: `${c.name} 견적 안내` }) : Promise.resolve(false),
+    mailEnabled() && email
+      ? sendMail({
+          to: email,
+          subject: `[초안] ${d.mailSubject}`,
+          html: `<p style="color:#6b7785;font-size:13px">아래 내용을 업체(${esc(c.email || '메일 주소 미입력')})에 전달하세요.</p><pre style="font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:15px;line-height:1.6;white-space:pre-wrap">제목: ${esc(d.mailSubject)}\n\n${esc(d.mailText)}</pre>`,
+        })
+      : Promise.resolve(false),
+    notifyAdmin(`[견적 발송 초안 · 문자]\n\n${d.sms}`).then(() => notifyAdmin(`[견적 발송 초안 · 메일]\n제목: ${d.mailSubject}\n\n${d.mailText}`)),
+  ])
+  return { sms, mail, telegram: telegramEnabled(), smsReady: smsEnabled(), mailReady: mailEnabled(), drafts: d }
 }

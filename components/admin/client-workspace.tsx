@@ -32,7 +32,7 @@ import { TakeoffPanel } from '@/components/admin/takeoff-panel'
 import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
+import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote, sendQuoteDrafts } from '@/app/actions/clients'
 import {
   ITEM_KINDS,
   calcQuote,
@@ -288,6 +288,22 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
     setTimeout(() => setCopied(false), 1500)
   }
 
+  /** 견적 안내 문자·메일 초안을 대표 휴대폰·메일·텔레그램으로 받는다. 업체에는 보내지 않는다 */
+  const sendDrafts = () => {
+    const pw = prompt('초안에 넣을 업체 링크 비밀번호 (비우면 비밀번호 줄을 뺌)', (client.phone || '').replace(/\D/g, '').slice(-4))
+    if (pw === null) return
+    startTransition(async () => {
+      try {
+        const r = await sendQuoteDrafts(client.id, pw)
+        const sent = [r.telegram && '텔레그램', r.sms && '문자', r.mail && '메일'].filter(Boolean).join('·')
+        const wait = [!r.smsReady && '문자(SOLAPI 키 필요)', !r.mailReady && '메일(RESEND 키 필요)'].filter(Boolean).join(', ')
+        alert(`${sent ? `${sent}로 초안을 보냈습니다.` : '보낸 곳이 없습니다.'}${wait ? `\n대기: ${wait}` : ''}`)
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '보내지 못했습니다.')
+      }
+    })
+  }
+
   const remove = () => {
     if (!confirm(`'${client.name}' 업체와 제안서·견적서를 모두 지울까요? 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
@@ -323,6 +339,16 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
         </div>
         <div className="flex items-center gap-2">
           {/* 접속·행동 기록은 따로 연다(어드민 전용, 프레젠테이션 화면에는 안 나옴) */}
+          {client.portalSlug && (
+            <button
+              type="button"
+              onClick={sendDrafts}
+              disabled={pending}
+              className="inline-flex h-8 items-center border border-border px-2.5 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
+            >
+              발송 초안 받기
+            </button>
+          )}
           <a
             href={`/admin/clients/${client.id}/access`}
             className="inline-flex h-8 items-center border border-border px-2.5 text-xs text-muted-foreground hover:bg-muted"

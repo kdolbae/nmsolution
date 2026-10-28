@@ -2,11 +2,13 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { leave, markInternal, pageview } from '@/lib/site-events'
+import { leave, markInternal, pageview, watchContactLinks } from '@/lib/site-events'
 
 /** 페이지를 열 때 방문 한 줄, 떠날 때 머문 시간·스크롤 깊이 한 줄. app/layout.tsx 에 한 번만 둔다. */
 export function SiteTracker() {
   const pathname = usePathname()
+  // 전화·카톡 링크는 페이지마다 다시 달 필요 없이 한 번만 듣는다
+  useEffect(() => watchContactLinks(), [])
   useEffect(() => {
     if (pathname.startsWith('/admin')) {
       // 관리자 화면을 여는 기기는 사장님·직원 기기다 — 이후 방문은 기록하지 않는다

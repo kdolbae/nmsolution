@@ -14,6 +14,8 @@ import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KE
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
 import { JSTECH_PAGE_HTML } from './jstech-page'
+import { SEOULGLASS_CLIENT, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
+import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -280,6 +282,27 @@ export function ensureClients(): Promise<void> {
       })
       await seedOnce(JSTECH_REV2_KEY, () => refreshJstech('색상을 못 맞출 때 보정 도장 20만 원 선택 항목 추가'))
       await seedOnce(JSTECH_REV3_KEY, () => refreshJstech('안쪽 방화보드 3×6 5장·조공 1명 추가'))
+      // 서울 차량 유리 교체 상가: 골목 처마 신설·끝단 벽체 마감. 업체 링크 비밀번호는 담당자 연락처 뒷번호 4자리(2026-10-30)
+      await seedOnce(SEOULGLASS_SEED_KEY, async () => {
+        const c = SEOULGLASS_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = seoulglassQuote(today())
+        const proposal = SEOULGLASS_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login, portal_password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin, await hashPortalPassword(c.portalPassword)],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        // 발송 견적번호 재료(업체 코드·공종). sends.ts 의 처음 코드 넣기는 이미 끝났으므로 여기서 바로 넣는다
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'SCG', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
+      })
     })().catch((e) => {
       ready = null
       throw e

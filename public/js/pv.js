@@ -46,4 +46,5 @@
   }
   setInterval(send, 15000)
   send()
+  setTimeout(send, 4000)
 })()

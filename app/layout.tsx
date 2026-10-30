@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import { SiteTracker } from '@/components/site-tracker'
+import { DesktopCallDialog } from '@/components/desktop-call-dialog'
 import { AdminFab } from '@/components/admin-fab'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono } from 'next/font/google'
@@ -105,6 +106,7 @@ export default function RootLayout({
         <TrackingScripts />
         {process.env.NODE_ENV === 'production' && <Analytics />}
         <SiteTracker />
+        <DesktopCallDialog />
         <AdminFab />
       </body>
     </html>

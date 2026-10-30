@@ -22,6 +22,7 @@ const KIND: Record<AccessRow['kind'], string> = {
   quote_open: '견적서 열기',
   send_view: '지난 견적 열람',
   compare: '견적 비교',
+  portal_file: '포털 서류 내려받기',
 }
 
 /** 이 시각 뒤로는 로그인 화면에도 행동 기록 스크립트가 들어간다. 스크립트가 한 번도 안 돌았으면 사람 대신 메일 보안 검사·링크 미리보기가 연 것으로 본다 */
@@ -60,7 +61,7 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
     ['열람', `${views.length}회`],
     ['마지막 열람', views[0] ? kst(views[0].at) : '-'],
     ['총 머문 시간', dur(views.reduce((a, r) => a + (r.seconds ?? 0), 0))],
-    ['PDF·인쇄', `${outside.filter((r) => r.kind === 'pdf' || r.kind === 'portal_print').length}회`],
+    ['PDF·인쇄', `${outside.filter((r) => r.kind === 'pdf' || r.kind === 'portal_print' || r.kind === 'portal_file').length}회`],
     ['비밀번호 틀림', `${outside.filter((r) => r.kind === 'login_fail').length}회`],
     ['IP 수', `${new Set(outside.map((r) => r.ip).filter(Boolean)).size}곳`],
   ]

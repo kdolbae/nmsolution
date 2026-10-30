@@ -56,7 +56,7 @@ export function ensureAccessLog(): Promise<void> {
   return ready
 }
 
-export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare'
+export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file'
 
 /** 업체용 링크 주소가 없는 업체(금강변압기 /kkt 는 따로 만든 페이지)는 이름으로 묶는다 */
 const NAME_OF_SLUG: Record<string, string> = { kkt: KKT_CLIENT.name }
@@ -71,6 +71,7 @@ const NOTIFY: Partial<Record<AccessKind, string>> = {
   quote_open: '견적서 열기',
   send_view: '지난 견적 열람',
   compare: '견적 비교',
+  portal_file: '포털에서 서류 내려받기',
   login_fail: '비밀번호 틀림',
 }
 

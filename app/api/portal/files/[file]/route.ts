@@ -3,6 +3,8 @@ import path from 'node:path'
 import { clientFiles } from '@/lib/clients/files'
 import { getClient } from '@/lib/clients/table'
 import { approvedClientId } from '@/lib/portal/access'
+import { logAccess } from '@/lib/clients/access-log'
+import { after } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   const set = client && clientFiles(client.name)
   const f = set?.files.find((x) => x.file === file)
   if (!set || !f) return new Response('없는 파일', { status: 404 })
+  after(() => logAccess(req.headers, client, 'portal_file', { details: { docs: f.download } }))
 
   const body = await readFile(path.join(process.cwd(), 'private', 'client-files', set.dir, f.file))
   return new Response(new Uint8Array(body), {

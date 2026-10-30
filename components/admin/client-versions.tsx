@@ -132,7 +132,7 @@ export function VersionHistory({
               <th className="px-2 py-2 text-left font-medium">바뀐 내용</th>
               <th className="w-32 px-2 py-2 text-right font-medium">공급가액</th>
               <th className="w-24 px-2 py-2 text-left font-medium">저장한 사람</th>
-              <th className="w-40 px-2 py-2" />
+              <th className="w-56 px-2 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -186,6 +186,17 @@ export function VersionHistory({
                       >
                         <Printer /> PDF
                       </a>
+                      {prev && (
+                        <a
+                          href={`/api/admin/clients/${clientId}/print?docs=quote&version=${v.no}&mark=${prev.no}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`v${prev.no} 대비 바뀐 곳을 빨간색으로 표시한 견적서 (내부용, PDF 로 저장)`}
+                          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'rounded-none text-red-600')}
+                        >
+                          <Printer /> 변경 표시
+                        </a>
+                      )}
                     </div>
                   </td>
                 </tr>

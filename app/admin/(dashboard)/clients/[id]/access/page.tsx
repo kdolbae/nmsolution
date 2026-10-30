@@ -54,8 +54,10 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
   if (!client) notFound()
   const all = await listAccess(client.id)
   const showAdmin = sp.admin === '1'
-  const rows = showAdmin ? all : all.filter((r) => !r.isAdmin)
-  const outside = all.filter((r) => !r.isAdmin)
+  // 관리자 본인 접속·검색 로봇·링크 미리보기는 기본으로 숨긴다(지우지는 않음)
+  const hidden = (r: AccessRow) => r.isAdmin || !!r.details?.bot
+  const rows = showAdmin ? all : all.filter((r) => !hidden(r))
+  const outside = all.filter((r) => !hidden(r))
   const views = outside.filter((r) => r.kind === 'view' || r.kind === 'share_view' || r.kind === 'portal_view' || r.kind === 'send_view' || r.kind === 'compare')
   const stats = [
     ['열람', `${views.length}회`],
@@ -83,7 +85,7 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
             href={showAdmin ? `/admin/clients/${client.id}/access` : `/admin/clients/${client.id}/access?admin=1`}
             className="border border-border px-2 py-1 text-xs hover:bg-muted"
           >
-            {showAdmin ? '관리자 접속 숨기기' : '관리자 접속도 보기'}
+            {showAdmin ? '관리자·로봇 접속 숨기기' : `관리자·로봇 접속도 보기 (${all.length - outside.length}건)`}
           </Link>
         </div>
 
@@ -101,13 +103,14 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
         ) : (
           <ul className="flex flex-col divide-y divide-border border-y border-border">
             {rows.map((r) => (
-              <li key={r.id} className={r.isAdmin ? 'opacity-50' : ''}>
+              <li key={r.id} className={hidden(r) ? 'opacity-50' : ''}>
                 <details className="group">
                   <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-sm">
                     <span className="w-36 shrink-0 font-mono text-xs tabular-nums">{kst(r.at)}</span>
                     <span className="w-28 shrink-0 font-medium">
                       {KIND[r.kind] ?? r.kind}
                       {r.isAdmin && <span className="ml-1 text-[10px] text-muted-foreground">관리자</span>}
+                      {r.details?.bot && <span className="ml-1 text-[10px] text-muted-foreground">로봇</span>}
                     </span>
                     <span className="w-24 shrink-0 text-xs text-muted-foreground">
                       {r.seconds != null ? `${dur(r.seconds)} · ${r.scroll ?? 0}%` : noScreen(r) ? '화면 안 띄움' : ''}

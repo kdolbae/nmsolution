@@ -1,4 +1,4 @@
-import { updateView } from '@/lib/clients/access-log'
+import { reportLogFailure, updateView } from '@/lib/clients/access-log'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       tz: String(b.tz ?? '').slice(0, 40),
     })
   } catch (e) {
-    console.error('pv', e)
+    await reportLogFailure('updateView', e)
   }
   return new Response(null, { status: 204 })
 }

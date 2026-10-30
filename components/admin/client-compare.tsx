@@ -2,8 +2,8 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftRight, Expand, Shrink } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeftRight, Expand, Printer, Shrink } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { diffLines, quoteSegments, sameLines, splitProposal, type Line, type Segment } from '@/lib/clients/compare'
 import { won, type Quote } from '@/lib/clients/quote'
@@ -202,9 +202,22 @@ export function ClientCompare({
       <div className="bg-background p-5 ring-1 ring-border lg:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-2xl font-bold tracking-tight">{clientName} · 버전 비교</h1>
-          <Button variant="outline" size="sm" className="rounded-none" onClick={toggleFull}>
-            {full ? <Shrink /> : <Expand />} {full ? '전체화면 끄기' : '전체화면'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {a.no !== b.no && (
+              <a
+                href={`/api/admin/clients/${clientId}/print?docs=quote&version=${b.no}&mark=${a.no}`}
+                target="_blank"
+                rel="noreferrer"
+                title={`v${b.no} 견적서에 v${a.no} 대비 바뀐 곳을 빨간색으로 표시 (내부용, PDF 로 저장)`}
+                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-none text-red-600')}
+              >
+                <Printer /> 변경 표시 견적서
+              </a>
+            )}
+            <Button variant="outline" size="sm" className="rounded-none" onClick={toggleFull}>
+              {full ? <Shrink /> : <Expand />} {full ? '전체화면 끄기' : '전체화면'}
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid items-end gap-3 lg:grid-cols-[1fr_auto_1fr]">
           <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">

@@ -1,6 +1,7 @@
 import { getSessionFrom, isAdmin } from '@/lib/admin'
 import { getClient, getVersion } from '@/lib/clients/table'
 import { printHtml } from '@/lib/clients/print'
+import type { QuoteMark } from '@/lib/clients/quote'
 import { withSentNumber } from '@/lib/clients/sends'
 import { bookFrameHtml, bookShellHtml } from '@/lib/clients/book'
 
@@ -31,6 +32,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     version = v.no
     suffix = ` v${v.no}${found.finalized?.version === v.no ? ' 최종본' : ''}`
   }
+  // mark=N: N 버전 견적 대비 바뀐 곳을 빨간색으로 표시한 견적서(내부용)
+  let mark: QuoteMark | undefined
+  if (sp.get('mark')) {
+    const m = await getVersion(found.id, Number(sp.get('mark')))
+    if (!m) return new Response('없는 버전', { status: 404 })
+    mark = { base: m.quote, label: `v${m.no} (${kst(m.at)}) 견적` }
+    suffix += ` 변경 표시 (v${m.no} 대비)`
+  }
   // 고객에게 발송한 버전이면 발송 견적번호(-R1 등)로 찍는다
   const client = await withSentNumber(found, version)
   if (docs === 'book') {
@@ -41,6 +50,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     u.searchParams.set('frame', '1')
     return new Response(bookShellHtml(`${u.pathname}${u.search}`, title), { headers: HEADERS })
   }
-  const html = printHtml(client, docs, suffix)
+  const html = printHtml(client, mark ? 'quote' : docs, suffix, mark)
   return new Response(html, { headers: HEADERS })
+}
+
+/** 2026-10-19 14:20 (한국 시각) */
+function kst(d: Date) {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', dateStyle: 'short', timeStyle: 'short' }).format(d)
 }

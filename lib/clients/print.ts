@@ -1,4 +1,4 @@
-import { PRETENDARD_CSS, QUOTE_CSS, renderQuote, type Quote, type QuoteRecipient } from './quote'
+import { PRETENDARD_CSS, QUOTE_CSS, renderQuote, type Quote, type QuoteMark, type QuoteRecipient } from './quote'
 import { esc, withBrandFont } from './proposal'
 
 /** 열리면 바로 인쇄 창을 띄운다. 접힌 내역(details)은 펼친다 */
@@ -11,9 +11,15 @@ const PRINT_TAGS = `<style>@page{size:A4;margin:18mm 16mm}
  * 업체 제안서·견적서 인쇄용 HTML (관리자 인쇄 · 협력업체 포털 인쇄가 같이 쓴다).
  * docs=both(함께) | proposal | quote. 제안서는 저장된 HTML 그대로(인쇄 CSS 는 제안서 자신의 것),
  * 견적서는 A4 양식으로 뒤에 새 쪽으로 붙인다. suffix 가 있으면 제목(=PDF 파일 이름)에 붙인다.
+ * mark 가 있으면 견적서에 이전 견적 대비 바뀐 곳을 빨간색으로 표시한다(어드민 전용).
  */
-export function printHtml(client: QuoteRecipient & { name: string; proposalHtml: string; quote: Quote }, docs: string, suffix = ''): string {
-  const quote = `<div class="nm-quote-page">${renderQuote(client.quote, client)}</div>`
+export function printHtml(
+  client: QuoteRecipient & { name: string; proposalHtml: string; quote: Quote },
+  docs: string,
+  suffix = '',
+  mark?: QuoteMark,
+): string {
+  const quote = `<div class="nm-quote-page">${renderQuote(client.quote, client, mark)}</div>`
   const quoteHead = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
 
   let html: string

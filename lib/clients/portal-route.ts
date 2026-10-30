@@ -8,7 +8,7 @@ import { verifyPortalPassword } from './portal-password'
 import { htmlToPdf, pdfResponse } from './pdf'
 import { logAccess, trackedHtml, trackerTag } from './access-log'
 import { customerSends, getSend, type listSends, type Send } from './sends'
-import { compareHtml, historyBar, notReadyHtml } from './send-compare'
+import { historyBar, notReadyHtml } from './send-compare'
 import { after } from 'next/server'
 
 /**
@@ -20,7 +20,7 @@ import { after } from 'next/server'
  *   <!--NM:QUOTE-SUMMARY--> 가 있으면 그 자리에 금액 요약 카드를 따로 넣는다(없으면 견적서 위에 붙임).
  * - 사진은 /client-assets/<주소>/ 에 두고 proxy.ts 가 같은 쿠키를 확인한다.
  * - 제안서·견적서는 고객 발송본(lib/clients/sends.ts)에서만 읽는다. 내부 작업 버전은 어떤 주소로도 열리지 않는다.
- *   ?s=N 지난 발송본, ?s=N&pdf=1 그 PDF, ?cmp=N(&to=M) 두 발송본 비교. 발송본이 없으면 '준비 중' 화면만 보인다.
+ *   ?s=N 지난 발송본, ?s=N&pdf=1 그 PDF(발송본끼리 비교는 어드민에서만). 발송본이 없으면 '준비 중' 화면만 보인다.
  */
 
 const NO_STORE = {
@@ -95,7 +95,7 @@ type PortalClient = NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>
 
 /**
  * 고객이 보는 화면 하나를 만든다(업체 페이지와 관리자 미리보기가 같이 쓴다). 발송본만 읽는다.
- * base 는 화면 안 링크의 주소(/atotech 또는 미리보기 주소). ?s=N 지난 발송본, ?cmp=N(&to=M) 비교.
+ * base 는 화면 안 링크의 주소(/atotech 또는 미리보기 주소). ?s=N 지난 발송본.
  */
 export async function customerView(
   client: PortalClient,
@@ -118,16 +118,8 @@ export async function customerView(
   // 없는(또는 숨긴) 발송본 번호면 최신으로 보낸다
   const back = { type: 'redirect' as const, to: base }
 
-  // ?cmp=N(&to=M): 지난 발송본과 최신(또는 M) 비교
-  if (params.has('cmp')) {
-    const a = want('cmp')
-    const b = params.has('to') ? want('to') : latest
-    if (!a || !b || a.no === b.no) return back
-    const [sa, sb] = await Promise.all([getSend(client.id, a.no), getSend(client.id, b.no)])
-    if (!sa || !sb) return back
-    const [older, newer] = sa.no < sb.no ? [sa, sb] : [sb, sa]
-    return { type: 'compare', html: compareHtml(client.name, base, older, newer, sends), kind: 'compare', details: { send: older.number, to: newer.number } }
-  }
+  // 2026-10-30 kevin: 견적 변경 내용은 내부(어드민)에서만 본다. 예전 비교 주소(?cmp=)는 최신 견적으로 보낸다
+  if (params.has('cmp')) return back
 
   const pick = params.has('s') ? want('s') : latest
   if (!pick) return back

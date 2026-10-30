@@ -75,7 +75,19 @@ const NOTIFY: Partial<Record<AccessKind, string>> = {
   login_fail: '비밀번호 틀림',
 }
 
-const BOT = /bot|crawl|spider|slurp|yeti|daum|bingpreview|headless|lighthouse|facebookexternalhit|kakaotalk-scrap|preview/i
+/** 검색 로봇·링크 미리보기·헤드리스 브라우저. 버리지 않고 details.bot 으로 표시만 하고(어드민에서 기본 숨김), 알림은 보내지 않는다 */
+const BOT = /bot|crawl|spider|slurp|yeti|daumoa|bingpreview|headless|lighthouse|facebookexternalhit|kakaotalk-scrap|slack-imgproxy|whatsapp|telegram|discord/i
+
+/** 기록 자체가 실패하면 관리자 휴대폰으로 알린다(같은 내용은 10분에 한 번) */
+const failedAt = new Map<string, number>()
+export async function reportLogFailure(where: string, e: unknown) {
+  console.error(where, e)
+  const key = `${where}:${String((e as Error)?.message ?? e).slice(0, 80)}`
+  const last = failedAt.get(key) ?? 0
+  if (Date.now() - last < 10 * 60_000) return
+  failedAt.set(key, Date.now())
+  await notifyAdmin(`[접속 기록 실패] ${where}\n${String((e as Error)?.message ?? e).slice(0, 300)}`).catch(() => undefined)
+}
 
 /** 사람이 읽을 수 있는 기기 요약: '휴대폰 · iOS · 카카오톡' 같은 꼴 */
 export function deviceOf(ua: string): string {
@@ -128,7 +140,7 @@ export async function logAccess(
   } = {},
 ): Promise<void> {
   const ua = h.get('user-agent') || ''
-  if (BOT.test(ua)) return
+  const bot = BOT.test(ua)
   try {
     await ensureAccessLog()
     // 관리자 본인 접속인지. 확인이 안 되면 업체 접속으로 남긴다
@@ -156,12 +168,12 @@ export async function logAccess(
         g.city,
         (h.get('referer') || '').slice(0, 500) || null,
         admin,
-        opts.details ? JSON.stringify(opts.details) : null,
+        opts.details || bot ? JSON.stringify({ ...opts.details, ...(bot ? { bot: true } : {}) }) : null,
         NAME_OF_SLUG[opts.slug ?? ''] ?? null,
       ],
     )
-    // 업체가 견적을 열거나 PDF 를 받으면 관리자 휴대폰으로 바로 알린다 (관리자 본인 접속은 빼고)
-    if (!admin && NOTIFY[kind]) {
+    // 업체가 견적을 열거나 PDF 를 받으면 관리자 휴대폰으로 바로 알린다 (관리자 본인 접속·로봇은 빼고)
+    if (!admin && !bot && NOTIFY[kind]) {
       const r = rows[0]
       const who = r?.name || opts.slug || '업체'
       const when = new Intl.DateTimeFormat('ko-KR', {
@@ -187,7 +199,7 @@ export async function logAccess(
       )
     }
   } catch (e) {
-    console.error('client_access_log', e)
+    await reportLogFailure(`logAccess ${opts.slug ?? client?.id ?? ''} ${kind}`, e)
   }
 }
 
@@ -217,7 +229,7 @@ export function trackedHtml(
   return /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${tag}</body>`) : html + tag
 }
 
-/** 페이지 안 스크립트가 보낸 행동 기록으로 그 열람 줄을 덮어쓴다(서버가 남긴 send 같은 값은 남긴다). 12시간 지난 열람은 받지 않는다 */
+/** 페이지 안 스크립트가 보낸 행동 기록으로 그 열람 줄을 덮어쓴다(서버가 남긴 send 같은 값은 남긴다). 48시간 지난 열람은 받지 않는다 */
 export async function updateView(viewId: string, seconds: number, scroll: number, details: Record<string, unknown>) {
   await ensureAccessLog()
   // 열람 줄은 응답 뒤(after)에 들어가서, 페이지가 열리자마자 보내는 첫 기록이 먼저 올 수 있다. 줄이 없으면 잠깐 기다렸다 다시 넣는다
@@ -225,7 +237,7 @@ export async function updateView(viewId: string, seconds: number, scroll: number
     if (wait) await new Promise((r) => setTimeout(r, wait))
     const { rowCount } = await pool.query(
       `UPDATE client_access_log SET seconds = $2, scroll = $3, details = COALESCE(details, '{}'::jsonb) || $4::jsonb, updated_at = now()
-        WHERE view_id = $1 AND created_at > now() - interval '12 hours' AND (seconds IS NULL OR seconds <= $2)`,
+        WHERE view_id = $1 AND created_at > now() - interval '48 hours' AND (seconds IS NULL OR seconds <= $2)`,
       [viewId, seconds, scroll, JSON.stringify(details)],
     )
     if (rowCount) return
@@ -251,6 +263,7 @@ export type AccessRow = {
     events?: { t: number; label: string }[]
     member?: string
     docs?: string
+    bot?: boolean
     /** 본 발송 견적번호 (비교면 to 와 함께) */
     send?: string | null
     to?: string
@@ -261,25 +274,43 @@ export type AccessRow = {
   } | null
 }
 
+/** 전 업체 최근 기록(업체에 연결되지 않은 기록 포함). 어드민 '접속 기록 전체' 화면용 */
+export async function listAllAccess(limit = 300): Promise<(AccessRow & { clientId: number | null; clientName: string | null; slug: string | null })[]> {
+  try {
+    await ensureAccessLog()
+    const { rows } = await pool.query(
+      `SELECT l.*, c.name AS client_name FROM client_access_log l LEFT JOIN clients c ON c.id = l.client_id ORDER BY l.created_at DESC LIMIT $1`,
+      [limit],
+    )
+    return rows.map((r) => ({ ...toRow(r), clientId: r.client_id == null ? null : Number(r.client_id), clientName: r.client_name ?? null, slug: r.slug ?? null }))
+  } catch (e) {
+    await reportLogFailure('listAllAccess', e)
+    return []
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toRow = (r: any): AccessRow => ({
+  id: Number(r.id),
+  at: new Date(r.created_at).toISOString(),
+  kind: r.kind,
+  ip: r.ip,
+  device: r.device,
+  place: [r.region, r.city].filter(Boolean).join(' ') || r.country || null,
+  referrer: r.referrer,
+  isAdmin: r.is_admin,
+  seconds: r.seconds,
+  scroll: r.scroll,
+  details: r.details,
+})
+
 export async function listAccess(clientId: number, limit = 300): Promise<AccessRow[]> {
   try {
     await ensureAccessLog()
     const { rows } = await pool.query(`SELECT * FROM client_access_log WHERE client_id = $1 ORDER BY created_at DESC LIMIT $2`, [clientId, limit])
-    return rows.map((r) => ({
-      id: Number(r.id),
-      at: new Date(r.created_at).toISOString(),
-      kind: r.kind,
-      ip: r.ip,
-      device: r.device,
-      place: [r.region, r.city].filter(Boolean).join(' ') || r.country || null,
-      referrer: r.referrer,
-      isAdmin: r.is_admin,
-      seconds: r.seconds,
-      scroll: r.scroll,
-      details: r.details,
-    }))
+    return rows.map(toRow)
   } catch (e) {
-    console.error('client_access_log', e)
+    await reportLogFailure('listAccess', e)
     return []
   }
 }

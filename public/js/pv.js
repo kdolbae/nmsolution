@@ -1,6 +1,6 @@
 (function () {
-  var s = document.currentScript, v = s && s.getAttribute('data-v')
-  if (!v || !navigator.sendBeacon) return
+  var s = document.currentScript || document.querySelector('script[data-v]'), v = s && s.getAttribute('data-v')
+  if (!v) return
   var t0 = Date.now(), active = 0, scroll = 0, sections = {}, clicks = [], events = [], dirty = true
   var now = function () { return Math.round((Date.now() - t0) / 1000) }
   var txt = function (el) { return ((el && (el.getAttribute('aria-label') || el.alt || el.title || el.textContent)) || '').replace(/\s+/g, ' ').trim().slice(0, 60) }
@@ -42,7 +42,10 @@
     dirty = false
     var body = JSON.stringify({ v: v, seconds: active, total: now(), scroll: scroll, sections: sections, clicks: clicks, events: events,
       screen: screen.width + 'x' + screen.height, lang: navigator.language, tz: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone })
-    navigator.sendBeacon('/api/pv', new Blob([body], { type: 'text/plain' }))
+    try {
+      if (!navigator.sendBeacon || !navigator.sendBeacon('/api/pv', new Blob([body], { type: 'text/plain' })))
+        fetch('/api/pv', { method: 'POST', body: body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(function () {})
+    } catch (e) { try { fetch('/api/pv', { method: 'POST', body: body, keepalive: true }).catch(function () {}) } catch (e2) {} }
   }
   setInterval(send, 15000)
   send()

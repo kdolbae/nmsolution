@@ -220,11 +220,18 @@ export function trackedHtml(
 /** 페이지 안 스크립트가 보낸 행동 기록으로 그 열람 줄을 덮어쓴다(서버가 남긴 send 같은 값은 남긴다). 12시간 지난 열람은 받지 않는다 */
 export async function updateView(viewId: string, seconds: number, scroll: number, details: Record<string, unknown>) {
   await ensureAccessLog()
-  await pool.query(
-    `UPDATE client_access_log SET seconds = $2, scroll = $3, details = COALESCE(details, '{}'::jsonb) || $4::jsonb, updated_at = now()
-      WHERE view_id = $1 AND created_at > now() - interval '12 hours'`,
-    [viewId, seconds, scroll, JSON.stringify(details)],
-  )
+  // 열람 줄은 응답 뒤(after)에 들어가서, 페이지가 열리자마자 보내는 첫 기록이 먼저 올 수 있다. 줄이 없으면 잠깐 기다렸다 다시 넣는다
+  for (const wait of [0, 1000, 2500, 5000]) {
+    if (wait) await new Promise((r) => setTimeout(r, wait))
+    const { rowCount } = await pool.query(
+      `UPDATE client_access_log SET seconds = $2, scroll = $3, details = COALESCE(details, '{}'::jsonb) || $4::jsonb, updated_at = now()
+        WHERE view_id = $1 AND created_at > now() - interval '12 hours' AND (seconds IS NULL OR seconds <= $2)`,
+      [viewId, seconds, scroll, JSON.stringify(details)],
+    )
+    if (rowCount) return
+    // 줄은 있는데 더 긴 기록이 먼저 들어가 있으면(기다리는 사이 다음 기록이 온 경우) 그대로 둔다
+    if ((await pool.query(`SELECT 1 FROM client_access_log WHERE view_id = $1`, [viewId])).rowCount) return
+  }
 }
 
 export type AccessRow = {

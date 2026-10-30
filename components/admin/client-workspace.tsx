@@ -289,7 +289,7 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
   }
 
   const remove = () => {
-    if (!confirm(`'${client.name}' 업체와 제안서·견적서를 모두 지울까요? 되돌릴 수 없습니다.`)) return
+    if (!confirm(`'${client.name}' 업체와 제안서·견적서(추가 견적서 포함)를 모두 지울까요? 추가 견적서 화면이면 그 견적서만 지웁니다. 되돌릴 수 없습니다.`)) return
     startTransition(async () => {
       await deleteClient(client.id)
       router.push('/admin/clients')
@@ -713,7 +713,7 @@ function QuotePanel({
   const fitPreview = () => {
     const f = previewFrame.current
     const d = f?.contentDocument
-    if (f && d && d.documentElement.scrollHeight) f.style.height = `${d.documentElement.scrollHeight + 4}px`
+    if (f && d?.documentElement?.scrollHeight) f.style.height = `${d.documentElement.scrollHeight + 4}px`
   }
   // 숨겨진 탭에서 읽히면 높이가 0 이므로 탭이 보일 때 다시 맞춘다
   useEffect(() => {

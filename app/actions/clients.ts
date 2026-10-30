@@ -2,6 +2,8 @@
 
 import { requireAdmin } from '@/lib/admin'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { notifySbworks } from '@/lib/sbworks'
 import { getContent } from '@/lib/content/get'
 import { emptyQuote, normalizeQuote, type Quote } from '@/lib/clients/quote'
 import { defaultProposalHtml } from '@/lib/clients/proposal'
@@ -10,10 +12,12 @@ import {
   finalizeClient,
   getClient,
   insertClient,
+  listQuoteSet,
   removeClient,
   updateClientInfo,
   updateProposal,
   updateQuote,
+  updateQuoteLabel,
   setPortalPasswordHash,
   LOCKED_MESSAGE,
   type ClientInfo,
@@ -89,14 +93,64 @@ export async function createClient(input: ClientInfo, copyFrom?: number | null) 
     quote = emptyQuote()
   }
   const id = await insertClient(info, proposal, quote, who(user))
+  after(() => notifySbworks(id, 'company'))
   revalidatePath('/admin/clients')
   return { ok: true as const, id }
 }
 
+/**
+ * 같은 업체에 견적서를 하나 더 만든다 (추가 공정 등, kevin 2026-10-28).
+ * 기업정보는 본 견적을 따르고, 견적서·제안서·버전 기록·최종본 확정은 견적서마다 따로다. 업체용 링크는 본 견적에만 있다.
+ * copy 가 true 면 지금 견적서(공종·요율·특기사항)를 복사해 시작한다.
+ */
+export async function addQuote(fromId: number, label: string, copy = false) {
+  const user = await requireAdmin()
+  const name = String(label ?? '').trim().slice(0, 100)
+  if (!name) throw new Error('견적서 이름을 입력해 주세요. (예: 추가 공정 - 배관 보온)')
+  const from = await getClient(fromId)
+  if (!from) throw new Error('업체를 찾을 수 없습니다.')
+  const rootId = from.parentId ?? from.id
+  const root = from.parentId ? await getClient(rootId) : from
+  if (!root) throw new Error('업체를 찾을 수 없습니다.')
+  const base = emptyQuote()
+  // 견적번호는 본 견적 번호 뒤에 순번 (NM-2610-04 → NM-2610-04-2, -3 …)
+  const siblings = await listQuoteSet(rootId)
+  const number = `${root.quote.number}-${siblings.length + 1}`
+  const quote: Quote = copy
+    ? { ...from.quote, number, date: base.date, title: name }
+    : { ...base, number, title: name, rates: from.quote.rates, costCalc: from.quote.costCalc, recipientFields: from.quote.recipientFields }
+  const info: ClientInfo = { ...root, memo: '', portalSlug: '', portalLogin: '' }
+  const id = await insertClient(info, '', quote, who(user), { parentId: rootId, quoteLabel: name })
+  after(() => notifySbworks(id, 'quote'))
+  revalidatePath('/admin/clients', 'layout')
+  return { ok: true as const, id }
+}
+
+/** 견적서 이름 바꾸기 (본 견적도 이름을 붙일 수 있다) */
+export async function renameQuote(id: number, label: string) {
+  await requireAdmin()
+  await updateQuoteLabel(id, String(label ?? '').trim().slice(0, 100))
+  after(() => notifySbworks(id, 'quote'))
+  revalidatePath('/admin/clients', 'layout')
+  return { ok: true as const }
+}
+
 export async function saveClientInfo(id: number, input: ClientInfo, portalPassword?: string) {
   await requireAdmin()
+  const cur = await getClient(id)
+  if (cur?.parentId) {
+    // 추가 견적서에서 고친 기업정보는 본 견적(업체)에 저장한다. 업체용 링크·메모는 본 견적 것을 그대로 둔다
+    const root = await getClient(cur.parentId)
+    if (!root) throw new Error('업체를 찾을 수 없습니다.')
+    const info = cleanInfo({ ...input, portalSlug: root.portalSlug, portalLogin: root.portalLogin, memo: root.memo })
+    await updateClientInfo(root.id, info)
+    after(() => notifySbworks(root.id, 'company'))
+    revalidatePath('/admin/clients', 'layout')
+    return { ok: true as const }
+  }
   await updateClientInfo(id, cleanInfo(input))
   await savePortalPassword(id, portalPassword)
+  after(() => notifySbworks(id, 'company'))
   revalidatePath('/admin/clients', 'layout')
   return { ok: true as const }
 }
@@ -106,6 +160,7 @@ export async function saveProposal(id: number, html: string) {
   if (typeof html !== 'string' || !html.trim()) throw new Error('제안서 내용이 비어 있습니다.')
   if (html.length > 2_000_000) throw new Error('제안서가 너무 큽니다. 이미지는 주소로 넣어 주세요.')
   const res = await shown(async () => ({ version: await updateProposal(id, html, who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'proposal'))
   revalidatePath('/admin/clients', 'layout')
   return res
 }
@@ -130,6 +185,7 @@ export async function resetProposal(id: number) {
 export async function saveQuote(id: number, quote: Quote) {
   const user = await requireAdmin()
   const res = await shown(async () => ({ version: await updateQuote(id, normalizeQuote(quote), who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'quote'))
   revalidatePath('/admin/clients', 'layout')
   return res
 }
@@ -138,6 +194,7 @@ export async function saveQuote(id: number, quote: Quote) {
 export async function finalizeClientVersion(id: number) {
   const user = await requireAdmin()
   const res = await shown(async () => ({ version: await finalizeClient(id, who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'quote'))
   revalidatePath('/admin/clients', 'layout')
   return res
 }
@@ -145,6 +202,7 @@ export async function finalizeClientVersion(id: number) {
 export async function deleteClient(id: number) {
   await requireAdmin()
   await removeClient(id)
+  after(() => notifySbworks(id, 'deleted'))
   revalidatePath('/admin/clients')
   return { ok: true as const }
 }

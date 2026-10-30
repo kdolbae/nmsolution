@@ -21,8 +21,7 @@ export function historyBar(base: string, sends: SendMeta[], current: SendMeta): 
       const tag = s.no === latest.no ? '<span class="nmh-tag">최신</span>' : ''
       const here = s.no === current.no ? ' aria-current="true"' : ''
       const view = s.no === latest.no ? base : `${base}?s=${s.no}`
-      const cmp = s.no === latest.no ? '' : `<a class="nmh-cmp" href="${base}?cmp=${s.no}">최신과 비교</a>`
-      return `<li${here}><a class="nmh-row" href="${view}"><b>${esc(s.number)}</b>${tag}<span>${day(s.sentAt)} 발송 · ${esc(s.title)}</span><span class="nmh-amt">공급가 ${won(s.supply)}원</span></a>${cmp}</li>`
+      return `<li${here}><a class="nmh-row" href="${view}"><b>${esc(s.number)}</b>${tag}<span>${day(s.sentAt)} 발송 · ${esc(s.title)}</span><span class="nmh-amt">공급가 ${won(s.supply)}원</span></a></li>`
     })
     .join('')
   return `<style>${BAR_CSS}</style>
@@ -30,8 +29,8 @@ export function historyBar(base: string, sends: SendMeta[], current: SendMeta): 
   <div class="nmh-in">
     <div class="nmh-now">${old ? '<span class="nmh-tag old">지난 견적</span>' : ''}견적번호 <b>${esc(current.number)}</b> · ${day(current.sentAt)} 발송</div>
     <div class="nmh-act">
-      ${old ? `<a href="${base}">최신 견적 ${esc(latest.number)} 보기</a><a href="${base}?cmp=${current.no}">최신과 비교</a>` : ''}
-      ${sends.length > 1 ? `<details class="nmh-list"><summary>견적 이력 ${sends.length}건</summary><ol>${list}<li class="nmh-note">지난 견적도 효력이 있음. 최신 견적과 나란히 비교할 수 있음.</li></ol></details>` : ''}
+      ${old ? `<a href="${base}">최신 견적 ${esc(latest.number)} 보기</a>` : ''}
+      ${sends.length > 1 ? `<details class="nmh-list"><summary>견적 이력 ${sends.length}건</summary><ol>${list}<li class="nmh-note">지난 견적도 효력이 있음.</li></ol></details>` : ''}
     </div>
   </div>
 </div>`

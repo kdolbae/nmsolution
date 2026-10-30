@@ -11,7 +11,32 @@ import { discountForGrand, type Quote, type QuoteSection } from './quote'
 export const KKT_CLIENT = {
   name: '주식회사 금강변압기',
   siteAddress: '경기 화성시 마도면 마도공단로1길 214',
+  /** 업체용 링크 nm-solution.co.kr/kkt (예전 /금강변압기 링크도 proxy.ts 가 여기로 넘김) */
+  portalSlug: 'kkt',
 }
+
+/** 2026-10-30 kevin: 금강변압기도 다른 업체와 같은 업체 페이지(링크 복사·미리보기·발송본·PDF)로. 한 번만 돈다 */
+export const KKT_PORTAL_KEY = 'kkt-portal-1030-v1'
+
+/**
+ * 2026-10-30 kevin(고객 급요청): 작업계획서는 다시 정비할 때까지 내리고, 업체 페이지에는 견적서만 보인다.
+ * 업체 페이지 틀(제안서 탭 HTML). <!--NM:QUOTE-SUMMARY-->·<!--NM:QUOTE--> 는 portalPageHtml 이 채운다.
+ */
+export const KKT_QUOTE_ONLY_PAGE = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive"><title>주식회사 금강변압기 견적서 | 엔엠솔루션</title>
+<style>body{margin:0;background:#f4f6f9;color:#1d2430;font-family:Pretendard,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+main{max-width:900px;margin:0 auto;padding:24px 16px 96px}
+h1{font-size:22px;font-weight:700;color:#0f2a44;margin:0 0 4px;letter-spacing:-.02em}main>p{margin:0 0 16px;color:#5d6878;font-size:14px}
+.qsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.qcard{background:#fff;border:1px solid #dde3ea;padding:14px 16px}.qcard.main{border-color:#0f2a44}
+.qcard .l{font-size:13px;color:#5d6878}.qcard .v{font-size:24px;font-weight:700;color:#0f2a44;margin:2px 0;font-variant-numeric:tabular-nums}.qcard .s{font-size:12.5px;color:#5d6878}
+.quote-sheet{background:#fff;border:1px solid #dde3ea;padding:28px 24px;margin-top:16px;overflow-x:auto}
+@media print{body{background:#fff}main{padding:0}.quote-sheet{border:0;padding:0;margin:0}}</style>
+</head><body><main><h1>주식회사 금강변압기 견적서</h1><p>엔엠솔루션이 제출하는 견적서임. 오른쪽 아래 버튼으로 PDF를 내려받을 수 있음.</p>
+<!--NM:QUOTE-SUMMARY-->
+<!--NM:QUOTE-->
+</main></body></html>`
 
 /**
  * 2026-10-19 최종안(합계 70,000,000원). 고객 페이지(/kkt)의 견적은 발송본이 없을 때 이것을 보여 준다.

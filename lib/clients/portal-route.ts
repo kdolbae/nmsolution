@@ -154,6 +154,11 @@ export function portalPageHtml(
     .join(esc(quote.number))
     .replace('<!--NM:QUOTE-SUMMARY-->', () => summary)
     .replace('<!--NM:QUOTE-->', () => (hasSummarySlot ? sheet : summary + sheet))
+  // 견적서 자리가 없는 제안서는 끝에 붙인다 (견적서가 빠지지 않게)
+  if (!send.proposalHtml.includes('<!--NM:QUOTE-->')) {
+    const tail = `<section class="nm-quote-tail" style="max-width:960px;margin:40px auto;padding:0 16px">${hasSummarySlot ? '' : summary}${sheet}</section>`
+    html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${tail}</body>`) : html + tail
+  }
   const head = `<link rel="stylesheet" href="${PRETENDARD_CSS}"><style>${QUOTE_CSS}</style>`
   html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, () => `${head}</head>`) : head + html
   html = keepInside(html)

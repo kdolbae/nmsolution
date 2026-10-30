@@ -3,7 +3,7 @@ import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_QUOTE, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_PORTAL_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -97,6 +97,35 @@ export function ensureClients(): Promise<void> {
           }).catch(() => null)
         }
       }
+      // 금강변압기: 다른 업체와 같은 업체 페이지(/kkt)로 옮긴다(2026-10-30 kevin). 비밀번호는 지금까지 쓰던 KKT_PASSWORD 를 업체 비밀번호로,
+      // 업체 페이지에는 작업계획서를 내리고 견적서만(정비 전까지). 이미 확정한 발송본도 견적서가 보이도록 같은 틀로 바꾼다
+      await seedOnce(KKT_PORTAL_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null; portal_password_hash: string | null }>(
+          `SELECT id, finalized_at, portal_password_hash FROM clients WHERE name = $1 ORDER BY id LIMIT 1`,
+          [KKT_CLIENT.name],
+        )
+        const row = found.rows[0]
+        if (!row) return
+        const id = Number(row.id)
+        const taken = await pool.query(`SELECT 1 FROM clients WHERE portal_slug = $1 AND id <> $2`, [KKT_CLIENT.portalSlug, id])
+        if (!taken.rows.length) await pool.query(`UPDATE clients SET portal_slug = COALESCE(portal_slug, $2) WHERE id = $1`, [id, KKT_CLIENT.portalSlug])
+        const password = process.env.KKT_PASSWORD?.trim()
+        if (!row.portal_password_hash && password) {
+          await pool.query(`UPDATE clients SET portal_password_hash = $2 WHERE id = $1`, [id, await hashPortalPassword(password)])
+        }
+        if (!row.finalized_at) {
+          await applyChange(id, 'system', 'system', (cur) =>
+            cur.proposalHtml.includes('<!--NM:QUOTE-->') ? null : { proposalHtml: KKT_QUOTE_ONLY_PAGE, summary: '업체 페이지(/kkt)를 공통 구조로: 작업계획서는 정비 전까지 내리고 견적서만' },
+          )
+        }
+        const sends = await pool.query<{ t: string | null }>(`SELECT to_regclass('client_sends') AS t`)
+        if (sends.rows[0]?.t) {
+          await pool.query(
+            `UPDATE client_sends SET proposal_html = $2 WHERE client_id = $1 AND position('<!--NM:QUOTE-->' in COALESCE(proposal_html, '')) = 0`,
+            [id, KKT_QUOTE_ONLY_PAGE],
+          )
+        }
+      })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {
         const c = SINIL_CLIENT

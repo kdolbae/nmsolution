@@ -191,7 +191,7 @@ export function ClientCompare({
 
   const go = (na: number, nb: number) => router.push(`/admin/clients/${clientId}/compare?a=${na}&b=${nb}`)
   const label = (v: { no: number; at: string; summary: string }) =>
-    `v${v.no}${v.no === versions[0]?.no ? ' (최신)' : ''}${v.no === finalizedVersion ? ' (최종본)' : ''} · ${fmtAt(v.at)} · ${v.summary}`
+    `v${v.no}${v.no === versions[0]?.no ? ' (최신)' : ''}${v.no === finalizedVersion ? ' (계약본)' : ''} · ${fmtAt(v.at)} · ${v.summary}`
   const diff = b.supply - a.supply
   const shown = entries.filter((e) => sel.has(e.key))
 

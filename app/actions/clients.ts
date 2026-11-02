@@ -10,6 +10,7 @@ import { defaultProposalHtml } from '@/lib/clients/proposal'
 import { hashPortalPassword } from '@/lib/clients/portal-password'
 import {
   finalizeClient,
+  unfinalizeClient,
   getClient,
   insertClient,
   listQuoteSet,
@@ -100,7 +101,7 @@ export async function createClient(input: ClientInfo, copyFrom?: number | null) 
 
 /**
  * 같은 업체에 견적서를 하나 더 만든다 (추가 공정 등, kevin 2026-10-28).
- * 기업정보는 본 견적을 따르고, 견적서·제안서·버전 기록·최종본 확정은 견적서마다 따로다. 업체용 링크는 본 견적에만 있다.
+ * 기업정보는 본 견적을 따르고, 견적서·제안서·버전 기록·계약 확정은 견적서마다 따로다. 업체용 링크는 본 견적에만 있다.
  * copy 가 true 면 지금 견적서(공종·요율·특기사항)를 복사해 시작한다.
  */
 export async function addQuote(fromId: number, label: string, copy = false) {
@@ -190,10 +191,22 @@ export async function saveQuote(id: number, quote: Quote) {
   return res
 }
 
-/** 지금 최신 버전을 최종본으로 확정한다. 확정 후에는 제안서·견적서를 고칠 수 없다 */
+/** 계약 확정: 지금 최신 버전을 계약본으로 잠근다. 해제 전에는 제안서·견적서를 고칠 수 없다 */
 export async function finalizeClientVersion(id: number) {
   const user = await requireAdmin()
   const res = await shown(async () => ({ version: await finalizeClient(id, who(user)) }))
+  if (res.ok) after(() => notifySbworks(id, 'quote'))
+  revalidatePath('/admin/clients', 'layout')
+  return res
+}
+
+/** 계약 확정 해제: 잠금을 풀어 다시 고칠 수 있게 한다 */
+export async function unlockClientVersion(id: number) {
+  await requireAdmin()
+  const res = await shown(async () => {
+    await unfinalizeClient(id)
+    return {}
+  })
   if (res.ok) after(() => notifySbworks(id, 'quote'))
   revalidatePath('/admin/clients', 'layout')
   return res

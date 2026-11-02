@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     found.proposalHtml = v.proposalHtml
     found.quote = v.quote
     version = v.no
-    suffix = ` v${v.no}${found.finalized?.version === v.no ? ' 최종본' : ''}`
+    suffix = ` v${v.no}${found.finalized?.version === v.no ? ' 계약본' : ''}`
   }
   // mark=N: N 버전 견적 대비 바뀐 곳을 빨간색으로 표시한 견적서(내부용)
   let mark: QuoteMark | undefined

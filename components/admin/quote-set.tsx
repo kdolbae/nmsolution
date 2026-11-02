@@ -12,7 +12,7 @@ type QuoteItem = { id: number; label: string; number: string; supply: number; fi
 
 /**
  * 한 업체의 견적서 목록 (본 견적 + 추가 견적, kevin 2026-10-28 "업체 별 공정(추가 공정), 견적서 추가가 가능해야 함").
- * 견적서마다 제안서·견적서·버전 기록·최종본 확정이 따로다. 계약·매출은 SBworks 엔엠솔루션 메뉴에서 견적서별로 만든다.
+ * 견적서마다 제안서·견적서·버전 기록·계약 확정이 따로다. 계약·매출은 SBworks 엔엠솔루션 메뉴에서 견적서별로 만든다.
  */
 export function QuoteSet({ currentId, quotes }: { currentId: number; quotes: QuoteItem[] }) {
   const router = useRouter()
@@ -79,7 +79,7 @@ export function QuoteSet({ currentId, quotes }: { currentId: number; quotes: Quo
               <span className="font-semibold">{q.label}</span>
               <span className={`text-xs ${q.id === currentId ? 'text-white/80' : 'text-muted-foreground'}`}>{q.number}</span>
               <span className="font-mono text-xs tabular-nums">{q.supply ? `${won(q.supply)}원` : '—'}</span>
-              {q.finalizedVersion && <span className="text-[10px] font-semibold">최종 v{q.finalizedVersion}</span>}
+              {q.finalizedVersion && <span className="text-[10px] font-semibold">계약 v{q.finalizedVersion}</span>}
             </Link>
           </li>
         ))}
@@ -101,7 +101,7 @@ export function QuoteSet({ currentId, quotes }: { currentId: number; quotes: Quo
             <input type="checkbox" checked={copy} onChange={(e) => setCopy(e.target.checked)} />
             지금 보고 있는 견적서({current?.label})를 복사해 시작
           </label>
-          <p className="text-xs text-muted-foreground">기업정보는 이 업체 것을 그대로 쓰고, 견적서·버전 기록·최종본 확정은 따로입니다. 업체용 링크에는 아직 본 견적만 나옵니다.</p>
+          <p className="text-xs text-muted-foreground">기업정보는 이 업체 것을 그대로 쓰고, 견적서·버전 기록·계약 확정은 따로입니다. 업체용 링크에는 아직 본 견적만 나옵니다.</p>
           <div className="flex gap-2">
             <Button size="sm" className="rounded-none" disabled={pending || !label.trim()} onClick={add}>{pending && <Loader2 className="animate-spin" />}만들기</Button>
             <Button size="sm" variant="ghost" className="rounded-none" onClick={() => setAdding(false)}>취소</Button>

@@ -59,7 +59,7 @@ const BAR_CSS = `.nmh{font-family:Pretendard,-apple-system,'Apple SD Gothic Neo'
 @media (max-width:640px){.nmh-list{position:static}.nmh-list ol{left:16px;right:16px;width:auto}}
 @media print{.nmh{display:none!important}}`
 
-/** 발송본이 아직 없을 때 업체 페이지 */
+/** 업체 페이지 공개를 껐거나 아직 보여 줄 견적이 없을 때 */
 export function notReadyHtml(name: string): string {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive"><title>${esc(name)} 공사 자료 | 엔엠솔루션</title><link rel="stylesheet" href="${PRETENDARD_CSS}">

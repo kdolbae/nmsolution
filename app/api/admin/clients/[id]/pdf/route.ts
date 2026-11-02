@@ -25,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     found.proposalHtml = v.proposalHtml
     found.quote = v.quote
     version = v.no
-    suffix = ` v${v.no}${found.finalized?.version === v.no ? ' 최종본' : ''}`
+    suffix = ` v${v.no}${found.finalized?.version === v.no ? ' 계약본' : ''}`
   }
   // 고객에게 발송한 버전이면 발송 견적번호(-R1 등)로 찍는다
   const client = await withSentNumber(found, version)

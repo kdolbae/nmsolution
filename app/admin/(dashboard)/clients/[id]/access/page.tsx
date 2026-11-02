@@ -116,7 +116,7 @@ export default async function AdminClientAccessPage({ params, searchParams }: { 
                       {r.seconds != null ? `${dur(r.seconds)} · ${r.scroll ?? 0}%` : noScreen(r) ? '화면 안 띄움' : ''}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                      {[r.details?.send && (r.details.to ? `${r.details.send} ↔ ${r.details.to}` : r.details.send), r.details?.member, r.device, r.place, r.ip].filter(Boolean).join(' · ')}
+                      {[r.details?.send && (r.details.to ? `${r.details.send} ↔ ${r.details.to}` : r.details.send), r.details?.version != null && `v${r.details.version}${r.details.pinned ? ' 고정' : ''}`, r.details?.member, r.device, r.place, r.ip].filter(Boolean).join(' · ')}
                     </span>
                   </summary>
                   <Detail r={r} />

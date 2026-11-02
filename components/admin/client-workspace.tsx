@@ -95,7 +95,7 @@ export function ClientWorkspace({
   takeoffTemplates?: TakeoffTemplate[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
-  /** 최종본 확정. 확정되면 제안서·견적서를 고칠 수 없다 */
+  /** 계약 확정(잠금). 확정되면 해제 전까지 제안서·견적서를 고칠 수 없다 */
   finalized: Finalized
   /** ?v=N 으로 고른 지난 버전. 있으면 편집 화면 대신 읽기 전용으로 보여 준다 */
   view: { no: number; at: string; summary: string; proposalHtml: string; quote: Quote } | null
@@ -596,7 +596,7 @@ function ProposalPanel({
           </>
         ) : locked ? (
           <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Lock className="size-4" /> 최종본 확정으로 잠김
+            <Lock className="size-4" /> 계약 확정으로 잠김
           </span>
         ) : (
           <>
@@ -725,7 +725,7 @@ function QuotePanel({
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 bg-secondary py-2">
         {locked ? (
           <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Lock className="size-4" /> 최종본 확정으로 잠김
+            <Lock className="size-4" /> 계약 확정으로 잠김
           </span>
         ) : (
           <Button className="rounded-none" onClick={save} disabled={pending || !dirty}>

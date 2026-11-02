@@ -18,7 +18,7 @@ type Item = {
   supply: number
   quoteNumber: string
   updatedAt: string
-  /** 최종본으로 확정한 버전 */
+  /** 계약 확정한 버전 */
   finalizedVersion: number | null
   /** 협력업체 포털 가입 승인 대기 인원 */
   waiting: number
@@ -135,7 +135,7 @@ export function ClientsList({ clients }: { clients: Item[] }) {
                 <div className="flex items-center gap-2">
                   <span className="truncate text-base font-bold hover:text-electric">{c.name}</span>
                   {c.finalizedVersion && (
-                    <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">최종본 v{c.finalizedVersion}</span>
+                    <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">계약 v{c.finalizedVersion}</span>
                   )}
                   {c.waiting > 0 && (
                     <span className="shrink-0 bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">관계자 승인 대기 {c.waiting}</span>
@@ -172,7 +172,7 @@ export function ClientsList({ clients }: { clients: Item[] }) {
                         <span className="shrink-0 text-xs text-muted-foreground">추가 견적</span>
                         <span className="min-w-0 flex-1 truncate font-medium">{x.label}</span>
                         {x.finalizedVersion && (
-                          <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">최종본 v{x.finalizedVersion}</span>
+                          <span className="shrink-0 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">계약 v{x.finalizedVersion}</span>
                         )}
                         <span className="shrink-0 text-xs text-muted-foreground">{x.quoteNumber}</span>
                         <span className="w-32 shrink-0 text-right font-mono tabular-nums">{x.supply ? `${won(x.supply)}원` : '—'}</span>

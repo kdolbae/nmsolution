@@ -14,7 +14,7 @@ import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KE
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
 import { JSTECH_PAGE_HTML } from './jstech-page'
-import { SEOULGLASS_CLIENT, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
+import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS_REV4_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -335,6 +335,9 @@ export function ensureClients(): Promise<void> {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'SCG', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
+      await seedOnce(SEOULGLASS_REV2_KEY, () => refreshSeoulglass('현장 경비 제외·일반관리비 5%·부자재 축소, 공급가 7,015,000'))
+      await seedOnce(SEOULGLASS_REV3_KEY, () => refreshSeoulglass('건물 벽 의자 베이스·옹벽 쪽 14m 판넬 벽(기둥·도리 없앰)·내부 문, 공급가 7,837,000'))
+      await seedOnce(SEOULGLASS_REV4_KEY, () => refreshSeoulglass('처마 옹벽 높은 구간 기준·물받이 옹벽 위·낮은 구간 처마 막음 후레싱·보강 기둥 복귀·안쪽 판넬 벽 11m, 공급가 7,983,000'))
     })().catch((e) => {
       ready = null
       throw e
@@ -398,6 +401,21 @@ async function refreshJstech(summary: string) {
   const quote = jstechQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = JSTECH_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 서울 차량 유리 교체 상가 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). */
+async function refreshSeoulglass(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [SEOULGLASS_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  await pool.query(`UPDATE clients SET memo = $2 WHERE id = $1`, [Number(row.id), SEOULGLASS_CLIENT.memo])
+  const quote = seoulglassQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = SEOULGLASS_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

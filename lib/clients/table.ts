@@ -3,7 +3,7 @@ import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PORTAL_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -147,8 +147,8 @@ export function ensureClients(): Promise<void> {
         await applyChange(Number(row.id), 'system', 'system', (cur) => {
           const next = addKktDoor(normalizeQuote(cur.quote))
           // 견적 전용 페이지에 보온 작업 제안(본체 400T + 50T 그라스울 패널, 도어 400T + 함석 커버)이 없으면 새 페이지로
-          // v3: 본체 보온재가 미네랄울로 적힌 앞선 제안(v2)도 그라스울로 바꾼다
-          const oldPlan = !cur.proposalHtml.includes('id="insul-plan"') || cur.proposalHtml.includes('(미네랄울, 이음부 겹침 시공)')
+          // 보온 제안이 없거나 앞선 400T 안(v2 미네랄울·v3 그라스울)이면 300T 안 페이지로 바꾼다
+          const oldPlan = !cur.proposalHtml.includes(KKT_PLAN_MARK)
           const page = cur.proposalHtml.includes('<!--NM:QUOTE-->') && oldPlan ? KKT_QUOTE_ONLY_PAGE : undefined
           if (!next && !page) return null
           return { ...(next ? { quote: next } : {}), ...(page ? { proposalHtml: page } : {}), summary: KKT_DOOR_SUMMARY }

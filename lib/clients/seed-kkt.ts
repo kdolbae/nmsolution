@@ -1399,6 +1399,9 @@ export const KKT_PLAN_MARK = '본체 내부 보온재 300T 시공 (미네랄울 
  * 슬라이딩 도어는 인건비를 넉넉히(3+3명 × 4일), 인양·용접·부속품 용접·전체 인양은 그대로 두고 부가세 포함 1억 8천 초반(181,500,000)으로 NEGO.
  * 본체 3+3명 × 3일, 공기 21일. 견적 전용 페이지의 본체 보온 카드에 하부 포함 문구.
  */
+/** 2026-11-02 kevin "작업계획서까지 업데이트": 작업계획서(200t+100t, 부속품, 보온·도어, 21일)를 정비해 업체 페이지에 다시 올림 (lib/clients/kkt-plan-page.ts) */
+export const KKT_PLAN_KEY = 'kkt-plan-1102'
+export const KKT_PLAN_SUMMARY = '작업계획서 정비(회전·안착 200t + 100t, 부속품 수리, 본체·도어 보온, 21일)해 업체 페이지에 다시 올림'
 export const KKT_INSUL_BOTTOM_KEY = 'kkt-insul-bottom-1102'
 export const KKT_GRAND_TARGET = 181_500_000
 export const KKT_INSUL_BOTTOM_HTML: [string, string] = [

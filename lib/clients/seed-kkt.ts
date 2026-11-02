@@ -17,6 +17,8 @@ export const KKT_CLIENT = {
 
 /** 2026-10-30 kevin: 금강변압기도 다른 업체와 같은 업체 페이지(링크 복사·미리보기·발송본·PDF)로. 한 번만 돈다 */
 export const KKT_PORTAL_KEY = 'kkt-portal-1030-v1'
+/** 2026-11-02 kevin: 슬라이딩 도어(6×6m, 두께 0.4m, 약 20t) 미네랄울 보온 공종 추가 */
+export const KKT_DOOR_KEY = 'kkt-door-insul-1102-v1'
 
 /**
  * 2026-10-30 kevin(고객 급요청): 작업계획서는 다시 정비할 때까지 내리고, 업체 페이지에는 견적서만 보인다.
@@ -1038,6 +1040,113 @@ export const KKT_QUOTE: Quote = {
           "note": "48인·일 × 50,000"
         }
       ]
+    },
+    {
+      "id": "s6",
+      "name": "슬라이딩 도어 보온 작업",
+      "desc": "슬라이딩 도어(6 × 6m, 두께 0.4m, 약 20t) 외면·옆면 보온: 미네랄울 100T + 아연도 골함석 케이싱 (약 46㎡, 2일)",
+      "items": [
+        {
+          "id": "i1",
+          "kind": "노무비",
+          "name": "보온공",
+          "spec": "미네랄울 부착·케이싱 시공 (고급기능공)",
+          "unit": "인·일",
+          "qty": 4,
+          "price": 350000,
+          "note": "2명 × 2일"
+        },
+        {
+          "id": "i2",
+          "kind": "노무비",
+          "name": "보온 보조",
+          "spec": "자재 재단·운반·핀 작업 (중급기능공)",
+          "unit": "인·일",
+          "qty": 4,
+          "price": 280000,
+          "note": "2명 × 2일"
+        },
+        {
+          "id": "i3",
+          "kind": "노무비",
+          "name": "간접노무비",
+          "spec": "현장 관리 인력 (직접노무비 2,520,000 × 15%)",
+          "unit": "식",
+          "qty": 1,
+          "price": 378000,
+          "note": "현장 관리자"
+        },
+        {
+          "id": "i4",
+          "kind": "재료비",
+          "name": "미네랄울 보온판",
+          "spec": "100T",
+          "unit": "㎡",
+          "qty": 51,
+          "price": 21400,
+          "note": "보온 면적 약 46㎡ + 할증 10%"
+        },
+        {
+          "id": "i5",
+          "kind": "재료비",
+          "name": "골함석 케이싱",
+          "spec": "아연도 골판 0.5t",
+          "unit": "㎡",
+          "qty": 51,
+          "price": 17300,
+          "note": "보온 면적 약 46㎡ + 겹침·할증 10%"
+        },
+        {
+          "id": "i6",
+          "kind": "재료비",
+          "name": "보온 부자재",
+          "spec": "보온핀·와셔·리벳·밴드·실링",
+          "unit": "식",
+          "qty": 1,
+          "price": 300000,
+          "note": "보온핀 ㎡당 4개 이상"
+        },
+        {
+          "id": "i7",
+          "kind": "재료비",
+          "name": "모서리 마감재",
+          "spec": "후레싱·앵글 (도어 둘레 24m)",
+          "unit": "식",
+          "qty": 1,
+          "price": 260000,
+          "note": ""
+        },
+        {
+          "id": "i8",
+          "kind": "장비",
+          "name": "시스템 비계",
+          "spec": "설치·해체 및 임대 (도어 전면 폭 6m × 높이 7m)",
+          "unit": "㎡",
+          "qty": 42,
+          "price": 13200,
+          "note": "2일"
+        },
+        {
+          "id": "i9",
+          "kind": "운반비",
+          "name": "보온 자재 운반",
+          "spec": "1톤 화물",
+          "unit": "회",
+          "qty": 1,
+          "price": 260000,
+          "note": "자재 반입 1회"
+        },
+        {
+          "id": "i10",
+          "kind": "경비",
+          "name": "경비",
+          "spec": "식대·교통비·부대 잡비",
+          "unit": "식",
+          "qty": 1,
+          "price": 400000,
+          "note": "8인·일 × 50,000"
+        }
+      ]
     }
   ],
   "costCalc": true,
@@ -1051,7 +1160,7 @@ export const KKT_QUOTE: Quote = {
   "truncate": true,
   "discount": 0,
   "discountLabel": "가격 조정 (NEGO)",
-  "notes": "전기 수전, 도장, 시운전은 포함하지 않음. 배관·닥트는 운반 시 절단된 부속품(약 6개소) 수리·재장착만 포함함.\n인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준이며, 실측 면적에 따라 정산함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 착공 후 작업일 20일 (일요일 휴무, 착공일은 발주처와 협의)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양·보온 작업 완료 후 10%",
+  "notes": "전기 수전, 도장, 시운전은 포함하지 않음. 배관·닥트는 운반 시 절단된 부속품(약 6개소) 수리·재장착만 포함함.\n인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준이며, 실측 면적에 따라 정산함.\n슬라이딩 도어 보온은 도어 외면·옆면(6 × 6m, 두께 0.4m) 약 46㎡ 기준이며, 실측 면적에 따라 정산함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 착공 후 작업일 20일 (일요일 휴무, 착공일은 발주처와 협의)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양·보온 작업 완료 후 10%",
   "validDays": 30
 }
 
@@ -1131,6 +1240,20 @@ export const KKT_B_NOTE = 'A안(기본안) 기준 견적. B안'
  * - 2026-10-16 A안만 최종 견적: 공사명의 "(A안)", 특기사항의 B안 줄, 제안서의 B안 내용 삭제
  *   (제안서는 B안이 남아 있으면 A안 전용 공개 페이지로 다시 만든다. 이전 내용은 버전 기록에 남는다)
  */
+/** 2026-11-02 kevin: 슬라이딩 도어 보온 공종(KKT_QUOTE 의 마지막 공종). 옛 견적에 없으면 붙인다 */
+export const KKT_DOOR_SECTION = KKT_QUOTE.sections.find((s) => s.name === '슬라이딩 도어 보온 작업')!
+export const KKT_DOOR_NOTE = '슬라이딩 도어 보온은 도어 외면·옆면(6 × 6m, 두께 0.4m) 약 46㎡ 기준이며, 실측 면적에 따라 정산함.'
+export const KKT_DOOR_SUMMARY = '슬라이딩 도어 보온 공종 추가(6 × 6m 외면·옆면 약 46㎡, 8,253,000원)'
+export function addKktDoor(quote: Quote): Quote | null {
+  if (quote.sections.some((s) => s.name === KKT_DOOR_SECTION.name)) return null
+  const lines = quote.notes.split('\n')
+  if (!lines.includes(KKT_DOOR_NOTE)) {
+    const k = lines.findIndex((l) => l.startsWith('보온은 '))
+    lines.splice(k >= 0 ? k + 1 : lines.length, 0, KKT_DOOR_NOTE)
+  }
+  return { ...quote, notes: lines.join('\n'), sections: [...quote.sections, { ...KKT_DOOR_SECTION, items: KKT_DOOR_SECTION.items.map((i) => ({ ...i })) }] }
+}
+
 export function upgradeKkt(
   quote: Quote,
   proposalHtml: string,
@@ -1240,6 +1363,13 @@ export function upgradeKkt(
     rates = KKT_QUOTE.rates
     discountLabel = KKT_QUOTE.discountLabel
     done.push('5개 공종(인양·용접·부속품 용접·전체 인양·보온), 인양 준비·부속품 수리·보온 추가, 간접노무비 15%·일반관리비 8%')
+  }
+  // 2026-11-02 kevin: 슬라이딩 도어 보온 공종이 없으면 붙인다
+  const withDoor = addKktDoor({ ...quote, notes, sections: next })
+  if (withDoor) {
+    next = withDoor.sections
+    notes = withDoor.notes
+    done.push(KKT_DOOR_SUMMARY)
   }
   if (!done.length) return null
   return {

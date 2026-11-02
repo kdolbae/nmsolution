@@ -14,7 +14,7 @@ import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KE
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
 import { JSTECH_PAGE_HTML } from './jstech-page'
-import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS_REV4_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
+import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS_REV4_KEY, SEOULGLASS_REV5_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -338,6 +338,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(SEOULGLASS_REV2_KEY, () => refreshSeoulglass('현장 경비 제외·일반관리비 5%·부자재 축소, 공급가 7,015,000'))
       await seedOnce(SEOULGLASS_REV3_KEY, () => refreshSeoulglass('건물 벽 의자 베이스·옹벽 쪽 14m 판넬 벽(기둥·도리 없앰)·내부 문, 공급가 7,837,000'))
       await seedOnce(SEOULGLASS_REV4_KEY, () => refreshSeoulglass('처마 옹벽 높은 구간 기준·물받이 옹벽 위·낮은 구간 처마 막음 후레싱·보강 기둥 복귀·안쪽 판넬 벽 11m, 공급가 7,983,000'))
+      await seedOnce(SEOULGLASS_REV5_KEY, () => refreshSeoulglass('후레싱 13m·벽체 22,000·양쪽 배수·안쪽 벽 10.5m·문 건물 벽 쪽·가격 조정(NEGO) 할인 415,000, 공급가 7,500,000'))
     })().catch((e) => {
       ready = null
       throw e

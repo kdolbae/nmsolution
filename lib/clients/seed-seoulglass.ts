@@ -15,19 +15,19 @@ export const SEOULGLASS_REV3_KEY = 'seoulglass-eaves-2611-v3-panelwall'
 export const SEOULGLASS_REV4_KEY = 'seoulglass-eaves-2611-v4-eave-flashing'
 
 export const SEOULGLASS_CLIENT = {
-  // 정식 상호·사업자번호·주소는 아직 받지 못함. 받으면 업체 정보에서 넣는다
+  // 정식 상호·사업자번호는 아직 받지 못함. 받으면 업체 정보에서 넣는다. 현장 주소는 2026-11-02 kevin이 알려줌
   name: '서울 차량 유리 교체 상가',
   bizNumber: '',
   contactPerson: '',
   phone: '010-9405-0154',
   email: '',
-  siteAddress: '서울 (상가 주소 확인 중)',
+  siteAddress: '서울 강서구 화곡동 371-59',
   portalSlug: 'seoulglass',
   portalLogin: 'seoulglass',
   /** 업체 링크 비밀번호: 담당자 연락처 뒷번호 4자리 (어드리밍·제이에스테크와 같은 방식) */
   portalPassword: '0154',
   memo: `[업체 · 내부용] 2026-10-30 등록
-- 서울 차량 유리 교체 상가, 담당자 연락처 010-9405-0154 (상호·이름·주소 미수령)
+- 서울 차량 유리 교체 상가, 담당자 연락처 010-9405-0154, 현장 주소 서울 강서구 화곡동 371-59(kevin 11-02). 상호·담당자 이름·사업자번호 미수령
 
 [공사 · 2026-10-30 사진 견적]
 - 왼쪽 건물 2층 슬래브 아래 벽 안쪽부터 오른쪽 옹벽까지 골목(폭 2,300 × 길이 14m) 전체를 EPS 난연 100T 판넬 지붕으로 덮음. 고 300 → 판넬 2,400 × 14장

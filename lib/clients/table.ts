@@ -3,7 +3,7 @@ import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -153,6 +153,38 @@ export function ensureClients(): Promise<void> {
           if (!next && !page) return null
           return { ...(next ? { quote: next } : {}), ...(page ? { proposalHtml: page } : {}), summary: KKT_DOOR_SUMMARY }
         })
+      })
+      // 2026-11-02 kevin: "1억4천5백 정도 만들었던 견적(10-30, 공급가 142,279,000) 이후 견적 모두 지우고 지금 걸로". 고객 화면에 고정된
+      // 10-30 버전 뒤에 같은 날 쌓인 중간 안(400T 미네랄울·400T 그라스울)을 지우고, 최신 300T 안을 바로 다음 번호로 당긴다.
+      // 발송 기록·계약 확정에 쓰인 버전은 지우지 않는다. 고객 화면 고정은 그대로 둔다
+      await seedOnce(KKT_PRUNE_KEY, async () => {
+        const found = await pool.query<{ id: string; portal_version: number | null; finalized_version: number | null }>(
+          `SELECT id, portal_version, finalized_version FROM clients WHERE name = $1 AND parent_id IS NULL ORDER BY id LIMIT 1`,
+          [KKT_CLIENT.name],
+        )
+        const row = found.rows[0]
+        if (!row) return
+        const id = Number(row.id)
+        const base = await pool.query<{ v: number | null }>(
+          `SELECT MAX(version_no) AS v FROM client_versions WHERE client_id = $1 AND position('슬라이딩 도어 보온 작업' in quote::text) = 0`,
+          [id],
+        )
+        const keep = row.portal_version ?? base.rows[0]?.v
+        const last = await pool.query<{ v: number | null }>(`SELECT MAX(version_no) AS v FROM client_versions WHERE client_id = $1`, [id])
+        const latest = last.rows[0]?.v
+        if (!keep || !latest || latest <= keep + 1) return
+        const sends = await pool.query<{ t: string | null }>(`SELECT to_regclass('client_sends') AS t`)
+        const sent = sends.rows[0]?.t
+          ? (await pool.query<{ v: number }>(`SELECT DISTINCT version_no AS v FROM client_sends WHERE client_id = $1 AND version_no IS NOT NULL`, [id])).rows.map((r) => r.v)
+          : []
+        const locked = [...sent, ...(row.finalized_version ? [row.finalized_version] : [])]
+        await pool.query(
+          `DELETE FROM client_versions WHERE client_id = $1 AND version_no > $2 AND version_no < $3 AND NOT (version_no = ANY($4::int[]))`,
+          [id, keep, latest, locked],
+        )
+        const gap = await pool.query(`SELECT 1 FROM client_versions WHERE client_id = $1 AND version_no > $2 AND version_no < $3`, [id, keep, latest])
+        const to = gap.rows.length ? latest : keep + 1
+        await pool.query(`UPDATE client_versions SET version_no = $3, summary = $4 WHERE client_id = $1 AND version_no = $2`, [id, latest, to, KKT_PRUNE_SUMMARY])
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

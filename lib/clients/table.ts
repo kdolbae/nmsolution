@@ -3,7 +3,7 @@ import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_PORTAL_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PORTAL_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -129,6 +129,28 @@ export function ensureClients(): Promise<void> {
             [id, KKT_QUOTE_ONLY_PAGE],
           )
         }
+      })
+      // 2026-11-02 kevin: 금강변압기 본체 보온 400T 재산출·슬라이딩 도어 보온·우천 천막 공종(계약 확정 전, 고객 화면은 고정해 비노출)
+      await seedOnce(KKT_DOOR_KEY, async () => {
+        const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE name = $1 ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
+        const row = found.rows[0]
+        if (!row || row.finalized_at) return
+        // kevin: 고객에게는 아직 보이지 않게. 고객 화면을 지금 최신 버전(10-30 견적)에 고정한 뒤 고친다(lib/clients/exposure.ts).
+        // 고객에게 보이려면 어드민 업체 화면 '고객 화면'에서 '최신 자동으로'를 누른다
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_version int`)
+        await pool.query(
+          `UPDATE clients SET portal_version = (SELECT MAX(version_no) FROM client_versions
+                                                 WHERE client_id = $1 AND position('슬라이딩 도어 보온 작업' in quote::text) = 0)
+            WHERE id = $1 AND portal_version IS NULL`,
+          [row.id],
+        )
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const next = addKktDoor(normalizeQuote(cur.quote))
+          // 견적 전용 페이지에 보온 작업 제안(본체 400T + 50T 그라스울 패널, 도어 400T + 함석 커버)이 없으면 새 페이지로
+          const page = cur.proposalHtml.includes('<!--NM:QUOTE-->') && !cur.proposalHtml.includes('id="insul-plan"') ? KKT_QUOTE_ONLY_PAGE : undefined
+          if (!next && !page) return null
+          return { ...(next ? { quote: next } : {}), ...(page ? { proposalHtml: page } : {}), summary: KKT_DOOR_SUMMARY }
+        })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

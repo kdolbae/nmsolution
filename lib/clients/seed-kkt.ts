@@ -17,6 +17,8 @@ export const KKT_CLIENT = {
 
 /** 2026-10-30 kevin: 금강변압기도 다른 업체와 같은 업체 페이지(링크 복사·미리보기·발송본·PDF)로. 한 번만 돈다 */
 export const KKT_PORTAL_KEY = 'kkt-portal-1030-v1'
+/** 2026-11-02 kevin: 슬라이딩 도어(6×6m, 두께 0.4m, 약 20t) 미네랄울 보온 공종 추가 */
+export const KKT_DOOR_KEY = 'kkt-door-insul-1102-v2'
 
 /**
  * 2026-10-30 kevin(고객 급요청): 작업계획서는 다시 정비할 때까지 내리고, 업체 페이지에는 견적서만 보인다.
@@ -32,9 +34,22 @@ h1{font-size:22px;font-weight:700;color:#0f2a44;margin:0 0 4px;letter-spacing:-.
 .qcard{background:#fff;border:1px solid #dde3ea;padding:14px 16px}.qcard.main{border-color:#0f2a44}
 .qcard .l{font-size:13px;color:#5d6878}.qcard .v{font-size:24px;font-weight:700;color:#0f2a44;margin:2px 0;font-variant-numeric:tabular-nums}.qcard .s{font-size:12.5px;color:#5d6878}
 .quote-sheet{background:#fff;border:1px solid #dde3ea;padding:28px 24px;margin-top:16px;overflow-x:auto}
-@media print{body{background:#fff}main{padding:0}.quote-sheet{border:0;padding:0;margin:0}}</style>
+@media print{body{background:#fff}main{padding:0}.quote-sheet{border:0;padding:0;margin:0}}
+.plan{background:#fff;border:1px solid #dde3ea;padding:22px 24px;margin-top:16px}
+.plan h2{font-size:17px;font-weight:700;color:#0f2a44;margin:0 0 6px}.plan>p{margin:0 0 14px;color:#5d6878;font-size:14px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.plan article{border:1px solid #e3e8ee;border-left:3px solid #0f2a44;padding:12px 14px}
+.plan h3{font-size:15px;font-weight:700;color:#0f2a44;margin:0 0 8px}.plan ol{margin:0;padding-left:20px;font-size:14px;line-height:1.7}
+.plan .spec{display:inline-block;margin-top:8px;font-size:12.5px;color:#5d6878}
+@media print{.plan{border:0;padding:0 0 12px}}</style>
 </head><body><main><h1>주식회사 금강변압기 견적서</h1><p>엔엠솔루션이 제출하는 견적서임. 오른쪽 아래 버튼으로 PDF를 내려받을 수 있음.</p>
 <!--NM:QUOTE-SUMMARY-->
+<section class="plan" id="insul-plan"><h2>보온 작업 제안</h2><p>진공건조로 본체와 슬라이딩 도어의 보온을 아래 순서로 시공하며, 작업 기간에는 가설 천막으로 비를 막음.</p>
+<div class="plan-grid">
+<article><h3>본체 보온</h3><ol><li>시스템 비계 설치 후 본체 외면 정리, 보온핀 설치</li><li>본체 내부 보온재 400T 시공 (미네랄울, 이음부 겹침 시공)</li><li>50T 그라스울 패널로 마감, 이음부 실링·모서리 후레싱</li></ol><span class="spec">보온재 400T + 그라스울 패널 50T</span></article>
+<article><h3>슬라이딩 도어 보온</h3><ol><li>기존 커버 철거·반출</li><li>미네랄울 400T 두께로 덮어 시공 (장핀 고정)</li><li>함석 커버 씌우고 이음부·모서리 마감</li></ol><span class="spec">미네랄울 400T + 함석 커버</span></article>
+<article><h3>우천 대비 가설 천막</h3><ol><li>보온 시작 전 시스템 비계 상부에 파이프 틀을 조립하고 방수 천막을 침</li><li>비계 측면도 천막으로 가려 보온재가 젖지 않게 유지</li><li>보온·커버 마감이 끝난 뒤 천막과 틀 철거</li></ol><span class="spec">방수 천막(타포린) + 파이프 틀</span></article>
+</div></section>
 <!--NM:QUOTE-->
 </main></body></html>`
 
@@ -925,17 +940,17 @@ export const KKT_QUOTE: Quote = {
     {
       "id": "s5",
       "name": "보온 작업",
-      "desc": "건조로 외면 전체 보온: 미네랄울 100T + 아연도 골함석 케이싱 (외곽 6 × 6 × 9m, 하부 제외 약 234㎡, 6일)",
+      "desc": "건조로 본체 보온: 내부 미네랄울 400T(고밀도 100T 4겹) 시공 후 50T 그라스울 패널 마감 (외곽 6 × 6 × 9m, 하부 제외 약 234㎡, 12일)",
       "items": [
         {
           "id": "i1",
           "kind": "노무비",
           "name": "보온공",
-          "spec": "미네랄울 부착·케이싱 시공 (고급기능공)",
+          "spec": "미네랄울 4겹 부착·그라스울 패널 시공 (고급기능공)",
           "unit": "인·일",
-          "qty": 24,
+          "qty": 48,
           "price": 350000,
-          "note": "4명 × 6일"
+          "note": "4명 × 12일"
         },
         {
           "id": "i2",
@@ -943,69 +958,139 @@ export const KKT_QUOTE: Quote = {
           "name": "보온 보조",
           "spec": "자재 재단·운반·핀 작업 (중급기능공)",
           "unit": "인·일",
-          "qty": 24,
+          "qty": 48,
           "price": 280000,
-          "note": "4명 × 6일"
+          "note": "4명 × 12일"
+        },
+        {
+          "id": "i12",
+          "kind": "노무비",
+          "name": "용접사",
+          "spec": "패널 지지 틀(각관) 본체 H빔 용접",
+          "unit": "인·일",
+          "qty": 6,
+          "price": 500000,
+          "note": "2명 × 3일"
+        },
+        {
+          "id": "i15",
+          "kind": "노무비",
+          "name": "안전담당 (관리감독자)",
+          "spec": "고소작업·비계 상부 작업 통제, 작업 전 TBM",
+          "unit": "인·일",
+          "qty": 12,
+          "price": 320000,
+          "note": "1명 × 12일"
+        },
+        {
+          "id": "i16",
+          "kind": "노무비",
+          "name": "화재감시자",
+          "spec": "패널 틀 용접 중 화기작업 감시",
+          "unit": "인·일",
+          "qty": 3,
+          "price": 250000,
+          "note": "1명 × 3일"
         },
         {
           "id": "i3",
           "kind": "노무비",
           "name": "간접노무비",
-          "spec": "현장 관리 인력 (직접노무비 15,120,000 × 15%)",
+          "spec": "현장 관리 인력 (직접노무비 37,830,000 × 15%)",
           "unit": "식",
           "qty": 1,
-          "price": 2268000,
+          "price": 5674500,
           "note": "현장 관리자"
         },
         {
           "id": "i4",
           "kind": "재료비",
           "name": "미네랄울 보온판",
-          "spec": "100T",
+          "spec": "고밀도 120K 100T (4겹 시공으로 400T)",
           "unit": "㎡",
-          "qty": 258,
-          "price": 21400,
-          "note": "보온 면적 약 234㎡ + 할증 10%"
+          "qty": 1050,
+          "price": 29800,
+          "note": "보온 면적 약 234㎡ × 4겹 + 재단·할증 12%"
         },
         {
           "id": "i5",
           "kind": "재료비",
-          "name": "골함석 케이싱",
-          "spec": "아연도 골판 0.5t",
+          "name": "그라스울 패널",
+          "spec": "50T 불연 샌드위치 패널 (외판 0.5t 컬러강판)",
           "unit": "㎡",
-          "qty": 258,
-          "price": 17300,
-          "note": "보온 면적 약 234㎡ + 겹침·할증 10%"
+          "qty": 265,
+          "price": 34000,
+          "note": "보온 면적 약 234㎡ + 겹침·할증 13%"
+        },
+        {
+          "id": "i13",
+          "kind": "재료비",
+          "name": "패널 지지 틀",
+          "spec": "각관 □50×50×2.3t, 앵커·브래킷 포함",
+          "unit": "m",
+          "qty": 420,
+          "price": 5200,
+          "note": "패널 고정 틀 (400T 두께 띄움)"
         },
         {
           "id": "i6",
           "kind": "재료비",
           "name": "보온 부자재",
-          "spec": "보온핀·와셔·리벳·밴드·실링",
+          "spec": "장핀(450mm)·와셔·리벳·밴드·알루미늄 테이프·실링",
           "unit": "식",
           "qty": 1,
-          "price": 1380000,
-          "note": "보온핀 ㎡당 4개 이상"
+          "price": 3200000,
+          "note": "400T 고정용 장핀 ㎡당 6개 이상"
         },
         {
           "id": "i7",
           "kind": "재료비",
-          "name": "모서리 마감재",
-          "spec": "후레싱·앵글",
+          "name": "패널 부자재",
+          "spec": "코너·조이너·후레싱·피스·실리콘",
           "unit": "식",
           "qty": 1,
-          "price": 920000,
+          "price": 1900000,
           "note": ""
+        },
+        {
+          "id": "i14",
+          "kind": "재료비",
+          "name": "용접 소모품",
+          "spec": "CO2 가스·와이어·디스크",
+          "unit": "식",
+          "qty": 1,
+          "price": 500000,
+          "note": ""
+        },
+        {
+          "id": "i17",
+          "kind": "재료비",
+          "name": "안전장구",
+          "spec": "그네식 안전대·안전모·방진 마스크(1급)·보안경·분진 보호복·내절단 장갑",
+          "unit": "식",
+          "qty": 1,
+          "price": 2600000,
+          "note": "작업 인원 11명분, 보호복·마스크 소모품 포함"
+        },
+        {
+          "id": "i18",
+          "kind": "재료비",
+          "name": "분진·보양재",
+          "spec": "작업 구역 보양 비닐·방진망·집진 청소",
+          "unit": "식",
+          "qty": 1,
+          "price": 600000,
+          "note": "유리섬유·광물섬유 분진 관리"
         },
         {
           "id": "i8",
           "kind": "장비",
           "name": "시스템 비계",
-          "spec": "설치·해체 및 임대 (둘레 약 36m × 높이 7m)",
+          "spec": "설치·해체 및 임대 (둘레 약 36m × 높이 7m, 작업발판·안전난간 포함)",
           "unit": "㎡",
           "qty": 252,
-          "price": 13200,
-          "note": "6일"
+          "price": 18500,
+          "note": "12일"
         },
         {
           "id": "i11",
@@ -1013,19 +1098,39 @@ export const KKT_QUOTE: Quote = {
           "name": "PT 비계 임대",
           "spec": "이동식 PT 아시바 (바퀴·안전난간 포함), 모서리·상부 마감용",
           "unit": "세트·일",
-          "qty": 12,
+          "qty": 24,
           "price": 58000,
-          "note": "2세트 × 6일"
+          "note": "2세트 × 12일"
+        },
+        {
+          "id": "i19",
+          "kind": "장비",
+          "name": "자재 양중",
+          "spec": "지게차 (미네랄울·패널 하역·양중)",
+          "unit": "대·일",
+          "qty": 3,
+          "price": 350000,
+          "note": "자재 반입일 3일"
         },
         {
           "id": "i9",
           "kind": "운반비",
           "name": "보온 자재 운반",
-          "spec": "1톤 화물",
+          "spec": "5톤 화물",
           "unit": "회",
-          "qty": 3,
-          "price": 260000,
-          "note": "자재 반입 2회 + 비계 반입 1회"
+          "qty": 4,
+          "price": 450000,
+          "note": "미네랄울 2회 + 패널·각관 1회 + 비계 1회"
+        },
+        {
+          "id": "i20",
+          "kind": "운반비",
+          "name": "폐자재 처리",
+          "spec": "재단 잔재·포장재 반출·처리",
+          "unit": "식",
+          "qty": 1,
+          "price": 700000,
+          "note": ""
         },
         {
           "id": "i10",
@@ -1034,8 +1139,242 @@ export const KKT_QUOTE: Quote = {
           "spec": "식대·교통비·부대 잡비",
           "unit": "식",
           "qty": 1,
-          "price": 2400000,
-          "note": "48인·일 × 50,000"
+          "price": 5850000,
+          "note": "117인·일 × 50,000"
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "name": "슬라이딩 도어 보온 작업",
+      "desc": "슬라이딩 도어(6 × 6m, 약 20t) 기존 커버 철거 후 미네랄울 400T(고밀도 100T 4겹) 보온, 함석 커버 마감 (한쪽 면·옆면 약 46㎡, 4일)",
+      "items": [
+        {
+          "id": "i1",
+          "kind": "노무비",
+          "name": "보온공",
+          "spec": "기존 커버 철거, 미네랄울 부착·함석 커버 시공 (고급기능공)",
+          "unit": "인·일",
+          "qty": 8,
+          "price": 350000,
+          "note": "2명 × 4일"
+        },
+        {
+          "id": "i2",
+          "kind": "노무비",
+          "name": "보온 보조",
+          "spec": "자재 재단·운반·핀 작업 (중급기능공)",
+          "unit": "인·일",
+          "qty": 8,
+          "price": 280000,
+          "note": "2명 × 4일"
+        },
+        {
+          "id": "i3",
+          "kind": "노무비",
+          "name": "간접노무비",
+          "spec": "현장 관리 인력 (직접노무비 5,040,000 × 15%)",
+          "unit": "식",
+          "qty": 1,
+          "price": 756000,
+          "note": "현장 관리자"
+        },
+        {
+          "id": "i4",
+          "kind": "재료비",
+          "name": "미네랄울 보온판",
+          "spec": "고밀도 120K 100T (4겹 시공으로 400T)",
+          "unit": "㎡",
+          "qty": 175,
+          "price": 29800,
+          "note": "전면 36㎡ × 4겹 + 옆면 9.6㎡, 재단·할증 14%"
+        },
+        {
+          "id": "i5",
+          "kind": "재료비",
+          "name": "함석 커버",
+          "spec": "아연도 골판 0.5t",
+          "unit": "㎡",
+          "qty": 53,
+          "price": 19800,
+          "note": "한쪽 면·옆면 약 46㎡ + 겹침·할증 15%"
+        },
+        {
+          "id": "i6",
+          "kind": "재료비",
+          "name": "보온 부자재",
+          "spec": "장핀(450mm)·와셔·리벳·밴드·알루미늄 테이프·실링",
+          "unit": "식",
+          "qty": 1,
+          "price": 650000,
+          "note": "400T 고정용 장핀 ㎡당 6개 이상"
+        },
+        {
+          "id": "i7",
+          "kind": "재료비",
+          "name": "모서리 마감재",
+          "spec": "후레싱·앵글 (도어 둘레 24m)",
+          "unit": "식",
+          "qty": 1,
+          "price": 320000,
+          "note": ""
+        },
+        {
+          "id": "i21",
+          "kind": "재료비",
+          "name": "안전장구",
+          "spec": "그네식 안전대·안전모·방진 마스크(1급)·보안경·분진 보호복·장갑",
+          "unit": "식",
+          "qty": 1,
+          "price": 550000,
+          "note": "작업 인원 4명분, 소모품 포함"
+        },
+        {
+          "id": "i8",
+          "kind": "장비",
+          "name": "시스템 비계",
+          "spec": "설치·해체 및 임대 (도어 전면 폭 6m × 높이 7m, 안전난간 포함)",
+          "unit": "㎡",
+          "qty": 42,
+          "price": 18500,
+          "note": "4일"
+        },
+        {
+          "id": "i9",
+          "kind": "운반비",
+          "name": "기존 커버 철거 반출",
+          "spec": "철거 커버·폐자재 반출·처리",
+          "unit": "식",
+          "qty": 1,
+          "price": 450000,
+          "note": ""
+        },
+        {
+          "id": "i10",
+          "kind": "운반비",
+          "name": "보온 자재 운반",
+          "spec": "1톤 화물",
+          "unit": "회",
+          "qty": 2,
+          "price": 260000,
+          "note": "자재 반입 2회"
+        },
+        {
+          "id": "i11",
+          "kind": "경비",
+          "name": "경비",
+          "spec": "식대·교통비·부대 잡비",
+          "unit": "식",
+          "qty": 1,
+          "price": 800000,
+          "note": "16인·일 × 50,000"
+        }
+      ]
+    },
+    {
+      "id": "s7",
+      "name": "우천 대비 가설 천막 작업",
+      "desc": "보온 작업 중 비를 막기 위한 가설 천막: 시스템 비계 상부·측면에 방수 천막(타포린) 설치·유지·해체 (본체 약 290㎡ + 도어 약 50㎡, 보온 기간 16일)",
+      "items": [
+        {
+          "id": "i1",
+          "kind": "노무비",
+          "name": "천막 설치·해체",
+          "spec": "비계 상부 파이프 틀 조립, 천막 결속·해체 (고급기능공)",
+          "unit": "인·일",
+          "qty": 6,
+          "price": 350000,
+          "note": "설치 2명 × 2일 + 해체 2명 × 1일"
+        },
+        {
+          "id": "i2",
+          "kind": "노무비",
+          "name": "설치 보조",
+          "spec": "자재 운반·결속 보조 (중급기능공)",
+          "unit": "인·일",
+          "qty": 6,
+          "price": 280000,
+          "note": "설치 2명 × 2일 + 해체 2명 × 1일"
+        },
+        {
+          "id": "i4b",
+          "kind": "노무비",
+          "name": "천막 점검·보수",
+          "spec": "강풍·우천 후 결속 점검, 찢김 보수 (중급기능공)",
+          "unit": "인·일",
+          "qty": 4,
+          "price": 280000,
+          "note": "1명 × 4회"
+        },
+        {
+          "id": "i3",
+          "kind": "노무비",
+          "name": "간접노무비",
+          "spec": "현장 관리 인력 (직접노무비 4,900,000 × 15%)",
+          "unit": "식",
+          "qty": 1,
+          "price": 735000,
+          "note": "현장 관리자"
+        },
+        {
+          "id": "i4",
+          "kind": "재료비",
+          "name": "방수 천막",
+          "spec": "타포린(PE 방수포) 고밀도, 아일릿 가공",
+          "unit": "㎡",
+          "qty": 400,
+          "price": 4500,
+          "note": "본체 측면 252㎡ + 상부 36㎡ + 도어 50㎡, 겹침 18%"
+        },
+        {
+          "id": "i5",
+          "kind": "재료비",
+          "name": "결속 부자재",
+          "spec": "로프·결속 밴드·클램프·고무 패킹·모래주머니",
+          "unit": "식",
+          "qty": 1,
+          "price": 480000,
+          "note": ""
+        },
+        {
+          "id": "i9",
+          "kind": "재료비",
+          "name": "안전장구",
+          "spec": "그네식 안전대·안전모·장갑 (비계 상부 작업)",
+          "unit": "식",
+          "qty": 1,
+          "price": 300000,
+          "note": "작업 인원 4명분"
+        },
+        {
+          "id": "i6",
+          "kind": "장비",
+          "name": "천막 틀 파이프 임대",
+          "spec": "단관 파이프·클램프 (비계 상부 지붕 틀, 물매용)",
+          "unit": "식",
+          "qty": 1,
+          "price": 1100000,
+          "note": "16일"
+        },
+        {
+          "id": "i7",
+          "kind": "운반비",
+          "name": "천막 자재 운반",
+          "spec": "1톤 화물",
+          "unit": "회",
+          "qty": 2,
+          "price": 260000,
+          "note": "반입 1회 + 반출 1회"
+        },
+        {
+          "id": "i8",
+          "kind": "경비",
+          "name": "경비",
+          "spec": "식대·교통비·부대 잡비",
+          "unit": "식",
+          "qty": 1,
+          "price": 800000,
+          "note": "16인·일 × 50,000"
         }
       ]
     }
@@ -1051,7 +1390,7 @@ export const KKT_QUOTE: Quote = {
   "truncate": true,
   "discount": 0,
   "discountLabel": "가격 조정 (NEGO)",
-  "notes": "전기 수전, 도장, 시운전은 포함하지 않음. 배관·닥트는 운반 시 절단된 부속품(약 6개소) 수리·재장착만 포함함.\n인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준이며, 실측 면적에 따라 정산함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 착공 후 작업일 20일 (일요일 휴무, 착공일은 발주처와 협의)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양·보온 작업 완료 후 10%",
+  "notes": "전기 수전, 도장, 시운전은 포함하지 않음. 배관·닥트는 운반 시 절단된 부속품(약 6개소) 수리·재장착만 포함함.\n인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준(내부 미네랄울 400T + 50T 그라스울 패널 마감)이며, 실측 면적에 따라 정산함.\n슬라이딩 도어 보온은 기존 커버 철거 후 미네랄울 400T(100T 4겹) + 함석 커버이며, 한쪽 면·옆면 약 46㎡ 기준으로 실측 면적에 따라 정산함.\n보온 작업 기간에는 비계 상부·측면에 가설 천막을 쳐 보온재가 비에 젖지 않게 하며, 천막 철거는 보온 완료 후 함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 착공 후 작업일 30일 (일요일 휴무, 착공일은 발주처와 협의)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양·보온 작업 완료 후 10%",
   "validDays": 30
 }
 
@@ -1131,6 +1470,48 @@ export const KKT_B_NOTE = 'A안(기본안) 기준 견적. B안'
  * - 2026-10-16 A안만 최종 견적: 공사명의 "(A안)", 특기사항의 B안 줄, 제안서의 B안 내용 삭제
  *   (제안서는 B안이 남아 있으면 A안 전용 공개 페이지로 다시 만든다. 이전 내용은 버전 기록에 남는다)
  */
+/**
+ * 2026-11-02 kevin: 본체 보온을 내부 미네랄울 400T + 50T 그라스울 패널로 재산출, 슬라이딩 도어 보온·우천 대비 가설 천막 공종 추가.
+ * 옛 견적(10-30 100T + 골함석 보온, 도어·천막 없음)에만 적용하고, 이미 반영된 견적은 null.
+ */
+export const KKT_BODY_SECTION = KKT_QUOTE.sections.find((s) => s.name === '보온 작업')!
+export const KKT_DOOR_SECTION = KKT_QUOTE.sections.find((s) => s.name === '슬라이딩 도어 보온 작업')!
+export const KKT_TARP_SECTION = KKT_QUOTE.sections.find((s) => s.name === '우천 대비 가설 천막 작업')!
+export const KKT_BODY_NOTE = '보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준(내부 미네랄울 400T + 50T 그라스울 패널 마감)이며, 실측 면적에 따라 정산함.'
+export const KKT_DOOR_NOTE = '슬라이딩 도어 보온은 기존 커버 철거 후 미네랄울 400T(100T 4겹) + 함석 커버이며, 한쪽 면·옆면 약 46㎡ 기준으로 실측 면적에 따라 정산함.'
+export const KKT_TARP_NOTE = '보온 작업 기간에는 비계 상부·측면에 가설 천막을 쳐 보온재가 비에 젖지 않게 하며, 천막 철거는 보온 완료 후 함.'
+const KKT_PERIOD_NEW = '공사 기간: 착공 후 작업일 30일 (일요일 휴무, 착공일은 발주처와 협의)'
+export const KKT_DOOR_SUMMARY = '본체 보온 내부 400T + 50T 그라스울 패널 재산출, 슬라이딩 도어 보온(커버 철거, 400T + 함석 커버)·우천 대비 가설 천막 공종 추가, 공기 30일, 업체 페이지에 보온 작업 제안'
+const copySection = (s: QuoteSection): QuoteSection => ({ ...s, items: s.items.map((i) => ({ ...i })) })
+export function addKktDoor(quote: Quote): Quote | null {
+  let { notes, sections } = quote
+  let changed = false
+  const setNote = (startsWith: string, line: string, after?: string) => {
+    const lines = notes.split('\n')
+    const k = lines.findIndex((l) => l.startsWith(startsWith))
+    if (k >= 0 && lines[k] === line) return
+    if (k >= 0) lines[k] = line
+    else {
+      const j = after ? lines.findIndex((l) => l.startsWith(after)) : -1
+      lines.splice(j >= 0 ? j + 1 : lines.length, 0, line)
+    }
+    notes = lines.join('\n')
+    changed = true
+  }
+  // 세 공종은 이 안과 다르면(옛 100T 보온, 없음, 앞선 초안) 이 안으로 맞춘다. 시드에서 한 번만 돌린다
+  for (const def of [KKT_BODY_SECTION, KKT_DOOR_SECTION, KKT_TARP_SECTION]) {
+    const cur = sections.find((s) => s.name === def.name)
+    if (cur && JSON.stringify(cur) === JSON.stringify(def)) continue
+    sections = cur ? sections.map((s) => (s === cur ? copySection(def) : s)) : [...sections, copySection(def)]
+    changed = true
+  }
+  setNote('보온은 ', KKT_BODY_NOTE)
+  setNote('슬라이딩 도어 보온은', KKT_DOOR_NOTE, '보온은 ')
+  setNote('보온 작업 기간에는', KKT_TARP_NOTE, '슬라이딩 도어 보온은')
+  setNote('공사 기간:', KKT_PERIOD_NEW)
+  return changed ? { ...quote, notes, sections } : null
+}
+
 export function upgradeKkt(
   quote: Quote,
   proposalHtml: string,

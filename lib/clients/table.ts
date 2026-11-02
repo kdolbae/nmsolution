@@ -1,9 +1,9 @@
 import type { PoolClient } from 'pg'
 import { pool } from '@/lib/db'
-import { calcQuote, normalizeQuote, today, type Quote } from './quote'
+import { calcQuote, discountForGrand, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -208,6 +208,23 @@ export function ensureClients(): Promise<void> {
             ...(html !== cur.proposalHtml ? { proposalHtml: html } : {}),
             summary: '우천 대비 가설 천막 제외에 맞춰 특기사항·보온 작업 제안의 천막 문구 정리',
           }
+        })
+      })
+      // 2026-11-02 kevin: 본체 보온 하부 포함 실제 치수(그라스울 패널), 슬라이딩 도어 인건비 상향, 인양·용접 공종은 그대로 두고
+      // 부가세 포함 1억 8천 초반(181,500,000)으로 가격 조정. 고객 화면은 최신 자동이라 바로 보인다
+      await seedOnce(KKT_INSUL_BOTTOM_KEY, async () => {
+        const found = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND parent_id IS NULL AND finalized_at IS NULL ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
+        const row = found.rows[0]
+        if (!row) return
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const q = normalizeQuote(cur.quote)
+          const next = addKktDoor(q) ?? q
+          const discount = discountForGrand({ ...next, discount: 0 }, KKT_GRAND_TARGET) ?? next.discount
+          const quote = { ...next, discount }
+          const html = cur.proposalHtml.split(KKT_INSUL_BOTTOM_HTML[0]).join(KKT_INSUL_BOTTOM_HTML[1])
+          const quoteChanged = JSON.stringify(quote) !== JSON.stringify(q)
+          if (!quoteChanged && html === cur.proposalHtml) return null
+          return { ...(quoteChanged ? { quote } : {}), ...(html !== cur.proposalHtml ? { proposalHtml: html } : {}), summary: KKT_INSUL_BOTTOM_SUMMARY }
         })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다

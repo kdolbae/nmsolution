@@ -1461,7 +1461,7 @@ export const KKT_VIDEO_SUMMARY = '슬라이딩 도어 보온 매트 46㎡ 전체
 export const KKT_YARD_KEY = 'kkt-door-yard-1102'
 /** 2026-11-02 kevin: 작업계획서는 기존(10-19판) 내용에 추가하는 방식. 단계별 장면 사진 줄·공정별 장비 표·현장 상부뷰 복원, 일차별 상세 공정 인쇄 시 칸 폭 정리 */
 export const KKT_RESTORE_KEY = 'kkt-plan-restore-1102'
-export const KKT_RESTORE_SUMMARY = '작업계획서에 기존 내용 복원(단계별 장면 사진, 공정별 장비 표, 현장 상부뷰) 및 인쇄 시 일차별 상세 공정 표 칸 폭 정리, 영상 개구부 면 보온 표시 정정 (금액 변동 없음)'
+export const KKT_RESTORE_SUMMARY = '작업계획서에 기존 내용 복원(단계별 장면 사진, 공정별 장비 표, 현장 상부뷰) 및 인쇄 시 일차별 상세 공정 표 칸 폭 정리 (금액 변동 없음)'
 export const KKT_YARD_NOTE_FROM = '인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.'
 export const KKT_YARD_NOTE_TO = '인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행하며, 완성품은 도어부가 마당을 향하도록 안착함.'
 export const KKT_YARD_MOVE_DESC = KKT_QUOTE.sections.find((x) => x.desc.startsWith('완성품 전체 인양'))!.desc

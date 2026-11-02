@@ -14,7 +14,7 @@ const read = (p: string) => readFileSync(path.join(root, p), 'utf8')
 const problems: string[] = []
 
 // 업체용 링크가 아닌 최상위 폴더(사이트 화면·API·어드민·포털)
-const NOT_CLIENT = new Set(['about', 'actions', 'admin', 'api', 'leak', 'portal', 'services'])
+const NOT_CLIENT = new Set(['about', 'actions', 'admin', 'api', 'contract', 'leak', 'portal', 'services'])
 for (const name of readdirSync(path.join(root, 'app'), { withFileTypes: true })) {
   if (!name.isDirectory() || NOT_CLIENT.has(name.name) || name.name.startsWith('(') || name.name.startsWith('_')) continue
   const route = path.join('app', name.name, 'route.ts')
@@ -37,6 +37,11 @@ if (!existsSync(path.join(root, 'public/js/pv.js'))) problems.push('public/js/pv
 if (!existsSync(path.join(root, 'app/api/pv/route.ts'))) problems.push('app/api/pv/route.ts 없음')
 for (const f of ['app/portal/page.tsx', 'app/api/portal/print/route.ts', 'app/api/portal/files/[file]/route.ts'])
   if (!/logAccess\(/.test(read(f))) problems.push(`${f}: logAccess 가 없음`)
+
+// 고객용 계약서 보기(/contract/<키>): 열람은 trackedHtml, PDF 는 logAccess
+const contract = read('app/contract/[token]/route.ts')
+if (!/trackedHtml\(/.test(contract)) problems.push("app/contract/[token]/route.ts: 계약서 열람에 trackedHtml 이 없음")
+if (!contract.includes("'contract_pdf'")) problems.push("app/contract/[token]/route.ts: 'contract_pdf' 기록이 없음")
 
 if (problems.length) {
   console.error('[check-tracking] 접속 기록이 빠진 곳:\n - ' + problems.join('\n - '))

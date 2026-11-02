@@ -23,6 +23,8 @@ const KIND: Record<AccessRow['kind'], string> = {
   send_view: '지난 견적 열람',
   compare: '견적 비교',
   portal_file: '포털 서류 내려받기',
+  contract_view: '계약서 열람',
+  contract_pdf: '계약서 PDF',
 }
 
 /** 이 시각 뒤로는 로그인 화면에도 행동 기록 스크립트가 들어간다. 스크립트가 한 번도 안 돌았으면 사람 대신 메일 보안 검사·링크 미리보기가 연 것으로 본다 */

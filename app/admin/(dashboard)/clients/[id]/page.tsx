@@ -4,6 +4,8 @@ import { ChevronLeft } from "lucide-react";
 import { ClientWorkspace } from "@/components/admin/client-workspace";
 import { ClientPortal } from "@/components/admin/client-portal";
 import { ClientSends } from "@/components/admin/client-sends";
+import { ClientContracts } from "@/components/admin/client-contracts";
+import { STATUS_LABEL, contractDefaults, listContracts, missingFields } from "@/lib/contracts/table";
 import { getQuoteCodes, isPortalHidden, listSends } from "@/lib/clients/sends";
 import { getPortalVersion } from "@/lib/clients/exposure";
 import { formatCode, getPortalInfo } from "@/lib/portal/members";
@@ -54,6 +56,8 @@ export default async function AdminClientPage({
     codes,
     portalHidden,
     portalVersion,
+    contracts,
+    contractDefault,
   ] = await Promise.all([
     listVersions(client.id),
     // 업체용 링크·협력업체 포털은 본 견적(업체)에만 있다
@@ -69,6 +73,8 @@ export default async function AdminClientPage({
     getQuoteCodes(client.id),
     isPortalHidden(client.id),
     getPortalVersion(client.id),
+    listContracts(client.id),
+    contractDefaults(client.id),
   ]);
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
   const picked =
@@ -145,6 +151,36 @@ export default async function AdminClientPage({
           />
         </div>
       )}
+      {/* 계약서: 제안서 + 견적 vN 근거로 생성·출력(날인). 본 견적·추가 견적서 모두 */}
+      <div className="mb-5">
+        <ClientContracts
+          clientId={client.id}
+          versions={versions.map((x) => ({
+            no: x.no,
+            summary: x.summary,
+            supply: x.supply,
+          }))}
+          defaults={contractDefault}
+          contracts={contracts.map((c) => ({
+            no: c.no,
+            number: c.number,
+            status: c.status,
+            statusLabel: STATUS_LABEL[c.status],
+            versionNo: c.versionNo,
+            party: c.party,
+            terms: c.terms,
+            supply: c.supply,
+            vat: c.vat,
+            token: c.token,
+            missing: missingFields(c),
+            createdAt: c.createdAt.toISOString(),
+            issuedAt: c.issuedAt ? c.issuedAt.toISOString() : null,
+            signedAt: c.signedAt ? c.signedAt.toISOString() : null,
+            signedNote: c.signedNote,
+            cancelledAt: c.cancelledAt ? c.cancelledAt.toISOString() : null,
+          }))}
+        />
+      </div>
       <ClientWorkspace
         initialTab={tab === "quote" ? "quote" : "proposal"}
         client={{

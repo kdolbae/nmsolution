@@ -56,7 +56,7 @@ export function ensureAccessLog(): Promise<void> {
   return ready
 }
 
-export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file'
+export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file' | 'contract_view' | 'contract_pdf'
 
 /** 업체용 링크 주소가 없는 업체(금강변압기 /kkt 는 따로 만든 페이지)는 이름으로 묶는다 */
 const NAME_OF_SLUG: Record<string, string> = { kkt: KKT_CLIENT.name }
@@ -73,6 +73,8 @@ const NOTIFY: Partial<Record<AccessKind, string>> = {
   compare: '견적 비교',
   portal_file: '포털에서 서류 내려받기',
   login_fail: '비밀번호 틀림',
+  contract_view: '계약서 열람',
+  contract_pdf: '계약서 PDF 다운로드',
 }
 
 /** 검색 로봇·링크 미리보기·헤드리스 브라우저. 버리지 않고 details.bot 으로 표시만 하고(어드민에서 기본 숨김), 알림은 보내지 않는다 */

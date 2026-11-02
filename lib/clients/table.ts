@@ -130,11 +130,20 @@ export function ensureClients(): Promise<void> {
           )
         }
       })
-      // 2026-11-02 kevin: 금강변압기 슬라이딩 도어(6×6m) 미네랄울 보온 공종 추가(계약 확정 전일 때만, 없을 때만)
+      // 2026-11-02 kevin: 금강변압기 본체 보온 400T 재산출·슬라이딩 도어 보온·우천 천막 공종(계약 확정 전, 고객 화면은 고정해 비노출)
       await seedOnce(KKT_DOOR_KEY, async () => {
         const found = await pool.query<{ id: string; finalized_at: Date | null }>(`SELECT id, finalized_at FROM clients WHERE name = $1 ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
         const row = found.rows[0]
         if (!row || row.finalized_at) return
+        // kevin: 고객에게는 아직 보이지 않게. 고객 화면을 지금 최신 버전(10-30 견적)에 고정한 뒤 고친다(lib/clients/exposure.ts).
+        // 고객에게 보이려면 어드민 업체 화면 '고객 화면'에서 '최신 자동으로'를 누른다
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_version int`)
+        await pool.query(
+          `UPDATE clients SET portal_version = (SELECT MAX(version_no) FROM client_versions
+                                                 WHERE client_id = $1 AND position('슬라이딩 도어 보온 작업' in quote::text) = 0)
+            WHERE id = $1 AND portal_version IS NULL`,
+          [row.id],
+        )
         await applyChange(Number(row.id), 'system', 'system', (cur) => {
           const next = addKktDoor(normalizeQuote(cur.quote))
           // 견적 전용 페이지에 보온 작업 제안(본체 400T + 50T 그라스울 패널, 도어 400T + 함석 커버)이 없으면 새 페이지로

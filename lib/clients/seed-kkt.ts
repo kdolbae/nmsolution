@@ -21,6 +21,8 @@ export const KKT_PORTAL_KEY = 'kkt-portal-1030-v1'
 export const KKT_DOOR_KEY = 'kkt-door-insul-1102-v4'
 /** 2026-11-02 kevin: 10-30 견적 뒤 중간 안 버전을 지우고 300T 안을 다음 번호로 (table.ts) */
 export const KKT_PRUNE_KEY = 'kkt-prune-1102'
+/** 2026-11-02 kevin "우선 올려줘": 300T 견적을 고객 화면에 노출(고정 해제) */
+export const KKT_PUBLISH_KEY = 'kkt-publish-300t-1102'
 export const KKT_PRUNE_SUMMARY = '10-30 견적 정정: 본체 보온 미네랄울 300T + 50T 그라스울 패널, 슬라이딩 도어 보온 300T + 함석 커버, 우천 대비 가설 천막, 공기 27일 (공급가 221,281,000)'
 
 /**

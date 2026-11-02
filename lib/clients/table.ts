@@ -3,7 +3,7 @@ import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -185,6 +185,11 @@ export function ensureClients(): Promise<void> {
         const gap = await pool.query(`SELECT 1 FROM client_versions WHERE client_id = $1 AND version_no > $2 AND version_no < $3`, [id, keep, latest])
         const to = gap.rows.length ? latest : keep + 1
         await pool.query(`UPDATE client_versions SET version_no = $3, summary = $4 WHERE client_id = $1 AND version_no = $2`, [id, latest, to, KKT_PRUNE_SUMMARY])
+      })
+      // 2026-11-02 kevin "우선 올려줘": 정리된 300T 견적을 고객 화면(/kkt)에 보이게 고정을 푼다(최신 자동). 다시 숨기려면 어드민 '고객 화면'에서 고정
+      await seedOnce(KKT_PUBLISH_KEY, async () => {
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_version int`)
+        await pool.query(`UPDATE clients SET portal_version = NULL WHERE name = $1 AND parent_id IS NULL`, [KKT_CLIENT.name])
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

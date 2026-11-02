@@ -3,7 +3,7 @@ import { pool } from '@/lib/db'
 import { calcQuote, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -190,6 +190,25 @@ export function ensureClients(): Promise<void> {
       await seedOnce(KKT_PUBLISH_KEY, async () => {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS portal_version int`)
         await pool.query(`UPDATE clients SET portal_version = NULL WHERE name = $1 AND parent_id IS NULL`, [KKT_CLIENT.name])
+      })
+      // 2026-11-02 kevin "우천 가설천막 작업 제외했어 내가": 천막 공종(남아 있으면)·천막 특기사항 줄·보온 제안의 천막 카드와 문구를 뺀다
+      await seedOnce(KKT_NO_TARP_KEY, async () => {
+        const found = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND parent_id IS NULL AND finalized_at IS NULL ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
+        const row = found.rows[0]
+        if (!row) return
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const q = normalizeQuote(cur.quote)
+          const sections = q.sections.filter((s) => s.name !== '우천 대비 가설 천막 작업')
+          const notes = q.notes.split('\n').filter((l) => !l.startsWith('보온 작업 기간에는')).join('\n')
+          const html = cur.proposalHtml.split(KKT_TARP_ARTICLE).join('').split(KKT_TARP_INTRO[0]).join(KKT_TARP_INTRO[1])
+          const quoteChanged = sections.length !== q.sections.length || notes !== q.notes
+          if (!quoteChanged && html === cur.proposalHtml) return null
+          return {
+            ...(quoteChanged ? { quote: { ...q, sections, notes } } : {}),
+            ...(html !== cur.proposalHtml ? { proposalHtml: html } : {}),
+            summary: '우천 대비 가설 천막 제외에 맞춰 특기사항·보온 작업 제안의 천막 문구 정리',
+          }
+        })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

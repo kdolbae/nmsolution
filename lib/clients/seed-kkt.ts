@@ -23,7 +23,11 @@ export const KKT_DOOR_KEY = 'kkt-door-insul-1102-v4'
 export const KKT_PRUNE_KEY = 'kkt-prune-1102'
 /** 2026-11-02 kevin "우선 올려줘": 300T 견적을 고객 화면에 노출(고정 해제) */
 export const KKT_PUBLISH_KEY = 'kkt-publish-300t-1102'
-export const KKT_PRUNE_SUMMARY = '10-30 견적 정정: 본체 보온 미네랄울 300T + 50T 그라스울 패널, 슬라이딩 도어 보온 300T + 함석 커버, 우천 대비 가설 천막, 공기 27일 (공급가 221,281,000)'
+/** 2026-11-02 kevin "우천 가설천막 작업 제외했어": 천막 공종·특기사항 줄·보온 제안의 천막 문구를 뺀다 (table.ts) */
+export const KKT_NO_TARP_KEY = 'kkt-no-tarp-1102'
+export const KKT_TARP_ARTICLE = "<article><h3>우천 대비 가설 천막</h3><ol><li>보온 시작 전 시스템 비계 상부에 파이프 틀을 조립하고 방수 천막을 침</li><li>비계 측면도 천막으로 가려 보온재가 젖지 않게 유지</li><li>보온·커버 마감이 끝난 뒤 천막과 틀 철거</li></ol><span class=\"spec\">방수 천막(타포린) + 파이프 틀</span></article>\n"
+export const KKT_TARP_INTRO = ["아래 순서로 시공하며, 작업 기간에는 가설 천막으로 비를 막음.</p>", "아래 순서로 시공함.</p>"] as const
+export const KKT_PRUNE_SUMMARY = '10-30 견적 정정: 본체 보온 미네랄울 300T + 50T 그라스울 패널, 슬라이딩 도어 보온 300T + 함석 커버, 공기 27일'
 
 /**
  * 2026-10-30 kevin(고객 급요청): 작업계획서는 다시 정비할 때까지 내리고, 업체 페이지에는 견적서만 보인다.
@@ -49,11 +53,10 @@ h1{font-size:22px;font-weight:700;color:#0f2a44;margin:0 0 4px;letter-spacing:-.
 @media print{.plan{border:0;padding:0 0 12px}}</style>
 </head><body><main><h1>주식회사 금강변압기 견적서</h1><p>엔엠솔루션이 제출하는 견적서임. 오른쪽 아래 버튼으로 PDF를 내려받을 수 있음.</p>
 <!--NM:QUOTE-SUMMARY-->
-<section class="plan" id="insul-plan"><h2>보온 작업 제안</h2><p>진공건조로 본체와 슬라이딩 도어의 보온을 아래 순서로 시공하며, 작업 기간에는 가설 천막으로 비를 막음.</p>
+<section class="plan" id="insul-plan"><h2>보온 작업 제안</h2><p>진공건조로 본체와 슬라이딩 도어의 보온을 아래 순서로 시공함.</p>
 <div class="plan-grid">
 <article><h3>본체 보온</h3><ol><li>시스템 비계 설치 후 본체 외면 정리, 보온핀 설치</li><li>본체 내부 보온재 300T 시공 (미네랄울 100T 3겹, 이음부 엇갈림 시공)</li><li>50T 그라스울 패널로 마감, 이음부 실링·모서리 후레싱</li></ol><span class="spec">미네랄울 300T + 그라스울 패널 50T</span></article>
 <article><h3>슬라이딩 도어 보온</h3><ol><li>기존 커버 철거·반출</li><li>미네랄울 300T 두께로 덮어 시공 (장핀 고정)</li><li>함석 커버 씌우고 이음부·모서리 마감</li></ol><span class="spec">미네랄울 300T + 함석 커버</span></article>
-<article><h3>우천 대비 가설 천막</h3><ol><li>보온 시작 전 시스템 비계 상부에 파이프 틀을 조립하고 방수 천막을 침</li><li>비계 측면도 천막으로 가려 보온재가 젖지 않게 유지</li><li>보온·커버 마감이 끝난 뒤 천막과 틀 철거</li></ol><span class="spec">방수 천막(타포린) + 파이프 틀</span></article>
 </div></section>
 <!--NM:QUOTE-->
 </main></body></html>`
@@ -1275,113 +1278,6 @@ export const KKT_QUOTE: Quote = {
           "note": "12인·일 × 50,000"
         }
       ]
-    },
-    {
-      "id": "s7",
-      "name": "우천 대비 가설 천막 작업",
-      "desc": "보온 작업 중 비를 막기 위한 가설 천막: 시스템 비계 상부·측면에 방수 천막(타포린) 설치·유지·해체 (본체 약 290㎡ + 도어 약 50㎡, 보온 기간 13일)",
-      "items": [
-        {
-          "id": "i1",
-          "kind": "노무비",
-          "name": "천막 설치·해체",
-          "spec": "비계 상부 파이프 틀 조립, 천막 결속·해체 (고급기능공)",
-          "unit": "인·일",
-          "qty": 6,
-          "price": 350000,
-          "note": "설치 2명 × 2일 + 해체 2명 × 1일"
-        },
-        {
-          "id": "i2",
-          "kind": "노무비",
-          "name": "설치 보조",
-          "spec": "자재 운반·결속 보조 (중급기능공)",
-          "unit": "인·일",
-          "qty": 6,
-          "price": 280000,
-          "note": "설치 2명 × 2일 + 해체 2명 × 1일"
-        },
-        {
-          "id": "i4b",
-          "kind": "노무비",
-          "name": "천막 점검·보수",
-          "spec": "강풍·우천 후 결속 점검, 찢김 보수 (중급기능공)",
-          "unit": "인·일",
-          "qty": 4,
-          "price": 280000,
-          "note": "1명 × 4회"
-        },
-        {
-          "id": "i3",
-          "kind": "노무비",
-          "name": "간접노무비",
-          "spec": "현장 관리 인력 (직접노무비 4,900,000 × 15%)",
-          "unit": "식",
-          "qty": 1,
-          "price": 735000,
-          "note": "현장 관리자"
-        },
-        {
-          "id": "i4",
-          "kind": "재료비",
-          "name": "방수 천막",
-          "spec": "타포린(PE 방수포) 고밀도, 아일릿 가공",
-          "unit": "㎡",
-          "qty": 400,
-          "price": 4500,
-          "note": "본체 측면 252㎡ + 상부 36㎡ + 도어 50㎡, 겹침 18%"
-        },
-        {
-          "id": "i5",
-          "kind": "재료비",
-          "name": "결속 부자재",
-          "spec": "로프·결속 밴드·클램프·고무 패킹·모래주머니",
-          "unit": "식",
-          "qty": 1,
-          "price": 480000,
-          "note": ""
-        },
-        {
-          "id": "i9",
-          "kind": "재료비",
-          "name": "안전장구",
-          "spec": "그네식 안전대·안전모·장갑 (비계 상부 작업)",
-          "unit": "식",
-          "qty": 1,
-          "price": 300000,
-          "note": "작업 인원 4명분"
-        },
-        {
-          "id": "i6",
-          "kind": "장비",
-          "name": "천막 틀 파이프 임대",
-          "spec": "단관 파이프·클램프 (비계 상부 지붕 틀, 물매용)",
-          "unit": "식",
-          "qty": 1,
-          "price": 950000,
-          "note": "13일"
-        },
-        {
-          "id": "i7",
-          "kind": "운반비",
-          "name": "천막 자재 운반",
-          "spec": "1톤 화물",
-          "unit": "회",
-          "qty": 2,
-          "price": 260000,
-          "note": "반입 1회 + 반출 1회"
-        },
-        {
-          "id": "i8",
-          "kind": "경비",
-          "name": "경비",
-          "spec": "식대·교통비·부대 잡비",
-          "unit": "식",
-          "qty": 1,
-          "price": 800000,
-          "note": "16인·일 × 50,000"
-        }
-      ]
     }
   ],
   "costCalc": true,
@@ -1395,7 +1291,7 @@ export const KKT_QUOTE: Quote = {
   "truncate": true,
   "discount": 0,
   "discountLabel": "가격 조정 (NEGO)",
-  "notes": "전기 수전, 도장, 시운전은 포함하지 않음. 배관·닥트는 운반 시 절단된 부속품(약 6개소) 수리·재장착만 포함함.\n인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준(내부 미네랄울 300T + 50T 그라스울 패널 마감)이며, 실측 면적에 따라 정산함.\n슬라이딩 도어 보온은 기존 커버 철거 후 미네랄울 300T(100T 3겹) + 함석 커버이며, 한쪽 면·옆면 약 46㎡ 기준으로 실측 면적에 따라 정산함.\n보온 작업 기간에는 비계 상부·측면에 가설 천막을 쳐 보온재가 비에 젖지 않게 하며, 천막 철거는 보온 완료 후 함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 착공 후 작업일 27일 (일요일 휴무, 착공일은 발주처와 협의)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양·보온 작업 완료 후 10%",
+  "notes": "전기 수전, 도장, 시운전은 포함하지 않음. 배관·닥트는 운반 시 절단된 부속품(약 6개소) 수리·재장착만 포함함.\n인양 작업(회전·안착) 크레인은 200TON·100TON 2대, 전체 인양(완성품 이동)은 250TON 1대로 수행함.\n보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준(내부 미네랄울 300T + 50T 그라스울 패널 마감)이며, 실측 면적에 따라 정산함.\n슬라이딩 도어 보온은 기존 커버 철거 후 미네랄울 300T(100T 3겹) + 함석 커버이며, 한쪽 면·옆면 약 46㎡ 기준으로 실측 면적에 따라 정산함.\n비파괴검사(PT/UT)는 포함하지 않으며, 발주처 요구 시 별도 정산함.\n연장·야간·휴일 작업은 공정에 따라 당사가 수행하며 추가 정산하지 않음.\n기상(우천 시 용접 불가)·발주처 사유에 따른 대기는 별도 협의함.\n작업구역(약 10×15m)은 이동식 안전펜스로 통제하며, 발주처 안전관리 규정과 출입 절차를 따름.\n공사 기간: 착공 후 작업일 27일 (일요일 휴무, 착공일은 발주처와 협의)\n결제 조건: 선수금 30%, 용접을 위한 인양(도비) 작업 완료 시 30%, 모든 접합 작업 완료 후 30%, 전체 인양·보온 작업 완료 후 10%",
   "validDays": 30
 }
 
@@ -1478,19 +1374,17 @@ export const KKT_B_NOTE = 'A안(기본안) 기준 견적. B안'
 /**
  * 2026-11-02 kevin: 본체 보온을 내부 400T + 50T 그라스울 패널로 재산출, 슬라이딩 도어 보온·우천 대비 가설 천막 공종 추가.
  * 같은 날 kevin "그라스울로 해보자"(PR #134) 뒤 두께 비교를 보고 "300t 견적으로 정정": 본체·도어 모두 미네랄울 100K 100T 3겹(300T, 26,000/㎡),
- * 본체 3+3명 × 10일, 도어 2+2명 × 3일, 천막 13일, 공기 27일.
+ * 본체 3+3명 × 10일, 도어 2+2명 × 3일, 공기 27일. 우천 대비 가설 천막은 kevin이 어드민에서 제외함(kkt-no-tarp-1102).
  * 옛 견적(10-30 100T + 골함석 보온, 도어·천막 없음)에만 적용하고, 이미 반영된 견적은 null.
  */
 export const KKT_BODY_SECTION = KKT_QUOTE.sections.find((s) => s.name === '보온 작업')!
 export const KKT_DOOR_SECTION = KKT_QUOTE.sections.find((s) => s.name === '슬라이딩 도어 보온 작업')!
-export const KKT_TARP_SECTION = KKT_QUOTE.sections.find((s) => s.name === '우천 대비 가설 천막 작업')!
 export const KKT_BODY_NOTE = '보온은 건조로 외곽(H빔 포함) 6 × 6 × 9m, 하부 제외 약 234㎡ 기준(내부 미네랄울 300T + 50T 그라스울 패널 마감)이며, 실측 면적에 따라 정산함.'
 export const KKT_DOOR_NOTE = '슬라이딩 도어 보온은 기존 커버 철거 후 미네랄울 300T(100T 3겹) + 함석 커버이며, 한쪽 면·옆면 약 46㎡ 기준으로 실측 면적에 따라 정산함.'
-export const KKT_TARP_NOTE = '보온 작업 기간에는 비계 상부·측면에 가설 천막을 쳐 보온재가 비에 젖지 않게 하며, 천막 철거는 보온 완료 후 함.'
 const KKT_PERIOD_NEW = '공사 기간: 착공 후 작업일 27일 (일요일 휴무, 착공일은 발주처와 협의)'
 /** 견적 전용 페이지의 보온 제안이 이 문구가 아니면(앞선 400T 안) 새 페이지로 바꾼다 */
 export const KKT_PLAN_MARK = '본체 내부 보온재 300T 시공 (미네랄울 100T 3겹'
-export const KKT_DOOR_SUMMARY = '본체 보온 내부 미네랄울 300T + 50T 그라스울 패널 재산출, 슬라이딩 도어 보온(커버 철거, 300T + 함석 커버)·우천 대비 가설 천막 공종 추가, 공기 27일, 업체 페이지에 보온 작업 제안'
+export const KKT_DOOR_SUMMARY = '본체 보온 내부 미네랄울 300T + 50T 그라스울 패널 재산출, 슬라이딩 도어 보온(커버 철거, 300T + 함석 커버) 공종 추가, 공기 27일, 업체 페이지에 보온 작업 제안'
 const copySection = (s: QuoteSection): QuoteSection => ({ ...s, items: s.items.map((i) => ({ ...i })) })
 export function addKktDoor(quote: Quote): Quote | null {
   let { notes, sections } = quote
@@ -1508,7 +1402,7 @@ export function addKktDoor(quote: Quote): Quote | null {
     changed = true
   }
   // 세 공종은 이 안과 다르면(옛 100T 보온, 없음, 앞선 초안) 이 안으로 맞춘다. 시드에서 한 번만 돌린다
-  for (const def of [KKT_BODY_SECTION, KKT_DOOR_SECTION, KKT_TARP_SECTION]) {
+  for (const def of [KKT_BODY_SECTION, KKT_DOOR_SECTION]) {
     const cur = sections.find((s) => s.name === def.name)
     if (cur && JSON.stringify(cur) === JSON.stringify(def)) continue
     sections = cur ? sections.map((s) => (s === cur ? copySection(def) : s)) : [...sections, copySection(def)]
@@ -1516,7 +1410,6 @@ export function addKktDoor(quote: Quote): Quote | null {
   }
   setNote('보온은 ', KKT_BODY_NOTE)
   setNote('슬라이딩 도어 보온은', KKT_DOOR_NOTE, '보온은 ')
-  setNote('보온 작업 기간에는', KKT_TARP_NOTE, '슬라이딩 도어 보온은')
   setNote('공사 기간:', KKT_PERIOD_NEW)
   return changed ? { ...quote, notes, sections } : null
 }

@@ -137,7 +137,10 @@ export function ensureClients(): Promise<void> {
         if (!row || row.finalized_at) return
         await applyChange(Number(row.id), 'system', 'system', (cur) => {
           const next = addKktDoor(normalizeQuote(cur.quote))
-          return next ? { quote: next, summary: KKT_DOOR_SUMMARY } : null
+          // 견적 전용 페이지에 보온 작업 제안(본체 400T + 50T 그라스울 패널, 도어 400T + 함석 커버)이 없으면 새 페이지로
+          const page = cur.proposalHtml.includes('<!--NM:QUOTE-->') && !cur.proposalHtml.includes('id="insul-plan"') ? KKT_QUOTE_ONLY_PAGE : undefined
+          if (!next && !page) return null
+          return { ...(next ? { quote: next } : {}), ...(page ? { proposalHtml: page } : {}), summary: KKT_DOOR_SUMMARY }
         })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다

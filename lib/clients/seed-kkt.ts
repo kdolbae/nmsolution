@@ -19,6 +19,9 @@ export const KKT_CLIENT = {
 export const KKT_PORTAL_KEY = 'kkt-portal-1030-v1'
 /** 2026-11-02 kevin: 슬라이딩 도어(6×6m, 두께 0.4m, 약 20t) 미네랄울 보온 공종 추가 */
 export const KKT_DOOR_KEY = 'kkt-door-insul-1102-v4'
+/** 2026-11-02 kevin: 10-30 견적 뒤 중간 안 버전을 지우고 300T 안을 다음 번호로 (table.ts) */
+export const KKT_PRUNE_KEY = 'kkt-prune-1102'
+export const KKT_PRUNE_SUMMARY = '10-30 견적 정정: 본체 보온 미네랄울 300T + 50T 그라스울 패널, 슬라이딩 도어 보온 300T + 함석 커버, 우천 대비 가설 천막, 공기 27일 (공급가 221,281,000)'
 
 /**
  * 2026-10-30 kevin(고객 급요청): 작업계획서는 다시 정비할 때까지 내리고, 업체 페이지에는 견적서만 보인다.

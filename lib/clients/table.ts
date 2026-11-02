@@ -14,7 +14,7 @@ import { SEONGWON_CLIENT, SEONGWON_REV2_KEY, SEONGWON_REV3_KEY, SEONGWON_REV4_KE
 import { SEONGWON_PAGE_HTML } from './seongwon-page'
 import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstechQuote } from './seed-jstech'
 import { JSTECH_PAGE_HTML } from './jstech-page'
-import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
+import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -304,6 +304,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`UPDATE clients SET quote_code = 'SCG', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
       await seedOnce(SEOULGLASS_REV2_KEY, () => refreshSeoulglass('현장 경비 제외·일반관리비 5%·부자재 축소, 공급가 7,015,000'))
+      await seedOnce(SEOULGLASS_REV3_KEY, () => refreshSeoulglass('건물 벽 의자 베이스·옹벽 쪽 14m 판넬 벽(기둥·도리 없앰)·내부 문, 공급가 7,837,000'))
     })().catch((e) => {
       ready = null
       throw e

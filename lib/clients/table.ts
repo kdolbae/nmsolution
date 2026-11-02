@@ -147,7 +147,9 @@ export function ensureClients(): Promise<void> {
         await applyChange(Number(row.id), 'system', 'system', (cur) => {
           const next = addKktDoor(normalizeQuote(cur.quote))
           // 견적 전용 페이지에 보온 작업 제안(본체 400T + 50T 그라스울 패널, 도어 400T + 함석 커버)이 없으면 새 페이지로
-          const page = cur.proposalHtml.includes('<!--NM:QUOTE-->') && !cur.proposalHtml.includes('id="insul-plan"') ? KKT_QUOTE_ONLY_PAGE : undefined
+          // v3: 본체 보온재가 미네랄울로 적힌 앞선 제안(v2)도 그라스울로 바꾼다
+          const oldPlan = !cur.proposalHtml.includes('id="insul-plan"') || cur.proposalHtml.includes('(미네랄울, 이음부 겹침 시공)')
+          const page = cur.proposalHtml.includes('<!--NM:QUOTE-->') && oldPlan ? KKT_QUOTE_ONLY_PAGE : undefined
           if (!next && !page) return null
           return { ...(next ? { quote: next } : {}), ...(page ? { proposalHtml: page } : {}), summary: KKT_DOOR_SUMMARY }
         })

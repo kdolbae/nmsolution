@@ -3,10 +3,10 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftRight, Expand, Eye, History, Loader2, Lock, Printer } from 'lucide-react'
+import { ArrowLeftRight, Expand, Eye, History, Loader2, Lock, LockOpen, Printer } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { finalizeClientVersion } from '@/app/actions/clients'
+import { finalizeClientVersion, unlockClientVersion } from '@/app/actions/clients'
 import { quoteDocument, won, type Quote, type QuoteRecipient } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
 
@@ -44,21 +44,22 @@ const CHANGE_LABEL: Record<VersionRow['change'], string> = {
   system: '자동',
 }
 
-/** 최종본 확정 안내 띠 */
+/** 계약 확정(잠금) 안내 띠 */
 export function LockBanner({ finalized }: { finalized: NonNullable<Finalized> }) {
   return (
     <div className="flex items-center gap-2 bg-navy px-4 py-3 text-sm text-white">
       <Lock className="size-4 shrink-0" />
       <span>
-        v{finalized.version}을 최종본으로 확정함 ({fmtAt(finalized.at)}
-        {finalized.by && ` · ${finalized.by}`}). 제안서·견적서는 더 고칠 수 없습니다. 고칠 일이 생기면 업체 목록의 업체 추가에서 이 업체 것을 복사해 새 견적으로 시작하세요.
+        v{finalized.version} 계약 확정 ({fmtAt(finalized.at)}
+        {finalized.by && ` · ${finalized.by}`}). 계약본이라 제안서·견적서가 잠겨 있습니다. 고칠 일이 생기면 버전 기록에서 계약 확정을 해제하거나, 업체 추가에서 복사해 새 견적으로 시작하세요.
       </span>
     </div>
   )
 }
 
 /**
- * 버전 기록: 저장할 때마다 한 줄. 보기·PDF, 두 버전을 골라 비교, 최종본 확정.
+ * 버전 기록: 저장할 때마다 한 줄. 보기·PDF, 두 버전을 골라 비교, 계약 확정(잠금)·해제.
+ * 고객 화면에 어느 버전이 보이는지는 위 '고객 화면' 칸에서 정한다(기본 최신 자동).
  * 화면 위쪽 문서는 늘 최신본이고, 지난 버전을 고르면 ?v=N 으로 그 버전을 읽기 전용으로 보여 준다.
  */
 export function VersionHistory({
@@ -90,9 +91,17 @@ export function VersionHistory({
   }, [picked, clientId])
 
   const finalize = () => {
-    if (!confirm(`최신본 v${latest}을 최종본으로 확정할까요?\n확정하면 이 업체의 제안서·견적서는 더 고칠 수 없습니다. 되돌릴 수 없습니다.`)) return
+    if (!confirm(`계약이 되었나요? 최신본 v${latest}을 계약본으로 확정하고 잠글까요?\n해제할 때까지 제안서·견적서를 고칠 수 없습니다.`)) return
     startTransition(async () => {
       const res = await finalizeClientVersion(clientId)
+      if (!res.ok) setMessage(res.error)
+      router.refresh()
+    })
+  }
+  const unlock = () => {
+    if (!confirm(`v${finalized?.version} 계약 확정을 해제할까요?\n잠금이 풀려 제안서·견적서를 다시 고칠 수 있습니다.`)) return
+    startTransition(async () => {
+      const res = await unlockClientVersion(clientId)
       if (!res.ok) setMessage(res.error)
       router.refresh()
     })
@@ -114,9 +123,13 @@ export function VersionHistory({
               <ArrowLeftRight /> 두 버전 체크 후 비교
             </Button>
           )}
-          {!finalized && (
-            <Button size="sm" variant="outline" className="rounded-none" onClick={finalize} disabled={pending || !latest}>
-              {pending ? <Loader2 className="animate-spin" /> : <Lock />} 최신본 v{latest} 최종본 확정
+          {finalized ? (
+            <Button size="sm" variant="outline" className="rounded-none" onClick={unlock} disabled={pending}>
+              {pending ? <Loader2 className="animate-spin" /> : <LockOpen />} 계약 확정 해제
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="rounded-none" onClick={finalize} disabled={pending || !latest} title="계약이 되면 누른다. 최신본을 계약본으로 잠근다">
+              {pending ? <Loader2 className="animate-spin" /> : <Lock />} 계약 확정 (v{latest} 잠금)
             </Button>
           )}
         </div>
@@ -148,7 +161,7 @@ export function VersionHistory({
                   <td className="px-2 py-2 font-semibold whitespace-nowrap">
                     v{v.no}
                     {i === 0 && v.no === latest && <span className="ml-1.5 bg-electric px-1.5 py-0.5 text-[10px] font-semibold text-white">최신</span>}
-                    {finalized?.version === v.no && <span className="ml-1.5 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">최종본</span>}
+                    {finalized?.version === v.no && <span className="ml-1.5 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">계약본</span>}
                   </td>
                   <td className="px-2 py-2 tabular-nums text-muted-foreground">{fmtAt(v.at)}</td>
                   <td className="px-2 py-2">

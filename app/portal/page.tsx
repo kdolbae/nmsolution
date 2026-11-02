@@ -49,7 +49,7 @@ export default async function PortalHomePage() {
         <PortalDocs
           clientName={client.name}
           label={client.label}
-          updatedAt={(client.finalized?.at ?? client.updatedAt).toISOString().slice(0, 10)}
+          updatedAt={client.updatedAt.toISOString().slice(0, 10)}
           proposalHtml={client.proposalHtml}
           quote={client.quote}
           recipient={{ name: client.name, contactPerson: client.contactPerson, phone: client.phone, siteAddress: client.siteAddress }}

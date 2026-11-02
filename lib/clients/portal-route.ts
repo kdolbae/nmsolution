@@ -7,7 +7,9 @@ import { PORTAL_MAX_AGE, hasPortalAccess, portalCookieName, portalToken, readCoo
 import { verifyPortalPassword } from './portal-password'
 import { htmlToPdf, pdfResponse } from './pdf'
 import { logAccess, trackedHtml, trackerTag } from './access-log'
-import { customerSends, getSend, type listSends, type Send } from './sends'
+import type { listSends } from './sends'
+import { exposedDoc } from './exposure'
+import type { Quote } from './quote'
 import { historyBar, notReadyHtml } from './send-compare'
 import { after } from 'next/server'
 
@@ -19,8 +21,8 @@ import { after } from 'next/server'
  * - 본문은 업체의 제안서 탭 HTML이고, <!--NM:QUOTE--> 자리에 지금 견적서를 엔엠솔루션 양식으로 넣는다.
  *   <!--NM:QUOTE-SUMMARY--> 가 있으면 그 자리에 금액 요약 카드를 따로 넣는다(없으면 견적서 위에 붙임).
  * - 사진은 /client-assets/<주소>/ 에 두고 proxy.ts 가 같은 쿠키를 확인한다.
- * - 제안서·견적서는 고객 발송본(lib/clients/sends.ts)에서만 읽는다. 내부 작업 버전은 어떤 주소로도 열리지 않는다.
- *   ?s=N 지난 발송본, ?s=N&pdf=1 그 PDF(발송본끼리 비교는 어드민에서만). 발송본이 없으면 '준비 중' 화면만 보인다.
+ * - 제안서·견적서는 고객 화면 노출 규칙(lib/clients/exposure.ts)대로 읽는다: 기본은 내부 최신 버전,
+ *   어드민이 버전을 고정했으면 그 버전, 공개를 껐으면 '준비 중' 화면. 지난 버전·비교는 고객에게 안 보인다(어드민에서만).
  */
 
 const NO_STORE = {
@@ -84,8 +86,8 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   // ?pdf=1: 이 페이지 그대로 PDF 파일로 내려받는다 (PDF 저장 버튼)
   if (view.type === 'page' && !shareToken && params.get('pdf') === '1') {
     after(() => logAccess(req.headers, client, 'pdf', { slug, details: view.details }))
-    const pdf = await htmlToPdf(portalPageHtml(client, view.send), req)
-    return pdfResponse(pdf, `${client.name} 제안서·견적서 ${view.send.number}.pdf`)
+    const pdf = await htmlToPdf(portalPageHtml(client, view.doc), req)
+    return pdfResponse(pdf, `${client.name} 제안서·견적서 ${view.doc.number}.pdf`)
   }
   const kind = shareToken ? 'share_view' : view.kind
   return new Response(trackedHtml(view.html, req.headers, slug, { client, kind, details: view.details }), { headers })
@@ -93,9 +95,13 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
 
 type PortalClient = NonNullable<Awaited<ReturnType<typeof getClientBySlug>>>
 
+/** 고객 화면에 넣는 문서 한 벌 (no 는 내부 버전 번호) */
+export type PortalDoc = { no: number; number: string; proposalHtml: string; quote: Quote }
+
 /**
- * 고객이 보는 화면 하나를 만든다(업체 페이지와 관리자 미리보기가 같이 쓴다). 발송본만 읽는다.
- * base 는 화면 안 링크의 주소(/atotech 또는 미리보기 주소). ?s=N 지난 발송본.
+ * 고객이 보는 화면 하나를 만든다(업체 페이지와 관리자 미리보기가 같이 쓴다).
+ * 노출 규칙은 lib/clients/exposure.ts(최신 자동 또는 고정 버전). base 는 화면 안 링크의 주소(/atotech 또는 미리보기 주소).
+ * 예전 주소(?s=N 지난 발송본, ?cmp=N 비교)는 지금 견적으로 보낸다.
  */
 export async function customerView(
   client: PortalClient,
@@ -104,44 +110,28 @@ export async function customerView(
 ): Promise<
   | { type: 'redirect'; to: string }
   | { type: 'empty'; html: string; kind: 'view'; details: Record<string, unknown> }
-  | { type: 'compare'; html: string; kind: 'compare'; details: Record<string, unknown> }
-  | { type: 'page'; html: string; send: Send; kind: 'view' | 'send_view'; details: Record<string, unknown> }
+  | { type: 'page'; html: string; doc: PortalDoc; kind: 'view'; details: Record<string, unknown> }
 > {
-  // 고객에게 보이는 것은 발송본뿐(숨긴 발송본 제외, 업체 페이지 공개를 껐으면 없음)
-  const sends = await customerSends(client.id)
-  if (!sends.length) return { type: 'empty', html: notReadyHtml(client.name), kind: 'view', details: { send: null } }
-  const latest = sends[0]
-  const want = (k: string) => {
-    const n = Number(params.get(k))
-    return Number.isSafeInteger(n) && n > 0 ? sends.find((x) => x.no === n) ?? null : null
-  }
-  // 없는(또는 숨긴) 발송본 번호면 최신으로 보낸다
-  const back = { type: 'redirect' as const, to: base }
-
-  // 2026-10-30 kevin: 견적 변경 내용은 내부(어드민)에서만 본다. 예전 비교 주소(?cmp=)는 최신 견적으로 보낸다
-  if (params.has('cmp')) return back
-
-  const pick = params.has('s') ? want('s') : latest
-  if (!pick) return back
-  const send = await getSend(client.id, pick.no)
-  if (!send) return back
-  const old = send.no !== latest.no
+  if (params.has('cmp') || params.has('s')) return { type: 'redirect', to: base }
+  const exposed = await exposedDoc(client)
+  if (!exposed) return { type: 'empty', html: notReadyHtml(client.name), kind: 'view', details: { version: null } }
+  const doc: PortalDoc = { no: exposed.version, number: exposed.number, proposalHtml: exposed.proposalHtml, quote: exposed.quote }
   return {
     type: 'page',
-    html: portalPageHtml(client, send, { base, sends }),
-    send,
-    kind: old ? 'send_view' : 'view',
-    details: { send: send.number, latest: !old },
+    html: portalPageHtml(client, doc),
+    doc,
+    kind: 'view',
+    details: { version: exposed.version, number: exposed.number, pinned: exposed.pinned },
   }
 }
 
 /**
- * 업체 페이지 HTML: 발송본의 제안서 + 견적서(엔엠솔루션 양식) + 휴대폰 폭 맞춤 + PDF 저장 버튼.
- * history 를 주면 맨 위에 견적번호·견적 이력 띠를 붙인다(PDF 에는 안 붙임).
+ * 업체 페이지 HTML: 제안서 + 견적서(엔엠솔루션 양식) + 휴대폰 폭 맞춤 + PDF 저장 버튼.
+ * history 를 주면(어드민 발송 기록 보기) 맨 위에 견적번호·발송 이력 띠를 붙인다(PDF 에는 안 붙임).
  */
 export function portalPageHtml(
   client: PortalClient,
-  send: Pick<Send, 'no' | 'proposalHtml' | 'quote'>,
+  send: Pick<PortalDoc, 'no' | 'proposalHtml' | 'quote'>,
   history?: { base: string; sends: Awaited<ReturnType<typeof listSends>> },
 ): string {
   const quote = send.quote

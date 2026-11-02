@@ -4,14 +4,14 @@ import { ensureClients } from './table'
 import { cleanClientCode, cleanWorkCode, quoteCodeNumber } from './quote-code'
 
 /**
- * 고객 발송본 (전 업체 공통, 2026-10-28 kevin).
+ * 고객 발송 기록 (전 업체 공통, 2026-10-28 kevin → 2026-11-02 정정).
  *
- * - 내부 버전(client_versions)은 저장할 때마다 쌓이는 작업본이고, 고객에게는 절대 보이지 않는다.
- * - 관리자가 '고객 발송본으로 확정'을 누를 때만 그 순간의 제안서·견적서를 이 표에 복사해 고정한다(이후 못 고침).
- * - 업체 페이지·협력업체 포털·고객 PDF 는 이 표만 읽는다. 발송본이 없으면 아무 견적도 보이지 않는다.
+ * - 2026-11-02 kevin: 고객 화면은 이 표가 아니라 내부 최신 버전(또는 어드민이 고정한 버전)을 보여 준다(lib/clients/exposure.ts).
+ *   이 표는 "언제 어떤 버전을 어떤 견적번호로 고객에게 보냈다"는 장부로만 남긴다. 발송 기록을 남겨도 고객 화면은 안 바뀐다.
+ * - 관리자가 '발송 기록 남기기'를 누르면 그 순간의 제안서·견적서를 이 표에 복사해 보관한다(이후 못 고침).
  * - 발송 견적번호: 업체 이니셜-NM연월-공종-순번 (ATK-NM2610-MECH-04, lib/clients/quote-code.ts). 다시 보내면 -R1, -R2.
  *   이 형식 전에 나간 발송본(처음 옮겨 온 것)은 그때 번호(NM-2610-04)를 그대로 둔다.
- * - 잘못 보낸 발송본은 '발송 취소'로 고객 화면에서만 내린다(기록은 남김).
+ * - 잘못 남긴 기록은 '취소'로 표시만 한다(withdrawn_at, 기록은 남김).
  * 표는 첫 조회 때 생긴다(ensureClients 와 같은 방식).
  */
 
@@ -122,7 +122,7 @@ export async function listSends(clientId: number, opts: { withWithdrawn?: boolea
   return rows.map(toMeta)
 }
 
-/** 발송본 한 벌. 고객 화면에서 부를 때는 취소된 발송본을 돌려주지 않는다 */
+/** 발송본 한 벌(어드민 발송 기록 보기용) */
 export async function getSend(clientId: number, no: number, opts: { withWithdrawn?: boolean } = {}): Promise<Send | null> {
   if (!Number.isSafeInteger(clientId) || !Number.isSafeInteger(no)) return null
   await ensureSends()
@@ -134,7 +134,7 @@ export async function getSend(clientId: number, no: number, opts: { withWithdraw
   return r ? { ...toMeta(r), proposalHtml: r.proposal_html ?? '', quote: normalizeQuote(r.quote) } : null
 }
 
-/** 고객에게 보이는 최신 발송본 */
+/** 취소하지 않은 마지막 발송 기록 */
 export async function latestSend(clientId: number): Promise<Send | null> {
   await ensureSends()
   const { rows } = await pool.query<{ send_no: number }>(
@@ -231,7 +231,7 @@ async function insertSend(clientId: number, by: string, opts: InsertOpts): Promi
   }
 }
 
-/** 발송 취소: 고객 화면에서만 내린다. 기록과 발송 견적번호는 남는다 */
+/** 발송 취소 표시. 기록과 발송 견적번호는 남는다 */
 export async function withdrawSend(clientId: number, no: number, by: string) {
   await ensureSends()
   const { rowCount } = await pool.query(
@@ -241,7 +241,7 @@ export async function withdrawSend(clientId: number, no: number, by: string) {
   if (!rowCount) throw new Error('이미 취소했거나 없는 발송본입니다.')
 }
 
-/** 업체 페이지 공개 여부. 끄면 업체 페이지·포털에 발송본도 안 보이고 '준비 중'만 보인다 */
+/** 업체 페이지 공개 여부. 끄면 업체 페이지·포털에 견적이 안 보이고 '준비 중'만 보인다 */
 export async function isPortalHidden(clientId: number): Promise<boolean> {
   await ensureSends()
   const { rows } = await pool.query<{ portal_hidden: boolean }>(`SELECT portal_hidden FROM clients WHERE id = $1`, [clientId])
@@ -253,12 +253,7 @@ export async function setPortalHidden(clientId: number, hidden: boolean) {
   await pool.query(`UPDATE clients SET portal_hidden = $2 WHERE id = $1`, [clientId, hidden])
 }
 
-/** 고객에게 보이는 발송본 (최신이 먼저). 업체 페이지 공개를 껐으면 빈 목록 */
-export async function customerSends(clientId: number): Promise<SendMeta[]> {
-  return (await isPortalHidden(clientId)) ? [] : listSends(clientId)
-}
-
-/** 발송 취소(숨김)를 되돌린다 */
+/** 발송 취소 표시를 되돌린다 */
 export async function restoreSend(clientId: number, no: number) {
   await ensureSends()
   await pool.query(`UPDATE client_sends SET withdrawn_at = NULL, withdrawn_by = NULL WHERE client_id = $1 AND send_no = $2`, [clientId, no])
@@ -277,7 +272,7 @@ async function once(key: string, run: () => Promise<boolean | void>) {
 
 const ATOTECH_SLUG = 'atotech'
 
-/** 처음 넣는 업체 코드·공종 (2026-10-28). 관리자가 어드민 '고객 발송 이력' 칸에서 바꿀 수 있다 */
+/** 처음 넣는 업체 코드·공종 (2026-10-28). 관리자가 어드민 '고객 화면' 칸의 발송 기록에서 바꿀 수 있다 */
 const DEFAULT_CODES: [slug: string, code: string, work: string][] = [
   ['atotech', 'ATK', 'MECH'],
   ['sinil', 'SIL', 'ROOF'],
@@ -327,7 +322,7 @@ async function bootstrapSends() {
 
 /**
  * 아토텍코리아(2026-10-28 kevin): 고객에게 메일로 보낸 펌프 교체 포함 견적(PR #90, 2026-10-26 발송)을 1차 발송본으로 둔다.
- * 그 뒤 내부에서 만든 배관만 견적(PR #110)은 자동으로 올리지 않는다. 보낼 때 관리자가 어드민에서 직접 확정한다.
+ * 그 뒤 내부에서 만든 배관만 견적(PR #110)은 자동으로 올리지 않는다(lib/clients/exposure.ts 가 이 발송본 버전으로 고정).
  */
 async function bootstrapAtotech(): Promise<boolean> {
   const c = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE portal_slug = $1`, [ATOTECH_SLUG])

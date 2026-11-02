@@ -25,11 +25,12 @@ import { phoneDigits } from '@/lib/quote'
  * 표를 처음 만들 때 금강변압기 제안서·견적서를 첫 업체로 넣는다.
  *
  * 버전: 제안서·견적서를 저장할 때마다 client_versions 에 그때의 제안서·견적서 전체를 한 벌 남긴다.
- * 최종본 확정(finalized_at)이 되면 제안서·견적서는 더 고칠 수 없다.
+ * 계약 확정(finalized_at, 2026-11-02 전 이름 '최종본 확정')이 되면 제안서·견적서는 더 고칠 수 없다. 해제(unfinalizeClient)하면 다시 고칠 수 있다.
+ * 고객 화면에 어떤 버전이 보이는지는 lib/clients/exposure.ts(최신 자동 또는 고정).
  */
 let ready: Promise<void> | null = null
 
-export const LOCKED_MESSAGE = '최종본으로 확정된 견적이라 제안서·견적서를 고칠 수 없습니다.'
+export const LOCKED_MESSAGE = '계약 확정으로 잠긴 견적이라 제안서·견적서를 고칠 수 없습니다. 고치려면 버전 기록에서 계약 확정을 먼저 해제하세요.'
 
 export function ensureClients(): Promise<void> {
   if (!ready) {
@@ -474,7 +475,7 @@ type Current = { proposalHtml: string; quote: unknown }
 type Next = { proposalHtml?: string; quote?: Quote; summary: string }
 
 /**
- * 제안서·견적서를 고치고 버전을 하나 남긴다. 확정된 업체면 LOCKED_MESSAGE 로 거절한다.
+ * 제안서·견적서를 고치고 버전을 하나 남긴다. 계약 확정으로 잠긴 업체면 LOCKED_MESSAGE 로 거절한다.
  * 저장한 내용이 바로 앞 버전과 같으면 버전을 늘리지 않는다. 남긴 버전 번호(없으면 null)를 돌려준다.
  */
 async function applyChange(
@@ -542,7 +543,7 @@ export type ClientRow = ClientInfo & {
   quote: Quote
   createdAt: Date
   updatedAt: Date
-  /** 최종본으로 확정한 버전. 확정 전이면 null */
+  /** 계약 확정(잠금)한 버전. 확정 전이면 null */
   finalized: { version: number; at: Date; by: string } | null
   /** 업체용 링크 비밀번호가 정해져 있는지 */
   portalPasswordSet: boolean
@@ -763,7 +764,7 @@ export async function getVersion(clientId: number, no: number): Promise<Version 
   }
 }
 
-/** 지금 최신 버전을 최종본으로 확정한다. 확정 후에는 제안서·견적서를 고칠 수 없다 */
+/** 계약 확정: 지금 최신 버전을 계약본으로 잠근다. 해제 전에는 제안서·견적서를 고칠 수 없다 */
 export async function finalizeClient(id: number, by: string): Promise<number> {
   await ensureClients()
   const { rows } = await pool.query<{ finalized_version: number }>(
@@ -773,8 +774,18 @@ export async function finalizeClient(id: number, by: string): Promise<number> {
      RETURNING finalized_version`,
     [id, by],
   )
-  if (!rows[0]) throw new Error('이미 확정했거나 없는 업체입니다.')
+  if (!rows[0]) throw new Error('이미 계약 확정했거나 없는 업체입니다.')
   return rows[0].finalized_version
+}
+
+/** 계약 확정 해제: 잠금을 풀어 다시 고칠 수 있게 한다 (2026-11-02 kevin: 확정은 계약 시점에만, 되돌릴 수 있게) */
+export async function unfinalizeClient(id: number) {
+  await ensureClients()
+  const { rowCount } = await pool.query(
+    `UPDATE clients SET finalized_at = NULL, finalized_by = NULL, finalized_version = NULL WHERE id = $1 AND finalized_at IS NOT NULL`,
+    [id],
+  )
+  if (!rowCount) throw new Error('계약 확정 상태가 아니거나 없는 업체입니다.')
 }
 
 export async function removeClient(id: number) {

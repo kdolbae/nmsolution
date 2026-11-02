@@ -5,6 +5,7 @@ import { ClientWorkspace } from "@/components/admin/client-workspace";
 import { ClientPortal } from "@/components/admin/client-portal";
 import { ClientSends } from "@/components/admin/client-sends";
 import { getQuoteCodes, isPortalHidden, listSends } from "@/lib/clients/sends";
+import { getPortalVersion } from "@/lib/clients/exposure";
 import { formatCode, getPortalInfo } from "@/lib/portal/members";
 import { mailEnabled } from "@/lib/mail";
 import { clientFiles } from "@/lib/clients/files";
@@ -52,6 +53,7 @@ export default async function AdminClientPage({
     sends,
     codes,
     portalHidden,
+    portalVersion,
   ] = await Promise.all([
     listVersions(client.id),
     // 업체용 링크·협력업체 포털은 본 견적(업체)에만 있다
@@ -66,6 +68,7 @@ export default async function AdminClientPage({
     listSends(client.id, { withWithdrawn: true }),
     getQuoteCodes(client.id),
     isPortalHidden(client.id),
+    getPortalVersion(client.id),
   ]);
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
   const picked =
@@ -112,7 +115,7 @@ export default async function AdminClientPage({
           />
         </div>
       )}
-      {/* 고객 발송본: 업체 페이지·포털은 이것만 보여 준다(내부 버전과 따로). 추가 견적서는 업체 페이지에 안 나간다 */}
+      {/* 고객 화면: 기본 최신 버전 자동, 버전 고정·공개 끄기·발송 기록. 추가 견적서는 업체 페이지에 안 나간다 */}
       {!client.parentId && (
         <div className="mb-5">
           <ClientSends
@@ -120,6 +123,7 @@ export default async function AdminClientPage({
             portalSlug={client.portalSlug}
             codes={codes}
             portalHidden={portalHidden}
+            portalVersion={portalVersion}
             quoteDate={client.quote.date}
             quoteNumber={client.quote.number}
             versions={versions.map((x) => ({

@@ -267,6 +267,9 @@ export type AccessRow = {
     /** 본 발송 견적번호 (비교면 to 와 함께) */
     send?: string | null
     to?: string
+    /** 고객이 본 내부 버전 번호 (lib/clients/exposure.ts) */
+    version?: number | null
+    pinned?: boolean
     total?: number
     screen?: string
     lang?: string

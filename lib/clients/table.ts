@@ -3,7 +3,8 @@ import { pool } from '@/lib/db'
 import { calcQuote, discountForGrand, normalizeQuote, today, type Quote } from './quote'
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_PLAN_PAGE } from './kkt-plan-page'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_PLAN_KEY, KKT_PLAN_SUMMARY, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -226,6 +227,14 @@ export function ensureClients(): Promise<void> {
           if (!quoteChanged && html === cur.proposalHtml) return null
           return { ...(quoteChanged ? { quote } : {}), ...(html !== cur.proposalHtml ? { proposalHtml: html } : {}), summary: KKT_INSUL_BOTTOM_SUMMARY }
         })
+      })
+      // 2026-11-02 kevin "작업계획서까지 업데이트": 견적서만 있던 업체 페이지를 정비한 작업계획서 + 견적서로 바꾼다(계약 확정 전만)
+      await seedOnce(KKT_PLAN_KEY, async () => {
+        const found = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND parent_id IS NULL AND finalized_at IS NULL ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
+        const row = found.rows[0]
+        if (!row) return
+        const page = kktProposalHtml(KKT_PLAN_PAGE)
+        await applyChange(Number(row.id), 'system', 'system', (cur) => (cur.proposalHtml === page ? null : { proposalHtml: page, summary: KKT_PLAN_SUMMARY }))
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

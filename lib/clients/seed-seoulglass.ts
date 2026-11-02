@@ -15,6 +15,8 @@ export const SEOULGLASS_REV3_KEY = 'seoulglass-eaves-2611-v3-panelwall'
 export const SEOULGLASS_REV4_KEY = 'seoulglass-eaves-2611-v4-eave-flashing'
 /** 5차(kevin 2026-11-02): 후레싱 13m@14,000·벽체 22,000·양쪽 배수·안쪽 벽 10.5m·문 건물 벽 쪽, 가격 조정(NEGO) 할인 415,000 → 7,500,000. 일정 11/3 실측·11/5~6 시공·11/9 마무리 */
 export const SEOULGLASS_REV5_KEY = 'seoulglass-eaves-2611-v5-nego-7500000'
+/** 6차(2026-11-02): 10-30 '최종본 확정'(v3) 잠금 때문에 REV4·REV5 가 건너뛰어짐 → 잠금을 풀고 7,500,000 안을 넣음. 고객 화면은 발송본(sends)으로 관리하므로 옛 잠금은 필요 없음 */
+export const SEOULGLASS_REV6_KEY = 'seoulglass-eaves-2611-v6-unlock-7500000'
 
 export const SEOULGLASS_CLIENT = {
   // 정식 상호·사업자번호는 아직 받지 못함. 받으면 업체 정보에서 넣는다. 현장 주소는 2026-11-02 kevin이 알려줌

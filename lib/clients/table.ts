@@ -4,7 +4,7 @@ import { calcQuote, discountForGrand, normalizeQuote, today, type Quote } from '
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
 import { KKT_PLAN_PAGE } from './kkt-plan-page'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_PLAN_KEY, KKT_PLAN_SUMMARY, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_PLAN_KEY, KKT_PLAN_SUMMARY, KKT_GW_KEY, KKT_GW_SUMMARY, KKT_GW_GRAND, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -235,6 +235,22 @@ export function ensureClients(): Promise<void> {
         if (!row) return
         const page = kktProposalHtml(KKT_PLAN_PAGE)
         await applyChange(Number(row.id), 'system', 'system', (cur) => (cur.proposalHtml === page ? null : { proposalHtml: page, summary: KKT_PLAN_SUMMARY }))
+      })
+      // 2026-11-02 kevin "미네랄울일 이유가 없음": 본체·도어 보온재를 그라스울 매트 250T(50T 5겹)로, 보온 인원 증원·분진 보호 강화, 부가세 포함 183,150,000,
+      // 작업계획서 페이지도 같은 문구로 다시 넣는다(계약 확정 전만)
+      await seedOnce(KKT_GW_KEY, async () => {
+        const found = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND parent_id IS NULL AND finalized_at IS NULL ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
+        const row = found.rows[0]
+        if (!row) return
+        const page = kktProposalHtml(KKT_PLAN_PAGE)
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const q = normalizeQuote(cur.quote)
+          const next = addKktDoor(q) ?? q
+          const quote = { ...next, discount: discountForGrand({ ...next, discount: 0 }, KKT_GW_GRAND) ?? next.discount }
+          const quoteChanged = JSON.stringify(quote) !== JSON.stringify(q)
+          if (!quoteChanged && cur.proposalHtml === page) return null
+          return { ...(quoteChanged ? { quote } : {}), ...(cur.proposalHtml !== page ? { proposalHtml: page } : {}), summary: KKT_GW_SUMMARY }
+        })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Building2, Inbox, BarChart3, Search, KeyRound, Activity, Menu, X, Eye } from 'lucide-react'
+import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Building2, Inbox, BarChart3, Search, KeyRound, Activity, Menu, X, Eye, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
@@ -15,6 +15,7 @@ const LINKS: Array<{ href: string; label: string; icon: typeof Home; external?: 
   { href: '/admin', label: '대시보드', icon: LayoutDashboard },
   { href: '/admin/clients', label: '업체 관리', icon: Building2 },
   { href: '/admin/access', label: '업체 접속 기록', icon: Eye },
+  { href: '/admin/orders', label: '발주서', icon: ClipboardList },
   { href: BOARD_STATS_URL, label: '마케팅 상황판', icon: BarChart3, external: true },
   { href: BOARD_ADS_URL, label: '검색광고 상황판', icon: Search, external: true },
   { href: '/admin/stats', label: '자체 방문 기록', icon: Activity },

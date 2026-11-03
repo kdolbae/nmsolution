@@ -10,7 +10,7 @@ const fmt = (n: number, d = 0) => (n ? n.toLocaleString('ko-KR', { maximumFracti
 const sel = 'h-8 w-full border border-input bg-background px-2 text-sm'
 
 /** 후레싱 발주서 품목 편집: 종류(제안 목록) 선택, 재질·두께·색상, 절곡 구간(치수·각도·방향), 길이·수량·단가 */
-export function FlashingItems({ items, onChange }: { items: PoItem[]; onChange: (items: PoItem[]) => void }) {
+export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items: PoItem[]; onChange: (items: PoItem[]) => void; startNo?: number; onSeoul?: () => void }) {
   const setAt = (i: number, patch: Partial<PoItem>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)))
   const setFl = (i: number, patch: Partial<Flashing>) => setAt(i, { fl: { ...(items[i].fl ?? emptyFlashing()), ...patch } })
   const move = (i: number, d: -1 | 1) => {
@@ -32,7 +32,7 @@ export function FlashingItems({ items, onChange }: { items: PoItem[]; onChange: 
         return (
           <div key={it.id} className="border p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="text-sm font-bold">No.{i + 1}</span>
+              <span className="text-sm font-bold">No.{startNo + i + 1}</span>
               <select
                 value=""
                 onChange={(e) => {
@@ -116,9 +116,16 @@ export function FlashingItems({ items, onChange }: { items: PoItem[]; onChange: 
           </div>
         )
       })}
-      <Button size="sm" variant="outline" className="self-start" onClick={() => onChange([...items, { ...emptyPoItem(), fl: emptyFlashing() }])}>
-        <Plus /> 후레싱 추가
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={() => onChange([...items, { ...emptyPoItem(), fl: emptyFlashing() }])}>
+          <Plus /> 후레싱 추가
+        </Button>
+        {onSeoul && (
+          <Button size="sm" variant="ghost" onClick={onSeoul} title="처마 막음·물끊기·마구리 캡·L자 받침·물받이 등 9종. 안 쓰는 줄은 지움">
+            <Plus /> 서울 처마 제안 9종 넣기
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

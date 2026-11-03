@@ -9,6 +9,7 @@ import { Section } from '@/components/admin/form'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { PartyFields } from '@/components/admin/order-party-fields'
 import { FlashingItems } from '@/components/admin/flashing-items'
+import { FL_SEOUL_SET } from '@/lib/orders/flashing'
 import { createOrder, deleteOrder, saveOrder } from '@/app/actions/orders'
 import { calcOrder, emptyPoItem, itemAmount, itemMeters, PO_STATUSES, renderOrderHtml, type PoItem, type PoParty, type PoPartyRow, type PoStatus, type PurchaseOrder } from '@/lib/orders/doc'
 
@@ -27,13 +28,18 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
     setDirty(true)
     setMsg('')
   }
-  const setItem = (idx: number, patch: Partial<PoItem>) => set('items', o.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
+  // 판넬·자재 줄(plain)과 후레싱 절곡 줄(fls)을 한 발주서에 같이 둔다. 발주서에는 자재 → 후레싱 순서로 찍힌다
+  const plain = o.items.filter((it) => !it.fl)
+  const fls = o.items.filter((it) => it.fl)
+  const setPlain = (v: PoItem[]) => set('items', [...v, ...fls])
+  const setFls = (v: PoItem[]) => set('items', [...plain, ...v])
+  const setItem = (idx: number, patch: Partial<PoItem>) => setPlain(plain.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
   const moveItem = (idx: number, d: -1 | 1) => {
     const j = idx + d
-    if (j < 0 || j >= o.items.length) return
-    const next = [...o.items]
+    if (j < 0 || j >= plain.length) return
+    const next = [...plain]
     ;[next[idx], next[j]] = [next[j], next[idx]]
-    set('items', next)
+    setPlain(next)
   }
 
   const html = useMemo(() => renderOrderHtml(o), [o])
@@ -108,12 +114,6 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <L label="발주일자"><input type="date" value={o.date} onChange={(e) => set('date', e.target.value)} className="h-8 w-full border border-input bg-background px-2 text-sm" /></L>
           <L label="발주번호 (비우면 저장 때 PO-YYMM-순번)"><TextIn value={o.no} onChange={(v) => set('no', v)} /></L>
-          <L label="발주 종류">
-            <select value={o.kind} onChange={(e) => set('kind', e.target.value as PurchaseOrder['kind'])} className="h-8 w-full border border-input bg-background px-2 text-sm">
-              <option value="general">일반 자재 (판넬 등)</option>
-              <option value="flashing">후레싱 (절곡)</option>
-            </select>
-          </L>
           <L label="상태">
             <select value={o.status} onChange={(e) => set('status', e.target.value as PoStatus)} className="h-8 w-full border border-input bg-background px-2 text-sm">
               {PO_STATUSES.map((s) => <option key={s}>{s}</option>)}
@@ -146,12 +146,9 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
       </div>
 
       <Section
-        title={o.kind === 'flashing' ? '후레싱 품목' : '품목'}
-        description={o.kind === 'flashing' ? "종류를 고르면 제안 치수가 들어감. 치수·각도·방향을 고치면 오른쪽 단면 그림과 '절곡 상세도' 장이 같이 바뀜." : "판넬은 단가 기준 'm'(길이×수량×단가). 단가를 모르면 비워 두거나 '금액란 숨김'으로 수량만 발주."}
+        title="판넬·자재 품목"
+        description="판넬은 단가 기준 'm'(길이×수량×단가). 단가를 모르면 비워 두거나 '금액란 숨김'으로 수량만 발주."
       >
-        {o.kind === 'flashing' ? (
-          <FlashingItems items={o.items} onChange={(v) => set('items', v)} />
-        ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
             <thead className="text-left text-xs text-muted-foreground">
@@ -171,7 +168,7 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
               </tr>
             </thead>
             <tbody>
-              {o.items.map((it, i) => (
+              {plain.map((it, i) => (
                 <tr key={it.id} className="align-middle">
                   <td className="py-1 text-xs text-muted-foreground">{i + 1}</td>
                   <td className="py-1 pr-1"><TextIn value={it.name} onChange={(v) => setItem(i, { name: v })} /></td>
@@ -192,20 +189,17 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
                   <td className="py-1 whitespace-nowrap">
                     <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => moveItem(i, -1)} aria-label="위로"><ChevronUp className="size-4" /></button>
                     <button type="button" className="p-1 text-muted-foreground hover:text-foreground" onClick={() => moveItem(i, 1)} aria-label="아래로"><ChevronDown className="size-4" /></button>
-                    <button type="button" className="p-1 text-muted-foreground hover:text-destructive" onClick={() => set('items', o.items.filter((_, j) => j !== i))} aria-label="삭제"><Trash2 className="size-4" /></button>
+                    <button type="button" className="p-1 text-muted-foreground hover:text-destructive" onClick={() => setPlain(plain.filter((_, j) => j !== i))} aria-label="삭제"><Trash2 className="size-4" /></button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        )}
         <div className="flex flex-wrap items-center gap-4">
-          {o.kind !== 'flashing' && (
-            <Button size="sm" variant="outline" onClick={() => set('items', [...o.items, emptyPoItem()])}>
-              <Plus /> 품목 추가
-            </Button>
-          )}
+          <Button size="sm" variant="outline" onClick={() => setPlain([...plain, emptyPoItem()])}>
+            <Plus /> 품목 추가
+          </Button>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={o.hidePrice} onChange={(e) => set('hidePrice', e.target.checked)} /> 금액란 숨김 (수량만 발주)
           </label>
@@ -213,6 +207,18 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
             공급가 {fmt(supply) || 0} · 부가세 {fmt(vat) || 0} · <b className="text-foreground">합계 {fmt(total) || 0}</b>
           </span>
         </div>
+      </Section>
+
+      <Section
+        title="후레싱 (절곡)"
+        description="판넬 발주처(새롬판넬 등)에 판넬과 같이 절곡 발주. 종류를 고르면 제안 치수가 들어가고, 치수·각도·벤딩 방향을 고치면 단면 그림과 발주서 뒤 '절곡 상세도' 장이 같이 바뀜."
+      >
+        <FlashingItems
+          items={fls}
+          startNo={plain.filter((it) => it.name || it.spec || it.qty || it.lengthMm || it.price || it.note).length}
+          onChange={setFls}
+          onSeoul={() => setFls([...fls, ...FL_SEOUL_SET.map((x) => ({ ...emptyPoItem(), name: x.name, note: x.note, fl: structuredClone(x.fl) }))])}
+        />
       </Section>
 
       <Section title="특기사항" description="한 줄에 한 항목.">

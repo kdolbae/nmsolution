@@ -174,6 +174,11 @@ export function calcOrder(o: PurchaseOrder) {
   return { supply, vat, total: supply + vat }
 }
 
+/** 표의 비고 칸: 후레싱은 첫 마디만(전체는 절곡 상세도에) */
+function noteOf(i: PoItem) {
+  return i.fl ? i.note.split('·')[0].trim() : i.note
+}
+
 /** 표의 규격 칸: 후레싱이면 재질·두께·색상·전개폭에 직접 적은 규격을 덧붙임 */
 function specOf(i: PoItem) {
   return i.fl ? [flSpec(i.fl), i.spec].filter(Boolean).join(' · ') : i.spec
@@ -306,7 +311,7 @@ export function renderOrderHtml(o: PurchaseOrder): string {
   const { supply, vat, total } = calcOrder(o)
   const showPrice = !o.hidePrice
   const items = o.items.filter((i) => i.name || i.spec || i.qty || i.lengthMm || i.price || i.note || i.fl)
-  const pages = paginate(items.map((i) => rowWeight(i.name || i.fl?.kind || '', specOf(i), i.note)))
+  const pages = paginate(items.map((i) => rowWeight(i.name || i.fl?.kind || '', specOf(i), noteOf(i))))
   // 후레싱 품목은 뒤에 '절곡 상세도' 장을 붙인다 (한 장에 6개: 2열 × 3줄)
   const flIdx = items.map((it, k) => (it.fl && it.fl.segs.length ? k : -1)).filter((k) => k >= 0)
   const detail: number[][] = []
@@ -326,7 +331,7 @@ export function renderOrderHtml(o: PurchaseOrder): string {
     const amt = itemAmount(i)
     return `<tr><td class="c">${idx + 1}</td><td>${esc(i.name || i.fl?.kind)}</td><td class="sp">${esc(specOf(i))}</td><td class="r">${i.lengthMm ? won(i.lengthMm) : ''}</td><td class="r">${fmtNum(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="r">${fmtNum(itemMeters(i))}</td>${
       showPrice ? `<td class="r">${i.price ? won(i.price) + (i.basis === 'm' ? '<span style="color:#5D6878;font-size:7.5pt">/m</span>' : '') : ''}</td><td class="r">${amt ? won(amt) : ''}</td>` : ''
-    }<td class="sp">${esc(i.note)}</td></tr>`
+    }<td class="sp">${esc(noteOf(i))}</td></tr>`
   }
   const blank = `<tr>${'<td></td>'.repeat(colCount)}</tr>`
 

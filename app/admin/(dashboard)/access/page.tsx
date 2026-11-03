@@ -15,6 +15,8 @@ const KIND: Record<string, string> = {
   portal_view: '포털 열람',
   portal_print: '포털 인쇄',
   portal_file: '포털 서류 내려받기',
+  contract_view: '계약서 열람',
+  contract_pdf: '계약서 PDF',
   quote_open: '견적서 열기',
   send_view: '지난 견적 열람',
   compare: '견적 비교',

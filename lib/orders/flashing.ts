@@ -2,6 +2,7 @@
  * 후레싱(절곡 철판) 발주 품목. 단면은 절곡 구간(치수·각도·방향)으로 적고, 그림은 그 값으로 자동으로 그린다.
  * - 첫 구간에서 오른쪽으로 출발해, 다음 구간마다 '각도'(두 면 사이 안쪽 각, 90 = 직각, 180 = 꺾지 않음)만큼 접는다.
  * - 방향 up = 그림에서 위로(반시계) 접음, down = 아래로(시계) 접음.
+ * - 각도 0 = 헴(완전히 접어 겹침).
  * - 전개폭 = 구간 치수의 합.
  * 브라우저(발주서 화면)와 서버(PDF)가 같이 쓴다.
  */
@@ -47,7 +48,7 @@ export function normalizeFlashing(raw: unknown): Flashing | undefined {
   const segs = Array.isArray(r.segs)
     ? r.segs.slice(0, 20).map((x) => {
         const g = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>
-        return { len: n(g.len), angle: Math.min(180, Math.max(0, n(g.angle) || 90)), dir: g.dir === 'up' ? 'up' : 'down' } satisfies FlSeg
+        return { len: n(g.len), angle: g.angle === undefined || g.angle === null || g.angle === '' ? 90 : Math.min(180, Math.max(0, n(g.angle))), dir: g.dir === 'up' ? 'up' : 'down' } satisfies FlSeg
       })
     : []
   return {
@@ -77,7 +78,7 @@ export function flSpec(f: Flashing) {
 
 /** 치수 순서 글: 80 ↓90° 120 ↓90° 250 … */
 export function flSegText(f: Flashing) {
-  return f.segs.map((g, i) => (i === 0 ? `${g.len}` : `${g.dir === 'up' ? '↑' : '↓'}${g.angle}° ${g.len}`)).join(' ')
+  return f.segs.map((g, i) => (i === 0 ? `${g.len}` : `${g.dir === 'up' ? '↑' : '↓'}${g.angle === 0 ? '헴' : `${g.angle}°`} ${g.len}`)).join(' ')
 }
 
 function points(segs: FlSeg[], start = 0) {
@@ -128,13 +129,13 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
       let ax = j[0] - cx, ay = j[1] - cy
       const AL = Math.hypot(ax, ay) || 1
       ax /= AL; ay /= AL
-      out += `<text x="${r(j[0] - ax * font * 1.4)}" y="${r(j[1] - ay * font * 1.4 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A">${g.angle}°</text>`
+      out += `<text x="${r(j[0] - ax * font * 1.4)}" y="${r(j[1] - ay * font * 1.4 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A">${g.angle === 0 ? '헴' : `${g.angle}°`}</text>`
     }
   })
   return out + '</svg>'
 }
 
-/** 서울 상가 처마(화곡동) 현장 후레싱 제안 8종. 길이·수량은 발주 때 넣고, 총 길이는 비고에 둠 */
+/** 서울 상가 처마(화곡동) 현장 후레싱 제안 9종(물받이 포함). 길이·수량은 발주 때 넣고, 총 길이는 비고에 둠 */
 export const FL_SEOUL_SET: { name: string; note: string; fl: Flashing }[] = [
   { name: '처마 막음 (옹벽 쪽)', note: '총 13m', fl: { kind: '처마 막음 후레싱', material: '칼라강판', thickness: 0.5, color: '청색', segs: [s(100), s(300, 90, 'down'), s(100, 90, 'up')] } },
   { name: '건물 벽 접합 물끊기', note: '총 14m', fl: { kind: '벽-지붕 접합 후레싱', material: '칼라강판', thickness: 0.5, color: '청색', segs: [s(60), s(100, 90, 'down'), s(40, 135, 'up')] } },
@@ -143,5 +144,6 @@ export const FL_SEOUL_SET: { name: string; note: string; fl: Flashing }[] = [
   { name: '벽체 상부 마감', note: '총 15.1m', fl: { kind: '벽체 두겁 (ㄷ자)', material: '칼라강판', thickness: 0.5, color: '아이보리', segs: [s(50), s(100, 90, 'down')] } },
   { name: '벽체 하부 베이스 캡 (선택)', note: '총 15.1m', fl: { kind: '하부 물끊기 후레싱', material: '칼라강판', thickness: 0.5, color: '아이보리', segs: [s(50), s(100, 90, 'down'), s(50, 90, 'down')] } },
   { name: '외부 코너', note: '2.9m × 2', fl: { kind: '외부 코너 후레싱', material: '칼라강판', thickness: 0.5, color: '아이보리', segs: [s(100), s(100, 90, 'down')] } },
+  { name: '부착 물받이 (옹벽 쪽 지붕 끝)', note: '총 14m · 끝막이 캡 2 · 선홈통 배수구 Ø75 1(오른쪽) · 치수 확인 필요', fl: { kind: '부착 물받이', material: '칼라강판', thickness: 0.6, color: '청색', segs: [s(50), s(110, 90, 'down'), s(150, 90, 'up'), s(130, 90, 'up'), s(20, 0, 'up')] } },
   { name: '문틀 주변 (선택)', note: '약 10m', fl: { kind: '창호·도어 후레싱', material: '칼라강판', thickness: 0.5, color: '아이보리', segs: [s(50), s(100, 90, 'down'), s(50, 90, 'down')] } },
 ]

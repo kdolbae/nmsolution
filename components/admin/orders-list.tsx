@@ -25,13 +25,7 @@ export function OrdersList({ orders, parties }: { orders: OrderSummary[]; partie
     <>
       <div className="mb-4 flex flex-wrap gap-2">
         <Button onClick={() => make('panel')} disabled={pending}>
-          {pending ? <Loader2 className="animate-spin" /> : <Plus />} 판넬 발주서 (지붕·소골 벽체)
-        </Button>
-        <Button variant="outline" onClick={() => make('flashing')} disabled={pending}>
-          <Plus /> 후레싱(절곡) 발주서
-        </Button>
-        <Button variant="outline" onClick={() => make('flashing-seoul')} disabled={pending} title="처마 막음·물끊기·마구리 캡·L자 받침 등 8종이 미리 들어감">
-          <Plus /> 후레싱 · 서울 처마 8종
+          {pending ? <Loader2 className="animate-spin" /> : <Plus />} 판넬 발주서 (지붕·소골 벽체 + 후레싱 절곡)
         </Button>
         <Button variant="outline" onClick={() => make('blank')} disabled={pending}>
           <Plus /> 빈 발주서

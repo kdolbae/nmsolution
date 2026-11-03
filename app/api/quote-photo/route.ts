@@ -6,6 +6,7 @@ import { isValidKoreanPhone } from '@/lib/quote'
 import { attributionValues, type Attribution } from '@/lib/attribution'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
+import { WORK_CATEGORIES } from '@/lib/work-landings'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,6 +47,9 @@ export async function POST(req: Request) {
   const symptom = str(fd.get('symptom'), 200)
   const message = str(fd.get('message'), 4000)
   const from = str(fd.get('from'), 60) || 'leak_photo'
+  // 작업별 랜딩(/work/*)은 자기 분류를 보낸다. 정해진 값만 받고 나머지는 누수로 둔다
+  const sentCategory = str(fd.get('category'), 60)
+  const category = WORK_CATEGORIES.includes(sentCategory) ? sentCategory : '누수 · 피해복구'
 
   // 이 폼은 광고 랜딩(/leak)에 붙어 있다. 유입 출처를 여기서 안 받으면
   // 광고로 들어온 문의가 출처 없이 남고, 나중에 소급해서 채울 수 없다.
@@ -78,7 +82,7 @@ export async function POST(req: Request) {
 
   const body = [
     `[사진 견적 · 사진 ${photos.length}장 · ${from}]`,
-    symptom && `증상: ${symptom}`,
+    symptom && `${category === '누수 · 피해복구' ? '증상' : '작업'}: ${symptom}`,
     message,
   ]
     .filter(Boolean)
@@ -92,7 +96,7 @@ export async function POST(req: Request) {
         name: name || '사진 견적',
         phone,
         location,
-        categories: '누수 · 피해복구',
+        categories: category,
         message: body,
         ...attributionValues(attribution),
       })

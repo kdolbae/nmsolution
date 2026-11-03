@@ -60,10 +60,26 @@ export async function shrink(file: File): Promise<Blob | null> {
 export function PhotoQuoteForm({
   phoneMobile,
   from = 'leak_photo',
+  category = '누수 · 피해복구',
+  options = LEAK_SYMPTOMS,
+  optionsTitle = '어떤 증상인가요?',
+  photoHint = '젖은 곳 가까이 한 장, 방(공간) 전체가 보이게 한 장, 위층 · 배관 · 지붕 쪽 한 장이면 충분합니다.',
+  photoLabel = '증상 사진',
+  locationPlaceholder = '안성시 공도읍',
+  messagePlaceholder = '예) 욕실 위 천장, 3일 전부터',
 }: {
   phoneMobile: string
   /** 전환 집계용. 어느 페이지의 폼인지 */
   from?: string
+  /** 견적 접수에 남는 분류. 작업별 랜딩(/work/*)이 자기 분류를 넘긴다 */
+  category?: string
+  /** 02 단계 선택지(누수 증상 · 작업 종류) */
+  options?: readonly string[]
+  optionsTitle?: string
+  photoHint?: string
+  photoLabel?: string
+  locationPlaceholder?: string
+  messagePlaceholder?: string
 }) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [symptom, setSymptom] = useState<string>('')
@@ -119,6 +135,7 @@ export function PhotoQuoteForm({
     for (const k of ['name', 'phone', 'location', 'message', 'website']) fd.set(k, String(form.get(k) ?? ''))
     fd.set('symptom', symptom)
     fd.set('from', from)
+    fd.set('category', category)
     // 이 폼은 광고 랜딩에 붙어 있다. 어느 광고에서 온 방문인지 함께 보낸다.
     fd.set('attribution', JSON.stringify(loadAttribution()))
     photos.forEach((p, i) => fd.append('photos', p.blob, `photo-${i + 1}.jpg`))
@@ -129,8 +146,8 @@ export function PhotoQuoteForm({
       const res = (await r.json().catch(() => null)) as { ok: boolean; error?: string } | null
       if (res?.ok) {
         setDone(photos.length)
-        track('quote_submitted', { categories: '누수 · 피해복구', from, photos: photos.length })
-        reportConversion('quote', { categories: '누수 · 피해복구', from })
+        track('quote_submitted', { categories: category, from, photos: photos.length })
+        reportConversion('quote', { categories: category, from })
       } else {
         setError(res?.error || '접수 중 문제가 발생했습니다. 전화나 카카오톡으로 사진을 보내 주세요.')
       }
@@ -178,7 +195,7 @@ export function PhotoQuoteForm({
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 flex items-center gap-2 text-sm font-semibold">
           <span className="font-mono text-xs text-electric">01</span>
-          증상 사진 <span className="font-normal text-muted-foreground">(최대 {MAX_PHOTOS}장)</span>
+          {photoLabel} <span className="font-normal text-muted-foreground">(최대 {MAX_PHOTOS}장)</span>
         </legend>
 
         <input
@@ -250,19 +267,17 @@ export function PhotoQuoteForm({
             )}
           </ul>
         )}
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          젖은 곳 가까이 한 장, 방(공간) 전체가 보이게 한 장, 위층 · 배관 · 지붕 쪽 한 장이면 충분합니다.
-        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{photoHint}</p>
       </fieldset>
 
       {/* 2. 증상 */}
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 flex items-center gap-2 text-sm font-semibold">
           <span className="font-mono text-xs text-electric">02</span>
-          어떤 증상인가요?
+          {optionsTitle}
         </legend>
         <div className="flex flex-wrap gap-2">
-          {LEAK_SYMPTOMS.map((s) => {
+          {options.map((s) => {
             const on = symptom === s
             return (
               <button
@@ -308,7 +323,7 @@ export function PhotoQuoteForm({
             <label htmlFor="p-location" className="text-sm">
               현장 위치
             </label>
-            <input id="p-location" name="location" className={FIELD} placeholder="안성시 공도읍" />
+            <input id="p-location" name="location" className={FIELD} placeholder={locationPlaceholder} />
           </div>
           <div className="flex flex-col gap-2">
             <label htmlFor="p-name" className="text-sm">
@@ -320,7 +335,7 @@ export function PhotoQuoteForm({
             <label htmlFor="p-message" className="text-sm">
               한 줄 설명 <span className="text-muted-foreground">(선택)</span>
             </label>
-            <input id="p-message" name="message" className={FIELD} placeholder="예) 욕실 위 천장, 3일 전부터" />
+            <input id="p-message" name="message" className={FIELD} placeholder={messagePlaceholder} />
           </div>
         </div>
       </fieldset>

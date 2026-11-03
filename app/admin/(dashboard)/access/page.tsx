@@ -18,6 +18,8 @@ const KIND: Record<string, string> = {
   quote_open: '견적서 열기',
   send_view: '지난 견적 열람',
   compare: '견적 비교',
+  work_order_view: '업무 지시서 열람',
+  work_order_pdf: '업무 지시서 PDF',
 }
 
 const kst = (iso: string) =>

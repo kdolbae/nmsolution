@@ -56,7 +56,7 @@ export function ensureAccessLog(): Promise<void> {
   return ready
 }
 
-export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file'
+export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file' | 'work_order_view' | 'work_order_pdf'
 
 /** 업체용 링크 주소가 없는 업체(금강변압기 /kkt 는 따로 만든 페이지)는 이름으로 묶는다 */
 const NAME_OF_SLUG: Record<string, string> = { kkt: KKT_CLIENT.name }
@@ -72,6 +72,8 @@ const NOTIFY: Partial<Record<AccessKind, string>> = {
   send_view: '지난 견적 열람',
   compare: '견적 비교',
   portal_file: '포털에서 서류 내려받기',
+  work_order_view: '업무 지시서 열람(현장 팀)',
+  work_order_pdf: '업무 지시서 PDF(현장 팀)',
   login_fail: '비밀번호 틀림',
 }
 
@@ -270,6 +272,8 @@ export type AccessRow = {
     /** 고객이 본 내부 버전 번호 (lib/clients/exposure.ts) */
     version?: number | null
     pinned?: boolean
+    /** 현장 팀이 연 업무 지시서 번호 */
+    workOrder?: string
     total?: number
     screen?: string
     lang?: string

@@ -4,6 +4,9 @@ import { ChevronLeft } from "lucide-react";
 import { ClientWorkspace } from "@/components/admin/client-workspace";
 import { ClientPortal } from "@/components/admin/client-portal";
 import { ClientSends } from "@/components/admin/client-sends";
+import { ClientWorkOrders } from "@/components/admin/client-work-orders";
+import { getWorkOrder, listWorkOrders } from "@/lib/work-orders/table";
+import { headers } from "next/headers";
 import { getQuoteCodes, isPortalHidden, listSends } from "@/lib/clients/sends";
 import { getPortalVersion } from "@/lib/clients/exposure";
 import { formatCode, getPortalInfo } from "@/lib/portal/members";
@@ -36,9 +39,9 @@ export default async function AdminClientPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; v?: string }>;
+  searchParams: Promise<{ tab?: string; v?: string; wo?: string }>;
 }) {
-  const [{ id }, { tab, v }] = await Promise.all([params, searchParams]);
+  const [{ id }, { tab, v, wo }] = await Promise.all([params, searchParams]);
   const client = await getClient(Number(id));
   if (!client) notFound();
   const [
@@ -54,6 +57,8 @@ export default async function AdminClientPage({
     codes,
     portalHidden,
     portalVersion,
+    workOrders,
+    h,
   ] = await Promise.all([
     listVersions(client.id),
     // 업체용 링크·협력업체 포털은 본 견적(업체)에만 있다
@@ -69,7 +74,11 @@ export default async function AdminClientPage({
     getQuoteCodes(client.id),
     isPortalHidden(client.id),
     getPortalVersion(client.id),
+    listWorkOrders(client.id),
+    headers(),
   ]);
+  const editingWo = wo ? await getWorkOrder(client.id, Number(wo)) : null;
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "nm-solution.co.kr"}`;
   // 최신본이 아닌 버전을 고르면 그 버전을 읽기 전용으로 보여 준다
   const picked =
     v && Number(v) !== versions[0]?.no
@@ -191,6 +200,24 @@ export default async function AdminClientPage({
           initial={schedule}
           log={scheduleLog}
           fromQuote={stepsFromQuote(client.quote)}
+        />
+      </div>
+      {/* 프로젝트 마지막 단계: 현장 업무 지시서 (전 업체 공통) */}
+      <div className="mt-5">
+        <ClientWorkOrders
+          clientId={client.id}
+          origin={origin}
+          orders={workOrders.map((o) => ({
+            no: o.no,
+            number: o.number,
+            title: o.title,
+            status: o.status,
+            shareKey: o.shareKey,
+            createdBy: o.createdBy,
+            createdAt: o.createdAt.toISOString(),
+            updatedAt: o.updatedAt.toISOString(),
+          }))}
+          editing={editingWo && { no: editingWo.no, number: editingWo.number, markdown: editingWo.markdown }}
         />
       </div>
     </>

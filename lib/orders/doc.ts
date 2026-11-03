@@ -1,3 +1,5 @@
+import { flSegText, flSpec, flSvg, flWidth, normalizeFlashing, type Flashing } from './flashing'
+
 /**
  * 발주서 (엔엠솔루션 → 자재 공급처). 화면 미리보기·인쇄·PDF 가 같은 HTML 을 쓴다.
  * 이 파일은 DB 를 쓰지 않으므로 어드민 화면(브라우저)에서도 불러 미리보기를 그린다.
@@ -31,6 +33,8 @@ export type PoItem = {
   basis: 'm' | 'ea'
   price: number
   note: string
+  /** 후레싱(절곡) 품목이면 단면 정보. 있으면 규격 칸은 이 값으로 채우고 절곡 상세도 장에 그림이 들어간다 */
+  fl?: Flashing
 }
 
 export type PoStatus = '작성 중' | '발주 완료' | '취소'
@@ -52,6 +56,8 @@ export type PurchaseOrder = {
   notes: string
   /** 금액란을 비우고 수량만 발주 (단가는 공급처 견적) */
   hidePrice: boolean
+  /** general = 일반 자재(판넬 등), flashing = 후레싱 절곡 발주 */
+  kind: 'general' | 'flashing'
 }
 
 export const PO_STATUSES: PoStatus[] = ['작성 중', '발주 완료', '취소']
@@ -95,6 +101,7 @@ export function emptyOrder(): PurchaseOrder {
     items: [emptyPoItem()],
     notes: DEFAULT_PO_NOTES,
     hidePrice: false,
+    kind: 'general',
   }
 }
 
@@ -127,6 +134,7 @@ export function normalizeOrder(raw: unknown): PurchaseOrder {
           basis: i.basis === 'ea' ? 'ea' : 'm',
           price: num(i.price),
           note: str(i.note, 200),
+          fl: normalizeFlashing(i.fl),
         } satisfies PoItem
       })
     : base.items
@@ -146,6 +154,7 @@ export function normalizeOrder(raw: unknown): PurchaseOrder {
     items,
     notes: str(r.notes, 3000),
     hidePrice: r.hidePrice === true,
+    kind: r.kind === 'flashing' ? 'flashing' : 'general',
   }
 }
 
@@ -165,6 +174,11 @@ export function calcOrder(o: PurchaseOrder) {
   return { supply, vat, total: supply + vat }
 }
 
+/** 표의 규격 칸: 후레싱이면 재질·두께·색상·전개폭에 직접 적은 규격을 덧붙임 */
+function specOf(i: PoItem) {
+  return i.fl ? [flSpec(i.fl), i.spec].filter(Boolean).join(' · ') : i.spec
+}
+
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
 const fmtNum = (n: number, d = 2) => (n ? n.toLocaleString('ko-KR', { maximumFractionDigits: d }) : '')
 function esc(s: unknown) {
@@ -178,6 +192,15 @@ function fmtDate(d: string) {
 export const PO_FONT_CSS = 'https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css'
 
 const CSS = `
+.flnote{margin:3mm 0 2mm;font-size:8pt;color:#5D6878}
+.flg{display:grid;grid-template-columns:1fr 1fr;gap:3.5mm}
+.flc{border:1px solid #DDE3EA;height:77mm;display:flex;flex-direction:column;overflow:hidden}
+.flh{flex:none;line-height:1.4;background:#F4F6F9;border-bottom:1px solid #DDE3EA;padding:1.4mm 2.5mm;font-size:9pt;font-weight:600;color:#0F2A44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flh span{font-weight:400;color:#5D6878;margin-left:2mm;font-size:8pt}
+.fls{flex:none;height:33mm;padding:1mm 2mm}.fls svg{width:100%;height:100%}
+.flc table{width:100%;border-collapse:collapse;border-top:1px solid #DDE3EA}
+.flc th{width:20mm;white-space:nowrap;text-align:left;font-weight:500;color:#5D6878;font-size:8pt;padding:.5mm 2.5mm;vertical-align:top}
+.flc td{font-size:8.5pt;padding:.5mm 2.5mm .5mm 0;word-break:keep-all}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{font-family:Pretendard,'Pretendard Variable','Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:#1D2430;font-size:9.5pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -243,41 +266,52 @@ function partyRows(p: PoParty, sealLabel: boolean) {
 }
 
 /** 쪽 나누기: 첫 장은 머리·사업자 칸이 있어 적게, 마지막 장은 합계·특기사항·서명 칸을 남긴다 */
-function paginate(n: number): number[][] {
+function paginate(w: number[]): number[][] {
+  // 용량은 한 줄짜리 행 기준. 글이 길어 두세 줄로 접히는 행은 w(무게)를 크게 준다
   const FIRST = 17
   const FIRST_LAST = 11
   const MID = 30
   const MID_LAST = 22
+  const n = w.length
+  const sum = (from: number, to: number) => w.slice(from, to).reduce((a, b) => a + b, 0)
   const pages: number[][] = []
   let i = 0
   let first = true
   while (true) {
-    const rest = n - i
     const lastCap = first ? FIRST_LAST : MID_LAST
     const fullCap = first ? FIRST : MID
-    if (rest <= lastCap) {
-      pages.push(Array.from({ length: rest }, (_, k) => i + k))
+    if (sum(i, n) <= lastCap) {
+      pages.push(Array.from({ length: n - i }, (_, k) => i + k))
       break
     }
+    let take = 0
+    while (i + take < n && sum(i, i + take + 1) <= fullCap) take++
     // 남은 품목이 이 장에 다 들어가도 합계 칸 자리가 없으면, 몇 줄은 다음(마지막) 장으로 넘긴다
-    const take = rest > fullCap ? fullCap : Math.max(1, rest - 3)
+    if (i + take >= n) take = Math.max(1, take - 3)
+    take = Math.max(1, take)
     pages.push(Array.from({ length: take }, (_, k) => i + k))
     i += take
     first = false
-    if (i >= n) {
-      pages.push([])
-      break
-    }
   }
   return pages
+}
+
+/** 행 무게: 칸 너비에 견준 글자 수로 접힐 줄 수를 어림한다 */
+function rowWeight(name: string, spec: string, note: string) {
+  const lines = Math.max(1, Math.ceil(name.length / 9), Math.ceil(spec.length / 24), Math.ceil(note.length / 7))
+  return lines === 1 ? 1 : 1 + (lines - 1) * 0.6
 }
 
 export function renderOrderHtml(o: PurchaseOrder): string {
   const { supply, vat, total } = calcOrder(o)
   const showPrice = !o.hidePrice
-  const items = o.items.filter((i) => i.name || i.spec || i.qty || i.lengthMm || i.price || i.note)
-  const pages = paginate(items.length)
-  const N = pages.length
+  const items = o.items.filter((i) => i.name || i.spec || i.qty || i.lengthMm || i.price || i.note || i.fl)
+  const pages = paginate(items.map((i) => rowWeight(i.name || i.fl?.kind || '', specOf(i), i.note)))
+  // 후레싱 품목은 뒤에 '절곡 상세도' 장을 붙인다 (한 장에 6개: 2열 × 3줄)
+  const flIdx = items.map((it, k) => (it.fl && it.fl.segs.length ? k : -1)).filter((k) => k >= 0)
+  const detail: number[][] = []
+  for (let k = 0; k < flIdx.length; k += 6) detail.push(flIdx.slice(k, k + 6))
+  const N = pages.length + detail.length
   const no = o.no || '(저장 후 부여)'
   const isNm = /엔엠솔루션|NM\s*SOLUTION/i.test(o.issuer.name)
   const brand = isNm ? `<div class="brand">NM SOLUTION<small>${esc(o.issuer.name)}</small></div>` : `<div class="brand alt">${esc(o.issuer.name)}</div>`
@@ -290,7 +324,7 @@ export function renderOrderHtml(o: PurchaseOrder): string {
 
   const row = (i: PoItem, idx: number) => {
     const amt = itemAmount(i)
-    return `<tr><td class="c">${idx + 1}</td><td>${esc(i.name)}</td><td class="sp">${esc(i.spec)}</td><td class="r">${i.lengthMm ? won(i.lengthMm) : ''}</td><td class="r">${fmtNum(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="r">${fmtNum(itemMeters(i))}</td>${
+    return `<tr><td class="c">${idx + 1}</td><td>${esc(i.name || i.fl?.kind)}</td><td class="sp">${esc(specOf(i))}</td><td class="r">${i.lengthMm ? won(i.lengthMm) : ''}</td><td class="r">${fmtNum(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="r">${fmtNum(itemMeters(i))}</td>${
       showPrice ? `<td class="r">${i.price ? won(i.price) + (i.basis === 'm' ? '<span style="color:#5D6878;font-size:7.5pt">/m</span>' : '') : ''}</td><td class="r">${amt ? won(amt) : ''}</td>` : ''
     }<td class="sp">${esc(i.note)}</td></tr>`
   }
@@ -308,9 +342,9 @@ export function renderOrderHtml(o: PurchaseOrder): string {
     .map((l) => l.trim().replace(/^\d+[.)]\s*/, ''))
     .filter(Boolean)
 
-  const sheets = pages.map((idxs, p) => {
+  const sheets: string[] = pages.map((idxs, p) => {
     const first = p === 0
-    const last = p === N - 1
+    const last = p === pages.length - 1
     // 한 장짜리 발주서는 빈 줄로 표를 채워 양식 모양을 맞춘다
     const pad = last && N === 1 ? Math.max(0, 7 - idxs.length) : 0
     const body = idxs.map((k) => row(items[k], k)).join('') + blank.repeat(pad)
@@ -336,6 +370,31 @@ ${
 }
 <div class="foot"><span>${esc(o.issuer.name)}${o.issuer.phone ? ' · ' + esc(o.issuer.phone) : ''}${o.issuer.email ? ' · ' + esc(o.issuer.email) : ''}</span><span>${esc(no)} · ${p + 1} / ${N}</span></div>
 </section>`
+  })
+
+  const card = (k: number) => {
+    const it = items[k]
+    const f = it.fl!
+    const rows: [string, string][] = [
+      ['재질·두께', [f.material, f.thickness ? `${f.thickness}t` : ''].filter(Boolean).join(' ')],
+      ['색상', f.color],
+      ['전개폭', flWidth(f) ? `${won(flWidth(f))} mm` : ''],
+      ['절곡 치수', flSegText(f)],
+      ['길이 × 수량', [it.lengthMm ? `${won(it.lengthMm)} mm` : '', it.qty ? `${fmtNum(it.qty)} ${it.unit}` : ''].filter(Boolean).join(' × ')],
+      ['비고', it.note],
+    ]
+    return `<div class="flc"><div class="flh"><b>No.${k + 1}</b> ${esc(it.name || f.kind)}${it.name && f.kind && it.name !== f.kind ? `<span>${esc(f.kind)}</span>` : ''}</div>
+<div class="fls">${flSvg(f, 300, 150, { font: 12 })}</div>
+<table>${rows.map(([a, b]) => `<tr><th>${a}</th><td>${esc(b)}</td></tr>`).join('')}</table></div>`
+  }
+  detail.forEach((ks, d) => {
+    const p = pages.length + d
+    sheets.push(`<section class="sheet">
+<div class="top">${brand}<h1>절곡 상세도</h1><div class="meta">발주번호 <b>${esc(no)}</b><br>${esc(o.siteName)}</div></div>
+<p class="flnote">단면 치수 단위 mm · 각도는 두 면 사이 안쪽 각 · <span style="color:#E8742A">●</span> 표시가 첫 구간 시작점 · 도장면(색상면)은 바깥쪽 기준</p>
+<div class="flg">${ks.map(card).join('')}</div>
+<div class="foot" style="margin-top:auto"><span>${esc(o.issuer.name)}${o.issuer.phone ? ' · ' + esc(o.issuer.phone) : ''}</span><span>${esc(no)} · ${p + 1} / ${N}</span></div>
+</section>`)
   })
 
   const title = `발주서 ${o.no || ''} ${o.supplier.name}`.trim()

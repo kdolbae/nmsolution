@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Section } from '@/components/admin/form'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { PartyFields } from '@/components/admin/order-party-fields'
+import { FlashingItems } from '@/components/admin/flashing-items'
 import { createOrder, deleteOrder, saveOrder } from '@/app/actions/orders'
 import { calcOrder, emptyPoItem, itemAmount, itemMeters, PO_STATUSES, renderOrderHtml, type PoItem, type PoParty, type PoPartyRow, type PoStatus, type PurchaseOrder } from '@/lib/orders/doc'
 
@@ -107,6 +108,12 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <L label="발주일자"><input type="date" value={o.date} onChange={(e) => set('date', e.target.value)} className="h-8 w-full border border-input bg-background px-2 text-sm" /></L>
           <L label="발주번호 (비우면 저장 때 PO-YYMM-순번)"><TextIn value={o.no} onChange={(v) => set('no', v)} /></L>
+          <L label="발주 종류">
+            <select value={o.kind} onChange={(e) => set('kind', e.target.value as PurchaseOrder['kind'])} className="h-8 w-full border border-input bg-background px-2 text-sm">
+              <option value="general">일반 자재 (판넬 등)</option>
+              <option value="flashing">후레싱 (절곡)</option>
+            </select>
+          </L>
           <L label="상태">
             <select value={o.status} onChange={(e) => set('status', e.target.value as PoStatus)} className="h-8 w-full border border-input bg-background px-2 text-sm">
               {PO_STATUSES.map((s) => <option key={s}>{s}</option>)}
@@ -138,7 +145,13 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
         </Section>
       </div>
 
-      <Section title="품목" description="판넬은 단가 기준 'm'(길이×수량×단가). 단가를 모르면 비워 두거나 '금액란 숨김'으로 수량만 발주.">
+      <Section
+        title={o.kind === 'flashing' ? '후레싱 품목' : '품목'}
+        description={o.kind === 'flashing' ? "종류를 고르면 제안 치수가 들어감. 치수·각도·방향을 고치면 오른쪽 단면 그림과 '절곡 상세도' 장이 같이 바뀜." : "판넬은 단가 기준 'm'(길이×수량×단가). 단가를 모르면 비워 두거나 '금액란 숨김'으로 수량만 발주."}
+      >
+        {o.kind === 'flashing' ? (
+          <FlashingItems items={o.items} onChange={(v) => set('items', v)} />
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
             <thead className="text-left text-xs text-muted-foreground">
@@ -186,10 +199,13 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
             </tbody>
           </table>
         </div>
+        )}
         <div className="flex flex-wrap items-center gap-4">
-          <Button size="sm" variant="outline" onClick={() => set('items', [...o.items, emptyPoItem()])}>
-            <Plus /> 품목 추가
-          </Button>
+          {o.kind !== 'flashing' && (
+            <Button size="sm" variant="outline" onClick={() => set('items', [...o.items, emptyPoItem()])}>
+              <Plus /> 품목 추가
+            </Button>
+          )}
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={o.hidePrice} onChange={(e) => set('hidePrice', e.target.checked)} /> 금액란 숨김 (수량만 발주)
           </label>

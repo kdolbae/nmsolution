@@ -280,6 +280,7 @@ const DEFAULT_CODES: [slug: string, code: string, work: string][] = [
   ['seongwon', 'SWR', 'STEEL'],
   ['jstech', 'JST', 'ROOF'],
   ['seoulglass', 'SCG', 'PANEL'],
+  ['ganatm', 'GNT', 'PANEL'],
   ['kkt', 'KKT', 'HEAVY'],
 ]
 

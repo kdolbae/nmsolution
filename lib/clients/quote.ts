@@ -469,10 +469,13 @@ export function renderQuote(q: Quote, to: QuoteRecipient, mark?: QuoteMark): str
   const calc = calcQuote(q)
   const mk = mark ? quoteMarks(q, mark.base) : null
   // 할인이 있는 견적서(금강변압기)는 공정별 금액·최종 금액을 총괄표로 떼어 보인다. 할인이 없으면(신일 등) 예전 한 표 양식 그대로
-  const withSummary = calc.discount > 0
   const mainIdx = q.sections.map((s, i) => (s.option ? -1 : i)).filter((i) => i >= 0)
   const optIdx = q.sections.map((s, i) => (s.option ? i : -1)).filter((i) => i >= 0)
-  const multi = mainIdx.length > 1
+  // 공종이 많으면(6개 이상, 예: 사진 번호별 소규모 보수) 원가 요약을 공종별 열로 펼치면 글자가 세로로 깨진다.
+  // 이때는 공종별 금액을 총괄표(세로 목록)로 보이고, 원가 요약은 합계 한 열로 줄인다
+  const wide = mainIdx.length > 5
+  const withSummary = calc.discount > 0 || wide
+  const multi = mainIdx.length > 1 && !wide
   const rows: string[] = []
   const optRows: string[] = []
   let no = 0

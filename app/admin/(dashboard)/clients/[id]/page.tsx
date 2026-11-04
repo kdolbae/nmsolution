@@ -5,6 +5,8 @@ import { ClientWorkspace } from "@/components/admin/client-workspace";
 import { ClientPortal } from "@/components/admin/client-portal";
 import { ClientSends } from "@/components/admin/client-sends";
 import { ClientWorkOrders } from "@/components/admin/client-work-orders";
+import { ClientMaterials } from "@/components/admin/client-materials";
+import { getMaterials } from "@/lib/materials/table";
 import { getWorkOrder, listWorkOrders } from "@/lib/work-orders/table";
 import { headers } from "next/headers";
 import { getQuoteCodes, isPortalHidden, listSends } from "@/lib/clients/sends";
@@ -58,6 +60,7 @@ export default async function AdminClientPage({
     portalHidden,
     portalVersion,
     workOrders,
+    materials,
     h,
   ] = await Promise.all([
     listVersions(client.id),
@@ -75,6 +78,7 @@ export default async function AdminClientPage({
     isPortalHidden(client.id),
     getPortalVersion(client.id),
     listWorkOrders(client.id),
+    getMaterials(client.id),
     headers(),
   ]);
   const editingWo = wo ? await getWorkOrder(client.id, Number(wo)) : null;
@@ -201,6 +205,10 @@ export default async function AdminClientPage({
           log={scheduleLog}
           fromQuote={stepsFromQuote(client.quote)}
         />
+      </div>
+      {/* 프로젝트 단계: 적산·자재 리스트 → 발주 (전 업체 공통) */}
+      <div className="mt-5">
+        <ClientMaterials clientId={client.id} clientName={client.name} initial={materials} />
       </div>
       {/* 프로젝트 마지막 단계: 현장 업무 지시서 (전 업체 공통) */}
       <div className="mt-5">

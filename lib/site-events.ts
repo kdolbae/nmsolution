@@ -83,7 +83,8 @@ function inflow(): Inflow {
       utm_medium: q.get('utm_medium') || undefined,
       utm_campaign: q.get('utm_campaign') || undefined,
       utm_content: q.get('utm_content') || undefined,
-      utm_term: q.get('utm_term') || undefined,
+      // 확장검색은 검색어(n_query)와 실제로 잡은 등록 키워드가 다르다. 키워드는 n_keyword 로 붙으니 utm_term 에 남긴다
+      utm_term: q.get('utm_term') || q.get('n_keyword') || undefined,
       // 네이버 검색광고 '자동 추적 파라미터' 를 켜면 실제 검색어와 순위가 붙는다
       ad_query: q.get('n_query') || q.get('n_keyword') || undefined,
       ad_rank: q.get('n_rank') ? Number(q.get('n_rank')) : undefined,

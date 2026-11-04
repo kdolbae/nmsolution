@@ -2,7 +2,7 @@
  * 후레싱(절곡 철판) 발주 품목. 단면은 절곡 구간(치수·각도·방향)으로 적고, 그림은 그 값으로 자동으로 그린다.
  * - 첫 구간에서 오른쪽으로 출발해, 다음 구간마다 '각도'(두 면 사이 안쪽 각, 90 = 직각, 180 = 꺾지 않음)만큼 접는다.
  * - 방향 up = 그림에서 위로(반시계) 접음, down = 아래로(시계) 접음.
- * - 각도 0 = 헴(완전히 접어 겹침).
+ * - 각도 0 = 헴(Hem, 현장 말로 '짬처리'·끝접기): 끝을 180° 되접어 겹침. 그림에서는 겹친 면을 조금 띄워 접힌 쪽이 보이게 그림.
  * - 전개폭 = 구간 치수의 합.
  * 브라우저(발주서 화면)와 서버(PDF)가 같이 쓴다.
  */
@@ -86,7 +86,7 @@ export function flSpec(f: Flashing) {
 
 /** 치수 순서 글: 80 ↓90° 120 ↓90° 250 … */
 export function flSegText(f: Flashing) {
-  return f.segs.map((g, i) => (i === 0 ? `${g.len}` : `${g.dir === 'up' ? '↑' : '↓'}${g.angle === 0 ? '헴' : `${g.angle}°`} ${g.len}`)).join(' ')
+  return f.segs.map((g, i) => (i === 0 ? `${g.len}` : `${g.dir === 'up' ? '↑' : '↓'}${g.angle === 0 ? '헴(짬)' : `${g.angle}°`} ${g.len}`)).join(' ')
 }
 
 function walk(segs: FlSeg[], start: number) {
@@ -162,11 +162,35 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
   const ox = (w - (maxX - minX) * sc) / 2
   const oy = (h - (maxY - minY) * sc) / 2
   const P = pts.map(([x, y]) => [ox + (x - minX) * sc, h - (oy + (y - minY) * sc)] as [number, number])
+  // 헴(각도 0)은 앞 구간 위에 그대로 겹치면 안 보이므로, 접는 쪽으로 조금 띄우고 접힌 곳을 둥글게 그림
+  const gap = font * 0.45
+  const hemAt: { i: number; dx: number; dy: number; nx: number; ny: number }[] = []
+  f.segs.forEach((g, i) => {
+    if (i === 0 || g.angle !== 0) return
+    const [a, b] = [P[i - 1], P[i]]
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+    const dx = (b[0] - a[0]) / L, dy = (b[1] - a[1]) / L
+    // 화면 좌표(y 아래로)에서 위로(반시계) 접으면 진행 방향 왼쪽 = (dy, -dx)
+    const sgn = g.dir === 'up' ? 1 : -1
+    const nx = dy * sgn, ny = -dx * sgn
+    for (let k = i + 1; k < P.length; k++) P[k] = [P[k][0] + nx * gap, P[k][1] + ny * gap]
+    hemAt.push({ i, dx, dy, nx, ny })
+  })
   const cx = P.reduce((a, p) => a + p[0], 0) / P.length
   const cy = P.reduce((a, p) => a + p[1], 0) / P.length
   const r = (n: number) => Math.round(n * 10) / 10
   let out = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, sans-serif">`
-  out += `<polyline points="${P.map((p) => `${r(p[0])},${r(p[1])}`).join(' ')}" fill="none" stroke="#0F2A44" stroke-width="${font * 0.22}" stroke-linejoin="round" stroke-linecap="round"/>`
+  let path = `M${r(P[0][0])},${r(P[0][1])}`
+  P.slice(1).forEach((p, k) => {
+    const i = k + 1
+    const hm = hemAt.find((x) => x.i === i)
+    if (hm) {
+      const j = P[i]
+      const e: [number, number] = [j[0] + hm.nx * gap, j[1] + hm.ny * gap]
+      path += ` L${r(j[0])},${r(j[1])} C${r(j[0] + hm.dx * gap)},${r(j[1] + hm.dy * gap)} ${r(e[0] + hm.dx * gap)},${r(e[1] + hm.dy * gap)} ${r(e[0])},${r(e[1])}`
+    } else path += ` L${r(p[0])},${r(p[1])}`
+  })
+  out += `<path d="${path}" fill="none" stroke="#0F2A44" stroke-width="${font * 0.22}" stroke-linejoin="round" stroke-linecap="round"/>`
   out += `<circle cx="${r(P[0][0])}" cy="${r(P[0][1])}" r="${font * 0.28}" fill="#E8742A"/>`
   f.segs.forEach((g, i) => {
     const [a, b] = [P[i], P[i + 1]]
@@ -180,12 +204,16 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
     const cp = clr(nx, ny), cm = clr(-nx, -ny)
     if (Math.abs(cp - cm) > font * 0.3 ? cm > cp : (mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny }
     out += `<text x="${r(mx + nx * d)}" y="${r(my + ny * d + font * 0.35)}" font-size="${font}" text-anchor="middle" fill="#1D2430" font-weight="600">${g.len}</text>`
-    if (i > 0 && g.angle < 180) {
+    const hm = hemAt.find((x) => x.i === i)
+    if (hm) {
+      const j = P[i]
+      out += `<text x="${r(j[0] + hm.dx * font * 1.6 + hm.nx * gap * 0.5)}" y="${r(j[1] + hm.dy * font * 1.6 + hm.ny * gap * 0.5 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A" font-weight="600">헴(짬)</text>`
+    } else if (i > 0 && g.angle < 180) {
       const j = P[i]
       let ax = j[0] - cx, ay = j[1] - cy
       const AL = Math.hypot(ax, ay) || 1
       ax /= AL; ay /= AL
-      out += `<text x="${r(j[0] - ax * font * 1.4)}" y="${r(j[1] - ay * font * 1.4 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A">${g.angle === 0 ? '헴' : `${g.angle}°`}</text>`
+      out += `<text x="${r(j[0] - ax * font * 1.4)}" y="${r(j[1] - ay * font * 1.4 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A">${g.angle}°</text>`
     }
   })
   return out + '</svg>'

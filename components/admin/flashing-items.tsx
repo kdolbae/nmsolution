@@ -76,7 +76,7 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
 
                 <div>
                   <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    절곡 구간 (1번 구간부터 차례로, 각도 = 두 면 사이 안쪽 각, 90 = 직각)
+                    절곡 구간 (1번 구간부터 차례로, 각도 = 두 면 사이 안쪽 각, 90 = 직각, 0 = 헴(짬처리) 끝 되접기)
                     <b className="ml-auto text-foreground">전개폭 {fmt(flWidth(fl)) || 0} mm</b>
                   </div>
                   <table className="w-full text-sm">
@@ -92,8 +92,8 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
                           <td className="py-0.5 pr-1">
                             {k === 0 ? null : (
                               <select value={g.dir} onChange={(e) => setSeg(k, { dir: e.target.value as FlSeg['dir'] })} className={sel}>
-                                <option value="down">↓ 아래로 (시계)</option>
-                                <option value="up">↑ 위로 (반시계)</option>
+                                <option value="down">{g.angle === 0 ? '↓ 아래쪽으로 되접음' : '↓ 아래로 (시계)'}</option>
+                                <option value="up">{g.angle === 0 ? '↑ 위쪽으로 되접음' : '↑ 위로 (반시계)'}</option>
                               </select>
                             )}
                           </td>
@@ -104,9 +104,19 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
                       ))}
                     </tbody>
                   </table>
-                  <Button size="xs" variant="outline" className="mt-1" onClick={() => setFl(i, { segs: [...segs, { len: 50, angle: 90, dir: 'down' }] })}>
-                    <Plus /> 구간 추가
-                  </Button>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <Button size="xs" variant="outline" onClick={() => setFl(i, { segs: [...segs, { len: 50, angle: 90, dir: 'down' }] })}>
+                      <Plus /> 구간 추가
+                    </Button>
+                    <Button size="xs" variant="outline" title="첫 구간 끝을 180° 되접음(짬처리). 접는 방향은 2번 구간의 벤딩 방향으로 바꿈" disabled={!segs.length || (segs.length > 1 && segs[1].angle === 0)}
+                      onClick={() => setFl(i, { segs: [{ len: 15, angle: 90, dir: 'down' }, { ...segs[0], angle: 0, dir: 'down' }, ...segs.slice(1)] })}>
+                      <Plus /> 시작 끝 헴(짬)
+                    </Button>
+                    <Button size="xs" variant="outline" title="마지막 구간 끝을 180° 되접음(짬처리). 접는 방향은 벤딩 방향으로 바꿈" disabled={!segs.length || segs[segs.length - 1].angle === 0}
+                      onClick={() => setFl(i, { segs: [...segs, { len: 15, angle: 0, dir: segs.length > 1 ? segs[segs.length - 1].dir : 'down' }] })}>
+                      <Plus /> 마지막 끝 헴(짬)
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   총길이 {fmt(itemMeters(it), 2) || 0} m{itemAmount(it) ? ` · 금액 ${fmt(itemAmount(it))}원` : ''}

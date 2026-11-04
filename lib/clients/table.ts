@@ -4,7 +4,7 @@ import { calcQuote, discountForGrand, normalizeQuote, today, type Quote } from '
 import { changedQuoteParts } from './compare'
 import { kktProposalHtml } from './proposal'
 import { KKT_PLAN_PAGE } from './kkt-plan-page'
-import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_PLAN_KEY, KKT_PLAN_SUMMARY, KKT_GW_KEY, KKT_GW_SUMMARY, KKT_GW_GRAND, KKT_VIDEO_KEY, KKT_VIDEO_SUMMARY, KKT_YARD_KEY, KKT_YARD_SUMMARY, KKT_RESTORE_KEY, KKT_RESTORE_SUMMARY, KKT_Q1104_KEY, KKT_Q1104_SUMMARY, KKT_GW48_KEY, KKT_GW48_SUMMARY, KKT_BODY6_KEY, KKT_BODY6_SUMMARY, KKT_DOOR_SECTION, KKT_YARD_NOTE_FROM, KKT_YARD_NOTE_TO, KKT_YARD_MOVE_DESC, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
+import { KKT_CLIENT, KKT_DOOR_KEY, KKT_DOOR_SUMMARY, KKT_PLAN_MARK, KKT_PORTAL_KEY, KKT_PRUNE_KEY, KKT_PRUNE_SUMMARY, KKT_PUBLISH_KEY, KKT_NO_TARP_KEY, KKT_INSUL_BOTTOM_KEY, KKT_PLAN_KEY, KKT_PLAN_SUMMARY, KKT_GW_KEY, KKT_GW_SUMMARY, KKT_GW_GRAND, KKT_VIDEO_KEY, KKT_VIDEO_SUMMARY, KKT_YARD_KEY, KKT_YARD_SUMMARY, KKT_RESTORE_KEY, KKT_RESTORE_SUMMARY, KKT_Q1104_KEY, KKT_Q1104_SUMMARY, KKT_GW48_KEY, KKT_GW48_SUMMARY, KKT_BODY6_KEY, KKT_BODY6_SUMMARY, KKT_NODUST_KEY, KKT_NODUST_SUMMARY, KKT_DOOR_SECTION, KKT_YARD_NOTE_FROM, KKT_YARD_NOTE_TO, KKT_YARD_MOVE_DESC, KKT_INSUL_BOTTOM_HTML, KKT_INSUL_BOTTOM_SUMMARY, KKT_GRAND_TARGET, KKT_TARP_ARTICLE, KKT_TARP_INTRO, KKT_QUOTE, KKT_QUOTE_ONLY_PAGE, addKktDoor, upgradeKkt } from './seed-kkt'
 import { SINIL_CLIENT, SINIL_PORTAL_PASSWORD_HASH, SINIL_SEED_KEY, SINIL_REV3_KEY, SINIL_REV4_KEY, SINIL_PAGE_V6_KEY, SINIL_SHARE, sinilRentalItems, SINIL_UPDATE_KEY, sinilQuote } from './seed-sinil'
 import { SINIL_PAGE_HTML } from './sinil-page'
 import { ADREAMING_CLIENT, ADREAMING_REV2_KEY, ADREAMING_REV3_KEY, ADREAMING_REV4_KEY, ADREAMING_REV5_KEY, ADREAMING_REV6_KEY, ADREAMING_SEED_KEY, adreamingQuote } from './seed-adreaming'
@@ -332,6 +332,21 @@ export function ensureClients(): Promise<void> {
           const base = { ...q, sections, notes: KKT_QUOTE.notes }
           const quote = { ...base, discount: discountForGrand({ ...base, discount: 0 }, 183_150_000) ?? KKT_QUOTE.discount }
           return { quote, ...(cur.proposalHtml !== page ? { proposalHtml: page } : {}), summary: KKT_BODY6_SUMMARY }
+        })
+      })
+      // 2026-11-04 kevin: 집진 장비·도어 발판 대신 청소 인력, 금액 유지
+      await seedOnce(KKT_NODUST_KEY, async () => {
+        const found = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND parent_id IS NULL AND finalized_at IS NULL ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
+        const row = found.rows[0]
+        if (!row) return
+        const page = kktProposalHtml(KKT_PLAN_PAGE)
+        await applyChange(Number(row.id), 'system', 'system', (cur) => {
+          const q = normalizeQuote(cur.quote)
+          const code = new Map(KKT_QUOTE.sections.map((x) => [x.name, x]))
+          const sections = q.sections.map((x) => (/보온/.test(x.name) && code.has(x.name) ? code.get(x.name)! : x))
+          const base = { ...q, sections, notes: KKT_QUOTE.notes }
+          const quote = { ...base, discount: discountForGrand({ ...base, discount: 0 }, 183_150_000) ?? KKT_QUOTE.discount }
+          return { quote, ...(cur.proposalHtml !== page ? { proposalHtml: page } : {}), summary: KKT_NODUST_SUMMARY }
         })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다

@@ -418,7 +418,7 @@ ${
     const p = pages.length + d
     sheets.push(`<section class="sheet">
 <div class="top">${brand}<h1>절곡 상세도</h1><div class="meta">발주번호 <b>${esc(no)}</b><br>${esc(o.siteName)}</div></div>
-<p class="flnote">단면 치수 단위 mm · 각도는 두 면 사이 안쪽 각 · <span style="color:#E8742A">●</span> 표시가 첫 구간 시작점 · 도장면(색상면)은 바깥쪽 기준</p>
+<p class="flnote">단면 치수 단위 mm · 각도는 두 면 사이 안쪽 각 · <span style="color:#E8742A">●</span> 표시가 첫 구간 시작점 · 도장면(색상면)은 바깥쪽 기준 · <b>헴(짬처리)</b> = 끝을 180° 되접어 겹침(손 베임·변형 방지), 그림에서 접힌 쪽으로 표시</p>
 <div class="flg">${ks.map(card).join('')}</div>
 <div class="foot" style="margin-top:auto"><span>${esc(o.issuer.name)}${o.issuer.phone ? ' · ' + esc(o.issuer.phone) : ''}</span><span>${esc(no)} · ${p + 1} / ${N}</span></div>
 </section>`)

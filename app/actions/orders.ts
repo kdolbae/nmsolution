@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin'
-import { emptyOrder, emptyPoItem, type PoParty, type PurchaseOrder } from '@/lib/orders/doc'
+import { emptyOrder, emptyPoItem, type PoForm, type PoParty, type PurchaseOrder } from '@/lib/orders/doc'
 import { deleteParty, getOrder, insertOrder, listParties, removeOrder, saveParty, updateOrder } from '@/lib/orders/table'
 
 /** 서울 상가 처마 판넬 발주처럼 판넬 두 줄을 미리 채운 새 발주서. 길이·수량은 비워 둔다 */
@@ -11,8 +11,8 @@ const PANEL_PRESET = [
   { name: '벽체판넬 (소골)', spec: '100T · 아이보리 · 난연(성적서 無)' },
 ]
 
-/** 새 발주서: 발주처(supplierId)를 고르면 그 발주처 양식으로 시작한다. 판넬 양식이면 지붕·소골 벽체 두 줄을 미리 채움 */
-export async function createOrder(supplierId: number | null, copyFrom?: number | null) {
+/** 새 발주서: 발주 제품(product)과 업체(supplierId)를 고른다. 판넬이면 지붕·소골 벽체 두 줄 + 후레싱 절곡 칸 */
+export async function createOrder(product: PoForm, supplierId: number | null, copyFrom?: number | null) {
   await requireAdmin()
   let order: PurchaseOrder
   if (copyFrom) {
@@ -26,7 +26,7 @@ export async function createOrder(supplierId: number | null, copyFrom?: number |
     const supplier = parties.find((p) => p.kind === 'supplier' && p.id === supplierId) ?? parties.find((p) => p.kind === 'supplier')
     if (issuer) order.issuer = strip(issuer)
     if (supplier) order.supplier = strip(supplier)
-    order.form = supplier?.form ?? 'panel'
+    order.form = product
     order.items = order.form === 'panel' ? PANEL_PRESET.map((p) => ({ ...emptyPoItem(), ...p, unit: '장', basis: 'm' as const })) : [emptyPoItem()]
   }
   const id = await insertOrder(order)

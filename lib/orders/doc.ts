@@ -18,15 +18,15 @@ export type PoParty = {
   email: string
   manager: string
   managerPhone: string
-  /** 발주처만: 이 발주처에 쓰는 발주서 양식 */
+  /** (쓰지 않음) 예전 발주처 양식 값. 양식은 발주 제품으로 정함 */
   form?: PoForm
 }
 
-/** 발주처별 발주서 양식. panel = 판넬 공장(판넬 + 후레싱 절곡), general = 일반 자재(품목표만) */
+/** 발주 제품. panel = 판넬(지붕·벽체 판넬 + 후레싱 절곡 칸), general = 일반 자재(품목표만) */
 export type PoForm = 'panel' | 'general'
 export const PO_FORMS: { value: PoForm; label: string }[] = [
-  { value: 'panel', label: '판넬 공장 (판넬 + 후레싱 절곡)' },
-  { value: 'general', label: '일반 자재 (품목표만)' },
+  { value: 'panel', label: '판넬 (판넬 + 후레싱 절곡)' },
+  { value: 'general', label: '일반 자재' },
 ]
 
 export type PoPartyRow = PoParty & { id: number; kind: 'issuer' | 'supplier'; sortOrder: number }
@@ -65,7 +65,7 @@ export type PurchaseOrder = {
   notes: string
   /** 금액란을 비우고 수량만 발주 (단가는 공급처 견적) */
   hidePrice: boolean
-  /** 발주처 양식(발주처를 고를 때 따라옴). panel 이면 후레싱(절곡) 칸이 나온다 */
+  /** 발주 제품. panel 이면 후레싱(절곡) 칸이 나온다 */
   form: PoForm
 }
 

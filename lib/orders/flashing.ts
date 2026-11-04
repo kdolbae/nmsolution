@@ -81,18 +81,43 @@ export function flSegText(f: Flashing) {
   return f.segs.map((g, i) => (i === 0 ? `${g.len}` : `${g.dir === 'up' ? '↑' : '↓'}${g.angle === 0 ? '헴' : `${g.angle}°`} ${g.len}`)).join(' ')
 }
 
-function points(segs: FlSeg[], start = 0) {
+function walk(segs: FlSeg[], start: number) {
   let x = 0
   let y = 0
-  let h = (start * Math.PI) / 180
+  let h = start
   const pts: [number, number][] = [[0, 0]]
+  const heads: number[] = []
   segs.forEach((g, i) => {
-    if (i > 0) h += ((g.dir === 'up' ? 1 : -1) * (180 - g.angle) * Math.PI) / 180
-    x += Math.cos(h) * Math.max(g.len, 0)
-    y += Math.sin(h) * Math.max(g.len, 0)
+    if (i > 0) h += (g.dir === 'up' ? 1 : -1) * (180 - g.angle)
+    heads.push(h)
+    const rad = (h * Math.PI) / 180
+    x += Math.cos(rad) * Math.max(g.len, 0)
+    y += Math.sin(rad) * Math.max(g.len, 0)
     pts.push([x, y])
   })
-  return pts
+  return { pts, heads }
+}
+
+/** 90°가 아닌 각도가 섞여도 그림이 기울지 않게, 수평·수직에 맞는 구간 길이가 가장 길어지도록 전체를 돌림 */
+function autoStart(segs: FlSeg[]) {
+  const { heads } = walk(segs, 0)
+  const off = (d: number) => {
+    const m = ((d % 90) + 90) % 90
+    return Math.min(m, 90 - m)
+  }
+  let best = 0
+  let bestLen = -1
+  const cands = [0, ...heads.map((d) => -(((d % 90) + 90) % 90))]
+  for (const c of cands) {
+    const len = segs.reduce((a, g, i) => a + (off(heads[i] + c) < 0.5 ? Math.max(g.len, 0) : 0), 0)
+    if (len > bestLen + 0.5) { bestLen = len; best = c }
+  }
+  // 첫 구간이 오른쪽에 가깝게(-45~45) 보이도록 90° 단위로 맞춤
+  return best < -45 ? best + 90 : best
+}
+
+function points(segs: FlSeg[], start?: number) {
+  return walk(segs, start ?? autoStart(segs)).pts
 }
 
 /** 단면 그림 SVG. w·h 는 px(화면) 또는 mm(인쇄) 어느 단위든 viewBox 기준 */

@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db'
-import { emptyParty, normalizeOrder, normalizeParty, todayKst, type PoParty, type PoPartyRow, type PurchaseOrder } from './doc'
+import { emptyOrder, emptyParty, emptyPoItem, normalizeOrder, normalizeParty, todayKst, type PoParty, type PoPartyRow, type PurchaseOrder } from './doc'
+import { FL_SEOUL_SET } from './flashing'
 
 /**
  * 발주서 표. 운영 DB 에 SQL 을 따로 돌리지 않아도 첫 조회 때 생긴다(lib/clients/table.ts 와 같은 방식).
@@ -39,12 +40,38 @@ export function ensureOrders(): Promise<void> {
         for (const s of SEED_PARTIES)
           await pool.query(`INSERT INTO po_parties (kind, data, sort_order) VALUES ($1, $2, $3)`, [s.kind, JSON.stringify(s.party), i++])
       }
+      // 2026-11-04 kevin: 서울 상가 처마 판넬+후레싱 발주서를 목록에 저장해 두고 어드민에서 고쳐 쓰게 함 (한 번만 넣음)
+      const seoul = await pool.query(`INSERT INTO po_seeds (key) VALUES ('seoul-eaves-po-v1') ON CONFLICT DO NOTHING`)
+      if (seoul.rowCount) {
+        const o = await seoulEavesOrder()
+        o.no = await nextNo(o.date)
+        await pool.query(`INSERT INTO purchase_orders (no, data) VALUES ($1, $2)`, [o.no, JSON.stringify(o)])
+      }
     })().catch((e) => {
       ready = null
       throw e
     })
   }
   return ready
+}
+
+/** 서울 화곡동 상가 처마: 발주 사업자 프레치제, 발주처 새롬판넬. 판넬 2줄 + 후레싱 제안 9종 (후레싱 길이·수량은 비움) */
+async function seoulEavesOrder(): Promise<PurchaseOrder> {
+  const { rows } = await pool.query<{ kind: string; data: unknown }>(`SELECT kind, data FROM po_parties ORDER BY sort_order, id`)
+  const pick = (kind: string, name: RegExp) => {
+    const r = rows.find((x) => x.kind === kind && name.test(normalizeParty(x.data).name)) ?? rows.find((x) => x.kind === kind)
+    return r ? normalizeParty(r.data) : emptyParty()
+  }
+  const o = emptyOrder()
+  o.issuer = pick('issuer', /프레치제/)
+  o.supplier = pick('supplier', /새롬/)
+  o.siteName = '서울 화곡동 상가 처마'
+  o.items = [
+    { ...emptyPoItem(), name: '지붕판넬', spec: '100T · 청색 · 난연(성적서 無)', lengthMm: 2400, qty: 14 },
+    { ...emptyPoItem(), name: '벽체판넬 (소골)', spec: '100T · 아이보리 · 난연(성적서 無)', lengthMm: 2900, qty: 14, note: '수량 확인' },
+    ...FL_SEOUL_SET.map((x) => ({ ...emptyPoItem(), name: x.name, note: x.note, fl: structuredClone(x.fl) })),
+  ]
+  return o
 }
 
 type PartyDbRow = { id: string; kind: string; data: unknown; sort_order: number }

@@ -213,31 +213,20 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
       const j = P[i]
       angles.push({ text: '헴(짬)', size: font * 0.8, color: '#E8742A', bold: true, ax: j[0] + hm.nx * gap * 0.5, ay: j[1] + hm.ny * gap * 0.5, ux: hm.dx, uy: hm.dy, base: font * 1.9, flip: false })
     } else if (i > 0 && g.angle < 180) {
-      // 각도는 꺾인 곳 안쪽(두 면 사이 이등분선 방향)에 놓음
-      const j = P[i], pv = P[i - 1], nx2 = P[i + 1]
-      const u1 = [pv[0] - j[0], pv[1] - j[1]], u2 = [nx2[0] - j[0], nx2[1] - j[1]]
-      const l1 = Math.hypot(u1[0], u1[1]) || 1, l2 = Math.hypot(u2[0], u2[1]) || 1
-      let bx = u1[0] / l1 + u2[0] / l2, by = u1[1] / l1 + u2[1] / l2
-      const BL = Math.hypot(bx, by)
-      if (BL < 1e-6) { bx = cx - j[0]; by = cy - j[1] } // 거의 펴진 경우는 도형 중심 쪽
-      const NL = Math.hypot(bx, by) || 1
-      angles.push({ text: `${g.angle}°`, size: font * 0.8, color: '#E8742A', bold: false, ax: j[0], ay: j[1], ux: bx / NL, uy: by / NL, base: font * 1.3, flip: false })
+      const j = P[i]
+      let ax = j[0] - cx, ay = j[1] - cy
+      const AL = Math.hypot(ax, ay) || 1
+      ax /= AL; ay /= AL
+      angles.push({ text: `${g.angle}°`, size: font * 0.8, color: '#E8742A', bold: false, ax: j[0], ay: j[1], ux: -ax, uy: -ay, base: font * 1.4, flip: true })
     }
   })
   const textW = (t: string, sz: number) => [...t].reduce((a, c) => a + (c.charCodeAt(0) < 128 ? (c === '°' ? 0.4 : 0.6) : 1.0) * sz, 0)
   type Box = [number, number, number, number]
   const placed: Box[] = []
   const boxAt = (lb: Lb, x: number, y: number): Box => { const hw = textW(lb.text, lb.size) / 2 + 1, hh = lb.size * 0.55; return [x - hw, y - hh, x + hw, y + hh] }
-  // 실제로 그려지는 선(헴은 띄운 자리 포함)
-  const D: [number, number][] = []
-  P.forEach((p, i) => {
-    const hm = hemAt.find((x) => x.i === i)
-    D.push(p)
-    if (hm) D.push([p[0] + hm.nx * gap, p[1] + hm.ny * gap])
-  })
   const hitsLine = (bx: Box) => {
-    for (let k = 0; k + 1 < D.length; k++) {
-      const [p, q] = [D[k], D[k + 1]]
+    for (let k = 0; k + 1 < P.length; k++) {
+      const [p, q] = [P[k], P[k + 1]]
       for (let t = 0; t <= 16; t++) {
         const x = p[0] + ((q[0] - p[0]) * t) / 16, y = p[1] + ((q[1] - p[1]) * t) / 16
         if (x > bx[0] - 1 && x < bx[2] + 1 && y > bx[1] - 1 && y < bx[3] + 1) return true
@@ -245,39 +234,20 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
     }
     return false
   }
-  // 화살표 선이 도형 선을 가로지르는지(기준점 근처는 뺌)
-  const leaderCrosses = (x1: number, y1: number, x2: number, y2: number) => {
-    const L = Math.hypot(x2 - x1, y2 - y1)
-    for (let t = 0.1; t < 1 - Math.min(0.5, (font * 0.8) / (L || 1)); t += 0.05) {
-      const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t
-      for (let k = 0; k + 1 < D.length; k++) {
-        const [a, b] = [D[k], D[k + 1]]
-        const vx = b[0] - a[0], vy = b[1] - a[1]
-        const u = Math.max(0, Math.min(1, ((x - a[0]) * vx + (y - a[1]) * vy) / (vx * vx + vy * vy || 1)))
-        if (Math.hypot(x - (a[0] + vx * u), y - (a[1] + vy * u)) < font * 0.12) return true
-      }
-    }
-    return false
-  }
-  const hitsBox = (bx: Box, m = 0) => placed.some((o) => bx[0] - m < o[2] && bx[2] + m > o[0] && bx[1] - m < o[3] && bx[3] + m > o[1])
+  const hitsBox = (bx: Box) => placed.some((o) => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])
   const outside = (bx: Box) => bx[0] < 0 || bx[1] < 0 || bx[2] > w || bx[3] > h
   const place = (lb: Lb) => {
     // 기준 거리: 글자 상자가 선에 닿지 않을 만큼(방향에 따라 가로·세로 반폭 반영)
     const hw0 = textW(lb.text, lb.size) / 2 + 1, hh0 = lb.size * 0.55
-    if (lb.bold) lb.base = Math.max(lb.base * 0.6, Math.abs(lb.ux) * hw0 + Math.abs(lb.uy) * hh0 + lb.size * 0.3)
-    else lb.base = Math.max(lb.base, Math.hypot(hw0, hh0) + lb.size * 0.2)
-    const steps = (lb.bold ? [0, 1.1, 2.2, 3.3, 4.4] : [0, 0.5, 1.0]).map((k) => lb.base + k * lb.size)
-    const rot = (x: number, y: number, deg: number): [number, number] => { const c = Math.cos((deg * Math.PI) / 180), sn = Math.sin((deg * Math.PI) / 180); return [x * c - y * sn, x * sn + y * c] }
-    const dirs: [number, number][] = !lb.flip ? [[lb.ux, lb.uy]]
-      : lb.bold ? [[lb.ux, lb.uy], [-lb.ux, -lb.uy], rot(lb.ux, lb.uy, 40), rot(lb.ux, lb.uy, -40), rot(-lb.ux, -lb.uy, 40), rot(-lb.ux, -lb.uy, -40)]
-      : [[lb.ux, lb.uy], [-lb.ux, -lb.uy]]
+    lb.base = Math.max(lb.base * 0.6, Math.abs(lb.ux) * hw0 + Math.abs(lb.uy) * hh0 + lb.size * 0.3)
+    const steps = (lb.bold ? [0, 1.1, 2.2, 3.3] : [0, 0.8, 1.6]).map((k) => lb.base + k * lb.size)
+    const dirs: [number, number][] = lb.flip ? [[lb.ux, lb.uy], [-lb.ux, -lb.uy]] : [[lb.ux, lb.uy]]
     let best: { x: number; y: number; dist: number; ux: number; uy: number } | null = null
     outer: for (const dist of steps) {
       for (const [ux, uy] of dirs) {
         const x = lb.ax + ux * dist, y = lb.ay + uy * dist
         const bx = boxAt(lb, x, y)
-        const moved = dist > lb.base + 0.1
-        if (!hitsBox(bx, moved ? lb.size * 0.3 : 0) && !hitsLine(bx) && !outside(bx) && !(moved && leaderCrosses(x, y, lb.ax, lb.ay))) { best = { x, y, dist, ux, uy }; break outer }
+        if (!hitsBox(bx) && !hitsLine(bx) && !outside(bx)) { best = { x, y, dist, ux, uy }; break outer }
       }
     }
     // 자리가 없으면 덜 겹치는 처음 자리(선만 안 겹치면)로
@@ -291,7 +261,7 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
     const bx = boxAt(lb, best.x, best.y)
     placed.push(bx)
     let s = ''
-    if (lb.bold && best.dist > lb.base + 0.1) {
+    if (best.dist > lb.base + 0.1 || (best.ux !== lb.ux && best.dist > lb.base + 0.1)) {
       // 화살표: 글자 상자 가장자리에서 기준점 쪽으로
       const vx = lb.ax - best.x, vy = lb.ay - best.y
       const VL = Math.hypot(vx, vy) || 1
@@ -307,8 +277,7 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
     }
     return s + `<text x="${r(best.x)}" y="${r(best.y + lb.size * 0.35)}" font-size="${r(lb.size)}" text-anchor="middle" fill="${lb.color}"${lb.bold ? ' font-weight="600"' : ''}>${lb.text}</text>`
   }
-  // 각도·헴을 먼저 안쪽에 두고, 치수가 겹치면 치수를 바깥으로 빼서 화살표로 가리킴
-  for (const lb of [...angles, ...labels]) out += place(lb)
+  for (const lb of [...labels, ...angles]) out += place(lb)
   return out + '</svg>'
 }
 

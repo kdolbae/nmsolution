@@ -11,7 +11,7 @@ import { PartyFields } from '@/components/admin/order-party-fields'
 import { FlashingItems } from '@/components/admin/flashing-items'
 import { FL_SEOUL_SET } from '@/lib/orders/flashing'
 import { createOrder, deleteOrder, saveOrder } from '@/app/actions/orders'
-import { calcOrder, emptyPoItem, itemAmount, itemMeters, PO_STATUSES, renderOrderHtml, type PoItem, type PoParty, type PoPartyRow, type PoStatus, type PurchaseOrder } from '@/lib/orders/doc'
+import { calcOrder, emptyPoItem, itemAmount, itemMeters, PO_STATUSES, renderOrderHtml, type PoItem, type PoParty, type PoPartyRow, type PoStatus, type PurchaseOrder, PO_FORMS, type PoForm } from '@/lib/orders/doc'
 
 const fmt = (n: number, d = 0) => (n ? n.toLocaleString('ko-KR', { maximumFractionDigits: d }) : '')
 
@@ -66,7 +66,7 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
   const copy = () =>
     start(async () => {
       if (dirty) await saveOrder(id, o)
-      const nid = await createOrder(null, id)
+      const nid = await createOrder(o.form, null, id)
       router.push(`/admin/orders/${nid}`)
     })
   const del = () => {
@@ -80,14 +80,7 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
   const pickParty = (kind: 'issuer' | 'supplier', pid: string) => {
     const p = parties.find((x) => String(x.id) === pid)
     if (!p) return
-    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, form } = p
-    if (kind === 'supplier') {
-      // 발주처를 바꾸면 그 발주처 양식도 따라온다
-      setO((x) => ({ ...x, supplier: { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone }, form: form ?? 'panel' }))
-      setDirty(true)
-      setMsg('')
-      return
-    }
+    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } = p
     set(kind, { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } satisfies PoParty)
   }
 
@@ -121,6 +114,11 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <L label="발주일자"><input type="date" value={o.date} onChange={(e) => set('date', e.target.value)} className="h-8 w-full border border-input bg-background px-2 text-sm" /></L>
           <L label="발주번호 (비우면 저장 때 PO-YYMM-순번)"><TextIn value={o.no} onChange={(v) => set('no', v)} /></L>
+          <L label="발주 제품">
+            <select value={o.form} onChange={(e) => set('form', e.target.value as PoForm)} className="h-8 w-full border border-input bg-background px-2 text-sm">
+              {PO_FORMS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+          </L>
           <L label="상태">
             <select value={o.status} onChange={(e) => set('status', e.target.value as PoStatus)} className="h-8 w-full border border-input bg-background px-2 text-sm">
               {PO_STATUSES.map((s) => <option key={s}>{s}</option>)}

@@ -192,6 +192,10 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
   })
   out += `<path d="${path}" fill="none" stroke="#0F2A44" stroke-width="${font * 0.22}" stroke-linejoin="round" stroke-linecap="round"/>`
   out += `<circle cx="${r(P[0][0])}" cy="${r(P[0][1])}" r="${font * 0.28}" fill="#E8742A"/>`
+  // 라벨 모으기: 치수(굵게) 먼저, 각도·헴 다음. 겹치면 바깥으로 빼고 화살표로 가리킴
+  type Lb = { text: string; size: number; color: string; bold: boolean; ax: number; ay: number; ux: number; uy: number; base: number; flip: boolean }
+  const labels: Lb[] = []
+  const angles: Lb[] = []
   f.segs.forEach((g, i) => {
     const [a, b] = [P[i], P[i + 1]]
     const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2
@@ -203,19 +207,77 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
     const clr = (sx: number, sy: number) => clearance(P, i, mx + sx * d * 1.3, my + sy * d * 1.3)
     const cp = clr(nx, ny), cm = clr(-nx, -ny)
     if (Math.abs(cp - cm) > font * 0.3 ? cm > cp : (mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny }
-    out += `<text x="${r(mx + nx * d)}" y="${r(my + ny * d + font * 0.35)}" font-size="${font}" text-anchor="middle" fill="#1D2430" font-weight="600">${g.len}</text>`
+    labels.push({ text: String(g.len), size: font, color: '#1D2430', bold: true, ax: mx, ay: my, ux: nx, uy: ny, base: d, flip: true })
     const hm = hemAt.find((x) => x.i === i)
     if (hm) {
       const j = P[i]
-      out += `<text x="${r(j[0] + hm.dx * font * 1.6 + hm.nx * gap * 0.5)}" y="${r(j[1] + hm.dy * font * 1.6 + hm.ny * gap * 0.5 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A" font-weight="600">헴(짬)</text>`
+      angles.push({ text: '헴(짬)', size: font * 0.8, color: '#E8742A', bold: true, ax: j[0] + hm.nx * gap * 0.5, ay: j[1] + hm.ny * gap * 0.5, ux: hm.dx, uy: hm.dy, base: font * 1.9, flip: false })
     } else if (i > 0 && g.angle < 180) {
       const j = P[i]
       let ax = j[0] - cx, ay = j[1] - cy
       const AL = Math.hypot(ax, ay) || 1
       ax /= AL; ay /= AL
-      out += `<text x="${r(j[0] - ax * font * 1.4)}" y="${r(j[1] - ay * font * 1.4 + font * 0.3)}" font-size="${font * 0.8}" text-anchor="middle" fill="#E8742A">${g.angle}°</text>`
+      angles.push({ text: `${g.angle}°`, size: font * 0.8, color: '#E8742A', bold: false, ax: j[0], ay: j[1], ux: -ax, uy: -ay, base: font * 1.4, flip: true })
     }
   })
+  const textW = (t: string, sz: number) => [...t].reduce((a, c) => a + (c.charCodeAt(0) < 128 ? (c === '°' ? 0.4 : 0.6) : 1.0) * sz, 0)
+  type Box = [number, number, number, number]
+  const placed: Box[] = []
+  const boxAt = (lb: Lb, x: number, y: number): Box => { const hw = textW(lb.text, lb.size) / 2 + 1, hh = lb.size * 0.55; return [x - hw, y - hh, x + hw, y + hh] }
+  const hitsLine = (bx: Box) => {
+    for (let k = 0; k + 1 < P.length; k++) {
+      const [p, q] = [P[k], P[k + 1]]
+      for (let t = 0; t <= 16; t++) {
+        const x = p[0] + ((q[0] - p[0]) * t) / 16, y = p[1] + ((q[1] - p[1]) * t) / 16
+        if (x > bx[0] - 1 && x < bx[2] + 1 && y > bx[1] - 1 && y < bx[3] + 1) return true
+      }
+    }
+    return false
+  }
+  const hitsBox = (bx: Box) => placed.some((o) => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])
+  const outside = (bx: Box) => bx[0] < 0 || bx[1] < 0 || bx[2] > w || bx[3] > h
+  const place = (lb: Lb) => {
+    // 기준 거리: 글자 상자가 선에 닿지 않을 만큼(방향에 따라 가로·세로 반폭 반영)
+    const hw0 = textW(lb.text, lb.size) / 2 + 1, hh0 = lb.size * 0.55
+    lb.base = Math.max(lb.base * 0.6, Math.abs(lb.ux) * hw0 + Math.abs(lb.uy) * hh0 + lb.size * 0.3)
+    const steps = (lb.bold ? [0, 1.1, 2.2, 3.3] : [0, 0.8, 1.6]).map((k) => lb.base + k * lb.size)
+    const dirs: [number, number][] = lb.flip ? [[lb.ux, lb.uy], [-lb.ux, -lb.uy]] : [[lb.ux, lb.uy]]
+    let best: { x: number; y: number; dist: number; ux: number; uy: number } | null = null
+    outer: for (const dist of steps) {
+      for (const [ux, uy] of dirs) {
+        const x = lb.ax + ux * dist, y = lb.ay + uy * dist
+        const bx = boxAt(lb, x, y)
+        if (!hitsBox(bx) && !hitsLine(bx) && !outside(bx)) { best = { x, y, dist, ux, uy }; break outer }
+      }
+    }
+    // 자리가 없으면 덜 겹치는 처음 자리(선만 안 겹치면)로
+    if (!best) {
+      for (const dist of steps) {
+        const x = lb.ax + lb.ux * dist, y = lb.ay + lb.uy * dist
+        if (!hitsBox(boxAt(lb, x, y)) && !outside(boxAt(lb, x, y))) { best = { x, y, dist, ux: lb.ux, uy: lb.uy }; break }
+      }
+    }
+    if (!best) best = { x: lb.ax + lb.ux * lb.base, y: lb.ay + lb.uy * lb.base, dist: lb.base, ux: lb.ux, uy: lb.uy }
+    const bx = boxAt(lb, best.x, best.y)
+    placed.push(bx)
+    let s = ''
+    if (best.dist > lb.base + 0.1 || (best.ux !== lb.ux && best.dist > lb.base + 0.1)) {
+      // 화살표: 글자 상자 가장자리에서 기준점 쪽으로
+      const vx = lb.ax - best.x, vy = lb.ay - best.y
+      const VL = Math.hypot(vx, vy) || 1
+      const ex = vx / VL, ey = vy / VL
+      const tEdge = Math.min(Math.abs((bx[2] - bx[0]) / 2 / (ex || 1e-9)), Math.abs((bx[3] - bx[1]) / 2 / (ey || 1e-9)))
+      const sx = best.x + ex * (tEdge + 1), sy = best.y + ey * (tEdge + 1)
+      const tx = lb.ax - ex * font * 0.25, ty = lb.ay - ey * font * 0.25
+      if (Math.hypot(tx - sx, ty - sy) > font * 0.4) {
+        const hl = font * 0.45, hw = font * 0.22
+        s += `<line x1="${r(sx)}" y1="${r(sy)}" x2="${r(tx)}" y2="${r(ty)}" stroke="${lb.color}" stroke-width="${font * 0.07}"/>`
+        s += `<polygon points="${r(tx)},${r(ty)} ${r(tx - ex * hl - ey * hw)},${r(ty - ey * hl + ex * hw)} ${r(tx - ex * hl + ey * hw)},${r(ty - ey * hl - ex * hw)}" fill="${lb.color}"/>`
+      }
+    }
+    return s + `<text x="${r(best.x)}" y="${r(best.y + lb.size * 0.35)}" font-size="${r(lb.size)}" text-anchor="middle" fill="${lb.color}"${lb.bold ? ' font-weight="600"' : ''}>${lb.text}</text>`
+  }
+  for (const lb of [...labels, ...angles]) out += place(lb)
   return out + '</svg>'
 }
 

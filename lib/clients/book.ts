@@ -369,7 +369,7 @@ function coverHtml(client: BookClient): string {
   <div class="to">${esc(client.name)} 귀중</div>
   <div class="bar"></div>
   <table>${rows.map(([k, v]) => `<tr><th>${esc(k!)}</th><td>${esc(v!)}</td></tr>`).join('')}</table>
-  <div class="sup"><b>${esc(SUPPLIER.name)}</b><br>대표 ${esc(SUPPLIER.ceo)} · 사업자등록번호 ${esc(SUPPLIER.bizNumber)}<br>${esc(SUPPLIER.address)}<br>대표전화 ${esc(SUPPLIER.phoneMain)} · 직통 ${esc(SUPPLIER.phoneMobile)} · ${esc(SUPPLIER.web)}</div>
+  <div class="sup"><b>${esc(SUPPLIER.name)}</b><br>대표 ${esc(SUPPLIER.ceo)}<br>${esc(SUPPLIER.address)}<br>대표전화 ${esc(SUPPLIER.phoneMain)} · 직통 ${esc(SUPPLIER.phoneMobile)} · ${esc(SUPPLIER.web)}</div>
 </div>`
 }
 

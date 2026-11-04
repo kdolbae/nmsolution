@@ -57,7 +57,7 @@ export function normalizeFlashing(raw: unknown): Flashing | undefined {
     thickness: n(r.thickness),
     color: String(r.color ?? '').slice(0, 40),
     segs,
-    ...(Number.isFinite(Number(r.start)) && Number(r.start) ? { start: Number(r.start) } : {}),
+    ...(r.start !== undefined && r.start !== null && r.start !== '' && Number.isFinite(Number(r.start)) ? { start: ((Math.round(Number(r.start)) % 360) + 360) % 360 } : {}),
   }
 }
 
@@ -99,7 +99,7 @@ function walk(segs: FlSeg[], start: number) {
 }
 
 /** 90°가 아닌 각도가 섞여도 그림이 기울지 않게, 수평·수직에 맞는 구간 길이가 가장 길어지도록 전체를 돌림 */
-function autoStart(segs: FlSeg[]) {
+export function flAutoStart(segs: FlSeg[]) {
   const { heads } = walk(segs, 0)
   const off = (d: number) => {
     const m = ((d % 90) + 90) % 90
@@ -117,7 +117,7 @@ function autoStart(segs: FlSeg[]) {
 }
 
 function points(segs: FlSeg[], start?: number) {
-  return walk(segs, start ?? autoStart(segs)).pts
+  return walk(segs, start ?? flAutoStart(segs)).pts
 }
 
 /** 단면 그림 SVG. w·h 는 px(화면) 또는 mm(인쇄) 어느 단위든 viewBox 기준 */

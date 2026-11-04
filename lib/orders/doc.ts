@@ -233,34 +233,35 @@ h1{margin:0;font-size:22pt;font-weight:700;letter-spacing:.5em;color:#0F2A44;tex
 .meta{font-size:8.5pt;text-align:right;color:#5D6878;min-width:48mm}
 .meta b{color:#1D2430;font-weight:600}
 .cont{font-size:8pt;color:#5D6878;text-align:right;margin:0 0 2mm}
-.parties{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:4mm}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:3mm}
 .party{border:1px solid #DDE3EA}
-.party h3{margin:0;background:#F4F6F9;font-size:9pt;font-weight:600;padding:1.6mm 3mm;color:#0F2A44;border-bottom:1px solid #DDE3EA}
+.party h3{margin:0;background:#F4F6F9;font-size:9pt;font-weight:600;padding:1.2mm 3mm;color:#0F2A44;border-bottom:1px solid #DDE3EA}
 .party table{width:100%;border-collapse:collapse}
-.party th{width:22mm;text-align:left;font-weight:500;color:#5D6878;padding:1.1mm 3mm;vertical-align:top;font-size:8.5pt}
-.party td{padding:1.1mm 3mm 1.1mm 0;font-size:9pt;word-break:keep-all}
+.party th{width:22mm;text-align:left;font-weight:500;color:#5D6878;padding:.55mm 3mm;vertical-align:top;font-size:8.5pt;line-height:1.35}
+.party td{padding:.55mm 3mm .55mm 0;font-size:9pt;word-break:keep-all;line-height:1.35}
 .party .nm{font-weight:700;font-size:10.5pt}
 .seal{color:#5D6878;font-size:8.5pt;margin-left:2mm}
-.info{width:100%;border-collapse:collapse;margin-top:4mm;border-top:1px solid #DDE3EA}
-.info th{background:#F4F6F9;font-weight:600;width:24mm;text-align:left;padding:1.6mm 3mm;border-bottom:1px solid #DDE3EA;font-size:9pt}
-.info td{padding:1.6mm 3mm;border-bottom:1px solid #DDE3EA}
-.lead{margin:4mm 0 2mm;font-size:9.5pt}
+.info{width:100%;border-collapse:collapse;margin-top:3mm;border-top:1px solid #DDE3EA}
+.info th{background:#F4F6F9;font-weight:600;width:24mm;text-align:left;padding:1.1mm 3mm;border-bottom:1px solid #DDE3EA;font-size:9pt}
+.info td{padding:1.1mm 3mm;border-bottom:1px solid #DDE3EA}
+.lead{margin:3mm 0 1.5mm;font-size:9.5pt}
 .items{width:100%;border-collapse:collapse;border-top:2pt solid #0F2A44;table-layout:fixed}
-.items th{background:#F4F6F9;font-weight:600;font-size:8.5pt;padding:1.6mm 1.2mm;border-bottom:1px solid #C9D1DB;text-align:center}
-.items td{padding:0 1.6mm;height:7.4mm;border-bottom:1px solid #DDE3EA;font-size:9pt;vertical-align:middle;word-break:keep-all;overflow:hidden}
+.items th{background:#F4F6F9;font-weight:600;font-size:8.5pt;padding:1.1mm 1.2mm;border-bottom:1px solid #C9D1DB;line-height:1.3;text-align:center}
+.items td{padding:.4mm 1.6mm;height:6.6mm;line-height:1.35;border-bottom:1px solid #DDE3EA;font-size:9pt;vertical-align:middle;word-break:keep-all;overflow:hidden}
 .items td.c{text-align:center}.items td.r{text-align:right;font-variant-numeric:tabular-nums}
 .items td.sp{font-size:8.5pt}
 .items tfoot td{font-weight:600;background:#fff}
 .items tfoot tr.grand td{border-top:1px solid #0F2A44;border-bottom:2pt solid #0F2A44;font-weight:700;font-size:10pt;color:#0F2A44}
-.notes{margin-top:4mm;border:1px solid #DDE3EA;padding:2.5mm 3mm;font-size:9pt}
+.end{margin-top:4mm;display:flex;gap:4mm;align-items:stretch}
+.notes{flex:1;border:1px solid #DDE3EA;padding:2.5mm 3mm;font-size:9pt}
 .notes h4{margin:0 0 1mm;font-size:9pt;font-weight:600;color:#0F2A44}
 .notes ol{margin:0;padding-left:5mm}
-.sign{margin-top:auto;padding-top:5mm;display:flex;justify-content:space-between;align-items:flex-end;gap:6mm}
+.sign{margin-left:auto;display:flex;flex-direction:column;justify-content:space-between;gap:3mm;min-width:72mm}
 .sign .by{font-size:10pt}
 .sign .by b{font-size:11pt}
 .sign .ok{border:1px solid #DDE3EA;padding:2.5mm 3mm;font-size:8.5pt;color:#5D6878;min-width:70mm}
 .sign .ok div{margin-top:4mm;color:#1D2430}
-.foot{margin-top:3mm;border-top:1px solid #DDE3EA;padding-top:1.5mm;font-size:8pt;color:#5D6878;display:flex;justify-content:space-between}
+.foot{margin-top:auto;border-top:1px solid #DDE3EA;padding-top:1.5mm;font-size:8pt;color:#5D6878;display:flex;justify-content:space-between}
 `
 
 function partyRows(p: PoParty, sealLabel: boolean) {
@@ -283,48 +284,53 @@ function partyRows(p: PoParty, sealLabel: boolean) {
 }
 
 /** 쪽 나누기: 첫 장은 머리·사업자 칸이 있어 적게, 마지막 장은 합계·특기사항·서명 칸을 남긴다 */
-function paginate(w: number[]): number[][] {
-  // 용량은 한 줄짜리 행 기준. 글이 길어 두세 줄로 접히는 행은 w(무게)를 크게 준다
-  const FIRST = 17
-  const FIRST_LAST = 11
-  const MID = 30
-  const MID_LAST = 22
-  const n = w.length
-  const sum = (from: number, to: number) => w.slice(from, to).reduce((a, b) => a + b, 0)
+/**
+ * 장 나누기(mm 어림). 품목은 쪽이 찰 때까지 이어서 넣고, 다음 장으로 넘기는 건 자리가 없을 때만.
+ * 품목은 다 들어가는데 합계·특기사항·서명 자리만 모자라면 품목은 그대로 두고 그 부분만 다음 장으로 넘김.
+ */
+const PAGE = { firstTop: 122, midTop: 42, bottom: 277 }
+function paginate(h: number[], endH: number): number[][] {
+  const n = h.length
   const pages: number[][] = []
   let i = 0
-  let first = true
+  let top = PAGE.firstTop
   while (true) {
-    const lastCap = first ? FIRST_LAST : MID_LAST
-    const fullCap = first ? FIRST : MID
-    if (sum(i, n) <= lastCap) {
-      pages.push(Array.from({ length: n - i }, (_, k) => i + k))
-      break
-    }
+    const room = PAGE.bottom - top
+    let used = 0
     let take = 0
-    while (i + take < n && sum(i, i + take + 1) <= fullCap) take++
-    // 남은 품목이 이 장에 다 들어가도 합계 칸 자리가 없으면, 몇 줄은 다음(마지막) 장으로 넘긴다
-    if (i + take >= n) take = Math.max(1, take - 3)
+    while (i + take < n && used + h[i + take] <= room) used += h[i + take++]
+    if (i + take >= n) {
+      // 남은 품목 다 들어감
+      if (used + endH <= room) {
+        pages.push(Array.from({ length: take }, (_, k) => i + k))
+        return pages
+      }
+      if (take > 0) pages.push(Array.from({ length: take }, (_, k) => i + k))
+      pages.push([]) // 합계·특기사항·서명만 다음 장
+      return pages
+    }
     take = Math.max(1, take)
     pages.push(Array.from({ length: take }, (_, k) => i + k))
     i += take
-    first = false
+    top = PAGE.midTop
   }
-  return pages
 }
 
-/** 행 무게: 칸 너비에 견준 글자 수로 접힐 줄 수를 어림한다 */
-function rowWeight(name: string, spec: string, note: string) {
+/** 행 높이(mm): 칸 너비에 견준 글자 수로 접힐 줄 수를 어림한다 */
+function rowHeight(name: string, spec: string, note: string) {
   const noteLines = note.split('\n').reduce((a, l) => a + Math.max(1, Math.ceil(l.length / 9)), 0)
   const lines = Math.max(1, Math.ceil(name.length / 9), Math.ceil(spec.length / 22), noteLines)
-  return lines === 1 ? 1 : 1 + (lines - 1) * 0.6
+  return Math.max(6.6, lines * 4.3 + 1)
 }
 
 export function renderOrderHtml(o: PurchaseOrder): string {
   const { supply, vat, total } = calcOrder(o)
   const showPrice = !o.hidePrice
   const items = o.items.filter((i) => i.name || i.spec || i.qty || i.lengthMm || i.price || i.note || i.fl)
-  const pages = paginate(items.map((i) => rowWeight(i.name || i.fl?.kind || '', specOf(i), noteOf(i))))
+  const noteLines = o.notes.split('\n').filter((l) => l.trim()).length
+  // 끝부분 높이: 합계(가격 표시 3줄/아니면 1줄) + 특기사항·서명(나란히)
+  const endH = (o.hidePrice ? 7 : 20) + 4 + Math.max(noteLines ? 9 + noteLines * 4.6 : 0, 32) + 1
+  const pages = paginate(items.map((i) => rowHeight(i.name || i.fl?.kind || '', specOf(i), noteOf(i))), endH)
   // 후레싱 품목은 뒤에 '절곡 상세도' 장을 붙인다 (한 장에 6칸: 2열 × 3줄, 크게 = 2칸, 아주 크게 = 4칸)
   const flIdx = items.map((it, k) => (it.fl && it.fl.segs.length ? k : -1)).filter((k) => k >= 0)
   const detail: number[][] = []
@@ -341,7 +347,7 @@ export function renderOrderHtml(o: PurchaseOrder): string {
   const brand = isNm ? `<div class="brand">NM SOLUTION<small>${esc(o.issuer.name)}</small></div>` : `<div class="brand alt">${esc(o.issuer.name)}</div>`
 
   const cols = showPrice
-    ? `<colgroup><col style="width:7mm"><col style="width:26mm"><col><col style="width:14mm"><col style="width:10mm"><col style="width:9mm"><col style="width:14mm"><col style="width:17mm"><col style="width:20mm"><col style="width:20mm"></colgroup>`
+    ? `<colgroup><col style="width:7mm"><col style="width:26mm"><col><col style="width:14mm"><col style="width:10mm"><col style="width:9mm"><col style="width:14mm"><col style="width:17mm"><col style="width:19mm"><col style="width:25mm"></colgroup>`
     : `<colgroup><col style="width:8mm"><col style="width:34mm"><col><col style="width:18mm"><col style="width:13mm"><col style="width:10mm"><col style="width:18mm"><col style="width:32mm"></colgroup>`
   const head = `<thead><tr><th>No</th><th>품명</th><th>규격·색상</th><th>길이<br>(mm)</th><th>수량</th><th>단위</th><th>총길이<br>(m)</th>${showPrice ? '<th>단가</th><th>금액</th>' : ''}<th>비고</th></tr></thead>`
   const colCount = showPrice ? 10 : 8
@@ -387,9 +393,9 @@ ${
 ${table}
 ${
   last
-    ? `${notes.length ? `<div class="notes"><h4>특기사항</h4><ol>${notes.map((l) => `<li>${esc(l)}</li>`).join('')}</ol></div>` : ''}
+    ? `<div class="end">${notes.length ? `<div class="notes"><h4>특기사항</h4><ol>${notes.map((l) => `<li>${esc(l)}</li>`).join('')}</ol></div>` : ''}
 <div class="sign"><div class="by">${esc(fmtDate(o.date))}<br>발주자 <b>${esc(o.issuer.name)}</b> 대표 ${esc(o.issuer.ceo)} <span class="seal">(인)</span></div>
-<div class="ok">수주 확인 (공급처)<div>${esc(o.supplier.name)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (인)</div></div></div>`
+<div class="ok">수주 확인 (공급처)<div>${esc(o.supplier.name)} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (인)</div></div></div></div>`
     : ''
 }
 <div class="foot"><span>${esc(o.issuer.name)}${o.issuer.phone ? ' · ' + esc(o.issuer.phone) : ''}${o.issuer.email ? ' · ' + esc(o.issuer.email) : ''}</span><span>${esc(no)} · ${p + 1} / ${N}</span></div>

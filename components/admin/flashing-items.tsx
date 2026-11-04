@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, Copy, Plus, RotateCcw, RotateCw, Trash2 } from 
 import { Button } from '@/components/ui/button'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { emptyPoItem, itemAmount, itemMeters, poItemId, type PoItem } from '@/lib/orders/doc'
-import { FL_COLORS, FL_MATERIALS, FL_PRESETS, FL_THICKNESS, emptyFlashing, flAutoStart, flSvg, flWidth, type Flashing, type FlSeg } from '@/lib/orders/flashing'
+import { FL_COLORS, FL_MATERIALS, FL_PRESETS, FL_FONTS, FL_THICKNESS, FL_ZOOMS, emptyFlashing, flAutoStart, flSvg, flWidth, type Flashing, type FlSeg } from '@/lib/orders/flashing'
 
 const fmt = (n: number, d = 0) => (n ? n.toLocaleString('ko-KR', { maximumFractionDigits: d }) : '')
 const sel = 'h-8 w-full border border-input bg-background px-2 text-sm'
@@ -112,7 +112,21 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
                   총길이 {fmt(itemMeters(it), 2) || 0} m{itemAmount(it) ? ` · 금액 ${fmt(itemAmount(it))}원` : ''}
                 </p>
               </div>
-              <RotatePreview fl={fl} onStart={(start) => setFl(i, { start })} />
+              <div className="flex flex-col gap-2">
+                <RotatePreview fl={fl} onStart={(start) => setFl(i, { start })} />
+                <div className="grid grid-cols-2 gap-2">
+                  <L label="상세도 그림 크기">
+                    <select value={fl.zoom ?? 1} onChange={(e) => setFl(i, { zoom: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })} className={sel}>
+                      {FL_ZOOMS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+                    </select>
+                  </L>
+                  <L label="치수 글자 크기">
+                    <select value={fl.font ?? 1} onChange={(e) => setFl(i, { font: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })} className={sel}>
+                      {[...new Set([...FL_FONTS.map(([v]) => v), fl.font ?? 1])].sort((a, b) => a - b).map((v) => <option key={v} value={v}>{FL_FONTS.find(([x]) => x === v)?.[1] ?? `${Math.round(v * 100)}%`}</option>)}
+                    </select>
+                  </L>
+                </div>
+              </div>
             </div>
           </div>
         )

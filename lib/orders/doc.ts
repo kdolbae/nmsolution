@@ -1,4 +1,4 @@
-import { flSegText, flSpec, flSvg, flWidth, normalizeFlashing, type Flashing } from './flashing'
+import { flSegText, flSlots, flTall, flSpec, flSvg, flWidth, normalizeFlashing, type Flashing } from './flashing'
 
 /**
  * 발주서 (엔엠솔루션 → 자재 공급처). 화면 미리보기·인쇄·PDF 가 같은 HTML 을 쓴다.
@@ -185,9 +185,9 @@ export function calcOrder(o: PurchaseOrder) {
   return { supply, vat, total: supply + vat }
 }
 
-/** 표의 비고 칸: 후레싱은 첫 마디만(전체는 절곡 상세도에) */
+/** 표의 비고 칸: 후레싱은 첫 마디 + '상세도 참조'(전체는 절곡 상세도에) */
 function noteOf(i: PoItem) {
-  return i.fl ? i.note.split('·')[0].trim() : i.note
+  return i.fl ? [i.note.split('·')[0].trim(), i.fl.segs.length ? '상세도 참조' : ''].filter(Boolean).join('\n') : i.note
 }
 
 /** 표의 규격 칸: 후레싱이면 재질·두께·색상·전개폭에 직접 적은 규격을 덧붙임 */
@@ -209,11 +209,12 @@ export const PO_FONT_CSS = 'https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/w
 
 const CSS = `
 .flnote{margin:3mm 0 2mm;font-size:8pt;color:#5D6878}
-.flg{display:grid;grid-template-columns:1fr 1fr;gap:3.5mm}
-.flc{border:1px solid #DDE3EA;height:77mm;display:flex;flex-direction:column;overflow:hidden}
+.flg{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:77mm;grid-auto-flow:row dense;gap:3.5mm}
+.flc{border:1px solid #DDE3EA;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.flc.z2{grid-column:span 2}.flc.z2v{grid-row:span 2}.flc.z3{grid-column:span 2;grid-row:span 2}
 .flh{flex:none;line-height:1.4;background:#F4F6F9;border-bottom:1px solid #DDE3EA;padding:1.4mm 2.5mm;font-size:9pt;font-weight:600;color:#0F2A44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .flh span{font-weight:400;color:#5D6878;margin-left:2mm;font-size:8pt}
-.fls{flex:none;height:33mm;padding:1mm 2mm}.fls svg{width:100%;height:100%}
+.fls{flex:1;min-height:0;padding:1mm 2mm}.fls svg{width:100%;height:100%}
 .flc table{width:100%;border-collapse:collapse;border-top:1px solid #DDE3EA}
 .flc th{width:20mm;white-space:nowrap;text-align:left;font-weight:500;color:#5D6878;font-size:8pt;padding:.5mm 2.5mm;vertical-align:top}
 .flc td{font-size:8.5pt;padding:.5mm 2.5mm .5mm 0;word-break:keep-all}
@@ -314,7 +315,8 @@ function paginate(w: number[]): number[][] {
 
 /** 행 무게: 칸 너비에 견준 글자 수로 접힐 줄 수를 어림한다 */
 function rowWeight(name: string, spec: string, note: string) {
-  const lines = Math.max(1, Math.ceil(name.length / 9), Math.ceil(spec.length / 24), Math.ceil(note.length / 7))
+  const noteLines = note.split('\n').reduce((a, l) => a + Math.max(1, Math.ceil(l.length / 9)), 0)
+  const lines = Math.max(1, Math.ceil(name.length / 9), Math.ceil(spec.length / 22), noteLines)
   return lines === 1 ? 1 : 1 + (lines - 1) * 0.6
 }
 
@@ -323,18 +325,24 @@ export function renderOrderHtml(o: PurchaseOrder): string {
   const showPrice = !o.hidePrice
   const items = o.items.filter((i) => i.name || i.spec || i.qty || i.lengthMm || i.price || i.note || i.fl)
   const pages = paginate(items.map((i) => rowWeight(i.name || i.fl?.kind || '', specOf(i), noteOf(i))))
-  // 후레싱 품목은 뒤에 '절곡 상세도' 장을 붙인다 (한 장에 6개: 2열 × 3줄)
+  // 후레싱 품목은 뒤에 '절곡 상세도' 장을 붙인다 (한 장에 6칸: 2열 × 3줄, 크게 = 2칸, 아주 크게 = 4칸)
   const flIdx = items.map((it, k) => (it.fl && it.fl.segs.length ? k : -1)).filter((k) => k >= 0)
   const detail: number[][] = []
-  for (let k = 0; k < flIdx.length; k += 6) detail.push(flIdx.slice(k, k + 6))
+  let used = 6
+  for (const k of flIdx) {
+    const n = flSlots(items[k].fl!)
+    if (used + n > 6) { detail.push([]); used = 0 }
+    detail[detail.length - 1].push(k)
+    used += n
+  }
   const N = pages.length + detail.length
   const no = o.no || '(저장 후 부여)'
   const isNm = /엔엠솔루션|NM\s*SOLUTION/i.test(o.issuer.name)
   const brand = isNm ? `<div class="brand">NM SOLUTION<small>${esc(o.issuer.name)}</small></div>` : `<div class="brand alt">${esc(o.issuer.name)}</div>`
 
   const cols = showPrice
-    ? `<colgroup><col style="width:7mm"><col style="width:26mm"><col><col style="width:14mm"><col style="width:10mm"><col style="width:9mm"><col style="width:14mm"><col style="width:17mm"><col style="width:20mm"><col style="width:14mm"></colgroup>`
-    : `<colgroup><col style="width:8mm"><col style="width:34mm"><col><col style="width:18mm"><col style="width:13mm"><col style="width:10mm"><col style="width:18mm"><col style="width:26mm"></colgroup>`
+    ? `<colgroup><col style="width:7mm"><col style="width:26mm"><col><col style="width:14mm"><col style="width:10mm"><col style="width:9mm"><col style="width:14mm"><col style="width:17mm"><col style="width:20mm"><col style="width:20mm"></colgroup>`
+    : `<colgroup><col style="width:8mm"><col style="width:34mm"><col><col style="width:18mm"><col style="width:13mm"><col style="width:10mm"><col style="width:18mm"><col style="width:32mm"></colgroup>`
   const head = `<thead><tr><th>No</th><th>품명</th><th>규격·색상</th><th>길이<br>(mm)</th><th>수량</th><th>단위</th><th>총길이<br>(m)</th>${showPrice ? '<th>단가</th><th>금액</th>' : ''}<th>비고</th></tr></thead>`
   const colCount = showPrice ? 10 : 8
 
@@ -342,7 +350,7 @@ export function renderOrderHtml(o: PurchaseOrder): string {
     const amt = itemAmount(i)
     return `<tr><td class="c">${idx + 1}</td><td>${esc(i.name || i.fl?.kind)}</td><td class="sp">${esc(specOf(i))}</td><td class="r">${i.lengthMm ? won(i.lengthMm) : ''}</td><td class="r">${fmtNum(i.qty)}</td><td class="c">${esc(i.unit)}</td><td class="r">${fmtNum(itemMeters(i))}</td>${
       showPrice ? `<td class="r">${i.price ? won(i.price) + (i.basis === 'm' ? '<span style="color:#5D6878;font-size:7.5pt">/m</span>' : '') : ''}</td><td class="r">${amt ? won(amt) : ''}</td>` : ''
-    }<td class="sp">${esc(noteOf(i))}</td></tr>`
+    }<td class="sp">${esc(noteOf(i)).replace(/\n/g, '<br>')}</td></tr>`
   }
   const blank = `<tr>${'<td></td>'.repeat(colCount)}</tr>`
 
@@ -399,8 +407,11 @@ ${
       ['길이 × 수량', [it.lengthMm ? `${won(it.lengthMm)} mm` : '', it.qty ? `${fmtNum(it.qty)} ${it.unit}` : ''].filter(Boolean).join(' × ')],
       ['비고', it.note],
     ]
-    return `<div class="flc"><div class="flh"><b>No.${k + 1}</b> ${esc(it.name || f.kind)}${it.name && f.kind && it.name !== f.kind ? `<span>${esc(f.kind)}</span>` : ''}</div>
-<div class="fls">${flSvg(f, 300, 150, { font: 12 })}</div>
+    const z = f.zoom ?? 1
+    const tall = z === 2 && flTall(f)
+    const box: [number, number] = z === 3 ? [620, 400] : z === 2 ? (tall ? [300, 400] : [620, 130]) : [300, 130]
+    return `<div class="flc${z > 1 ? ` z${z}${tall ? 'v' : ''}` : ''}"><div class="flh"><b>No.${k + 1}</b> ${esc(it.name || f.kind)}${it.name && f.kind && it.name !== f.kind ? `<span>${esc(f.kind)}</span>` : ''}</div>
+<div class="fls">${flSvg(f, box[0], box[1], { font: 12 })}</div>
 <table>${rows.map(([a, b]) => `<tr><th>${a}</th><td>${esc(b)}</td></tr>`).join('')}</table></div>`
   }
   detail.forEach((ks, d) => {

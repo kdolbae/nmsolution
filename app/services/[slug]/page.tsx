@@ -5,11 +5,16 @@ import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
 import { MultilineText } from '@/components/multiline-text'
 import { getContent } from '@/lib/content/get'
+import { getWorkLanding } from '@/lib/work-landings'
+import { WorkLandingView, workLandingMetadata } from '@/components/work-landing'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  // 작업별 광고 랜딩(/services/welding 등)
+  const work = getWorkLanding(slug)
+  if (work) return workLandingMetadata(work)
   const services = await getContent('services')
   const item = services.items.find((s) => s.slug === slug)
   if (!item) return { title: '사업소개' }
@@ -19,6 +24,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  const work = getWorkLanding(slug)
+  if (work) return <WorkLandingView w={work} settings={await getContent('settings')} />
   const [services, settings] = await Promise.all([getContent('services'), getContent('settings')])
   const idx = services.items.findIndex((s) => s.slug === slug)
   if (idx === -1) notFound()

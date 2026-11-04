@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${url}/leak`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     // 작업별 검색광고 랜딩(출장용접 · 배관/펌프 · 철골/캐노피 · 판넬)
     ...WORK_LANDINGS.map((w) => ({
-      url: `${url}/work/${w.slug}`,
+      url: `${url}/services/${w.slug}`,
       lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.9,

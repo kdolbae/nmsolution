@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowDown, ArrowRight, Camera, Check, ChevronDown, MapPin, MessageSquareText, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
@@ -8,29 +7,23 @@ import { SectionHeading } from '@/components/section-heading'
 import { PhotoQuoteForm } from '@/components/photo-quote-form'
 import { KakaoChatButton } from '@/components/contact-widgets'
 import { TrackLink } from '@/components/track-link'
-import { getContent } from '@/lib/content/get'
+import type { SettingsContent } from '@/lib/content/defaults'
 import { jsonLdScript, siteUrl } from '@/lib/site'
-import { WORK_LANDINGS, getWorkLanding } from '@/lib/work-landings'
+import { WORK_LANDINGS, type WorkLanding } from '@/lib/work-landings'
 
 /**
- * 작업별 검색광고 랜딩 — /work/welding · /work/piping · /work/steel · /work/panel.
+ * 작업별 검색광고 랜딩 — /services/welding · piping · steel · panel · equipment.
+ * app/services/[slug]/page.tsx 가 주소가 작업 랜딩이면 이 화면을 그린다.
+ * (/work/<키> 는 현장 팀 업무 지시서 링크라 쓰지 않는다.)
  *
  * 검색한 작업이 첫 화면 제목에 그대로 보이고, 바로 아래에 그 작업의 실제 현장 사진이 나온다.
  * 구성은 /leak 와 같다(첫 화면 → 사진 견적 폼 → 작업 범위 → 현장 사진 → 순서 → FAQ → 마지막 권유).
  * 내용은 lib/work-landings.ts 에 있다.
  */
 
-export const dynamic = 'force-dynamic'
-
-export function generateStaticParams() {
-  return WORK_LANDINGS.map((w) => ({ slug: w.slug }))
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  const w = getWorkLanding(slug)
-  if (!w) return { title: '작업 안내' }
-  const path = `/work/${w.slug}`
+/** /services/<작업> 의 검색 결과 · 공유 미리보기 정보 */
+export function workLandingMetadata(w: WorkLanding): Metadata {
+  const path = `/services/${w.slug}`
   return {
     title: w.title,
     description: w.description,
@@ -56,14 +49,9 @@ const STEPS = [
   { n: '04', title: '시공 · 마무리', description: '작업 전 · 후 사진과 항목별 내역서를 드립니다.' },
 ]
 
-export default async function WorkLandingPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const w = getWorkLanding(slug)
-  if (!w) notFound()
-
-  const settings = await getContent('settings')
+export function WorkLandingView({ w, settings }: { w: WorkLanding; settings: SettingsContent }) {
   const url = siteUrl()
-  const path = `/work/${w.slug}`
+  const path = `/services/${w.slug}`
   const tel = `tel:${settings.phoneMobile}`
   const from = `work_${w.slug}`
   const others = WORK_LANDINGS.filter((o) => o.slug !== w.slug)
@@ -293,11 +281,11 @@ export default async function WorkLandingPage({ params }: { params: Promise<{ sl
       <section className="border-t border-border bg-secondary py-12 lg:py-16">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 lg:px-8">
           <p className="text-kicker text-muted-foreground">같이 맡길 수 있는 작업</p>
-          <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
             {others.map((o) => (
               <li key={o.slug}>
                 <Link
-                  href={`/work/${o.slug}`}
+                  href={`/services/${o.slug}`}
                   className="flex h-full items-center justify-between gap-4 bg-background p-5 text-sm font-semibold transition-colors hover:text-electric"
                 >
                   {o.category}

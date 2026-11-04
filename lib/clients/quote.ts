@@ -112,6 +112,7 @@ export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safet
 export const SUPPLIER = {
   name: '엔엠솔루션 (NM SOLUTION)',
   ceo: '김성배',
+  /** 2026-11-04 kevin: 사업자번호가 바뀔 수 있어 견적서·표지에는 찍지 않음 */
   bizNumber: '736-88-01988',
   address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',
   phoneMain: '1800-5901',
@@ -591,7 +592,6 @@ ${mark ? `<p class="q-mark">변경 표시본 (내부용): 빨간색은 ${esc(mar
   <div class="q-party"><h3>공급자</h3><table class="kv"><tbody>
     <tr><th>상호</th><td>${SUPPLIER.name}</td></tr>
     <tr><th>대표</th><td>${SUPPLIER.ceo}</td></tr>
-    <tr><th>사업자번호</th><td>${SUPPLIER.bizNumber}</td></tr>
     <tr><th>주소</th><td>${SUPPLIER.address}</td></tr>
     <tr><th>연락처</th><td>${SUPPLIER.phoneMain} · ${SUPPLIER.phoneMobile}</td></tr>
   </tbody></table></div>

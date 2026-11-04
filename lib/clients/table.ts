@@ -17,6 +17,9 @@ import { JSTECH_CLIENT, JSTECH_REV2_KEY, JSTECH_REV3_KEY, JSTECH_SEED_KEY, jstec
 import { JSTECH_PAGE_HTML } from './jstech-page'
 import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS_REV4_KEY, SEOULGLASS_REV5_KEY, SEOULGLASS_REV6_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
+import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
+import { defaultProposalHtml } from './proposal'
+import { getContent } from '@/lib/content/get'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -578,6 +581,32 @@ export function ensureClients(): Promise<void> {
         // 10-30 '최종본 확정'(v3)으로 잠겨 REV4·REV5 가 건너뛰어졌음. 고객 화면은 발송본(client_sends)이 담당하므로 잠금을 풀고 갱신한다
         await pool.query(`UPDATE clients SET finalized_at = NULL, finalized_by = NULL, finalized_version = NULL WHERE portal_slug = $1`, [SEOULGLASS_CLIENT.portalSlug])
         await refreshSeoulglass('최종본 잠금 해제 후 11-02 최종안 반영: 후레싱 13m·벽체 22,000·양쪽 배수·안쪽 벽 10.5m·문 건물 벽 쪽·가격 조정(NEGO) 할인 415,000, 공급가 7,500,000')
+      })
+      // 가나티엠: 이천 물류창고 판넬 보수 견적 의뢰(2026-11-04). 담당자·연락처·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(GANATM_SEED_KEY, async () => {
+        const c = GANATM_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const [home, services, about, settings] = await Promise.all([
+          getContent('home'),
+          getContent('services'),
+          getContent('about'),
+          getContent('settings'),
+        ])
+        const proposal = defaultProposalHtml(c, { home, services, about, settings })
+        const quote = ganatmQuote(today())
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'GNT', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
     })().catch((e) => {
       ready = null

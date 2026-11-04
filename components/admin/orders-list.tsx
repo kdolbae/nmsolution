@@ -8,28 +8,41 @@ import { Button } from '@/components/ui/button'
 import { Section } from '@/components/admin/form'
 import { PartyFields } from '@/components/admin/order-party-fields'
 import { createOrder, deleteOrderParty, saveOrderParty } from '@/app/actions/orders'
-import { emptyParty, type PoParty, type PoPartyRow } from '@/lib/orders/doc'
+import { emptyParty, PO_FORMS, type PoParty, type PoPartyRow } from '@/lib/orders/doc'
 
 type OrderSummary = { id: number; no: string; date: string; status: string; issuer: string; supplier: string; siteName: string; total: number; items: number }
 
 export function OrdersList({ orders, parties }: { orders: OrderSummary[]; parties: PoPartyRow[] }) {
   const router = useRouter()
   const [pending, start] = useTransition()
-  const make = (preset: 'blank' | 'panel' | 'flashing' | 'flashing-seoul') =>
+  const suppliers = parties.filter((p) => p.kind === 'supplier')
+  const [supplierId, setSupplierId] = useState<number | null>(suppliers[0]?.id ?? null)
+  const picked = suppliers.find((p) => p.id === supplierId)
+  const make = () =>
     start(async () => {
-      const id = await createOrder(preset)
+      const id = await createOrder(supplierId)
       router.push(`/admin/orders/${id}`)
     })
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button onClick={() => make('panel')} disabled={pending}>
-          {pending ? <Loader2 className="animate-spin" /> : <Plus />} 판넬 발주서 (지붕·소골 벽체 + 후레싱 절곡)
+      <div className="mb-4 flex flex-wrap items-end gap-2 bg-background p-4 ring-1 ring-border">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">발주처 선택</span>
+          <select value={supplierId ?? ''} onChange={(e) => setSupplierId(Number(e.target.value) || null)} className="h-9 min-w-56 border border-input bg-background px-2 text-sm">
+            {suppliers.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </label>
+        <Button onClick={make} disabled={pending || !supplierId}>
+          {pending ? <Loader2 className="animate-spin" /> : <Plus />} 이 발주처로 발주서 만들기
         </Button>
-        <Button variant="outline" onClick={() => make('blank')} disabled={pending}>
-          <Plus /> 빈 발주서
-        </Button>
+        {picked && (
+          <span className="text-xs text-muted-foreground">
+            양식: {PO_FORMS.find((f) => f.value === (picked.form ?? 'panel'))?.label}
+          </span>
+        )}
       </div>
 
       <section className="mb-8 bg-background ring-1 ring-border">
@@ -101,8 +114,8 @@ function PartyList({ kind, rows }: { kind: 'issuer' | 'supplier'; rows: PoPartyR
 function PartyCard({ kind, id, initial, onDone }: { kind: 'issuer' | 'supplier'; id: number | null; initial: PoParty; onDone?: () => void }) {
   const router = useRouter()
   const [p, setP] = useState<PoParty>(() => {
-    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } = initial
-    return { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone }
+    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, form } = initial
+    return { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, ...(kind === 'supplier' ? { form: form ?? 'panel' } : {}) }
   })
   const [msg, setMsg] = useState('')
   const [pending, start] = useTransition()
@@ -122,6 +135,14 @@ function PartyCard({ kind, id, initial, onDone }: { kind: 'issuer' | 'supplier';
   }
   return (
     <div className="border p-4">
+      {kind === 'supplier' && (
+        <label className="mb-2 flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">발주서 양식</span>
+          <select value={p.form ?? 'panel'} onChange={(e) => { setP({ ...p, form: e.target.value as PoParty['form'] }); setMsg('') }} className="h-8 border border-input bg-background px-2 text-sm sm:w-80">
+            {PO_FORMS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
+        </label>
+      )}
       <PartyFields value={p} onChange={(v) => { setP(v); setMsg('') }} />
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" onClick={save} disabled={pending || !p.name.trim()}>

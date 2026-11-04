@@ -14,7 +14,7 @@ const read = (p: string) => readFileSync(path.join(root, p), 'utf8')
 const problems: string[] = []
 
 // 업체용 링크가 아닌 최상위 폴더(사이트 화면·API·어드민·포털)
-const NOT_CLIENT = new Set(['about', 'actions', 'admin', 'api', 'leak', 'portal', 'services'])
+const NOT_CLIENT = new Set(['about', 'actions', 'admin', 'api', 'leak', 'portal', 'services', 'work'])
 for (const name of readdirSync(path.join(root, 'app'), { withFileTypes: true })) {
   if (!name.isDirectory() || NOT_CLIENT.has(name.name) || name.name.startsWith('(') || name.name.startsWith('_')) continue
   const route = path.join('app', name.name, 'route.ts')
@@ -35,7 +35,7 @@ for (const kind of ['login_page', 'pdf', 'login_ok', 'login_fail'])
   if (!pr.includes(`'${kind}'`)) problems.push(`lib/clients/portal-route.ts: '${kind}' 기록이 없음`)
 if (!existsSync(path.join(root, 'public/js/pv.js'))) problems.push('public/js/pv.js 없음')
 if (!existsSync(path.join(root, 'app/api/pv/route.ts'))) problems.push('app/api/pv/route.ts 없음')
-for (const f of ['app/portal/page.tsx', 'app/api/portal/print/route.ts', 'app/api/portal/files/[file]/route.ts'])
+for (const f of ['app/portal/page.tsx', 'app/api/portal/print/route.ts', 'app/api/portal/files/[file]/route.ts', 'app/work/[key]/route.ts'])
   if (!/logAccess\(/.test(read(f))) problems.push(`${f}: logAccess 가 없음`)
 
 if (problems.length) {

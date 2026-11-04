@@ -3,7 +3,7 @@
 import type { PoParty } from '@/lib/orders/doc'
 import { TextIn } from '@/components/admin/inputs'
 
-const FIELDS: [keyof PoParty, string, string?][] = [
+const FIELDS: [Exclude<keyof PoParty, 'form'>, string, string?][] = [
   ['name', '상호'],
   ['ceo', '대표자'],
   ['bizNumber', '사업자번호', '000-00-00000'],

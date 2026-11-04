@@ -13,7 +13,7 @@ let ready: Promise<void> | null = null
 const SEED_PARTIES: { kind: 'issuer' | 'supplier'; party: PoParty }[] = [
   { kind: 'issuer', party: { ...emptyParty('엔엠솔루션'), ceo: '김성배', address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호', phone: '1800-5901' } },
   { kind: 'issuer', party: { ...emptyParty('프레치제'), ceo: '김성배' } },
-  { kind: 'supplier', party: { ...emptyParty('(주)새롬판넬 화성공장') } },
+  { kind: 'supplier', party: { ...emptyParty('(주)새롬판넬 화성공장'), form: 'panel' } },
 ]
 
 export function ensureOrders(): Promise<void> {
@@ -65,6 +65,7 @@ async function seoulEavesOrder(): Promise<PurchaseOrder> {
   const o = emptyOrder()
   o.issuer = pick('issuer', /프레치제/)
   o.supplier = pick('supplier', /새롬/)
+  o.form = o.supplier.form ?? 'panel'
   o.siteName = '서울 화곡동 상가 처마'
   o.items = [
     { ...emptyPoItem(), name: '지붕판넬', spec: '100T · 청색 · 난연(성적서 無)', lengthMm: 2400, qty: 14 },

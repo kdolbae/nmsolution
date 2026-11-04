@@ -66,7 +66,7 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
   const copy = () =>
     start(async () => {
       if (dirty) await saveOrder(id, o)
-      const nid = await createOrder('blank', id)
+      const nid = await createOrder(null, id)
       router.push(`/admin/orders/${nid}`)
     })
   const del = () => {
@@ -80,7 +80,14 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
   const pickParty = (kind: 'issuer' | 'supplier', pid: string) => {
     const p = parties.find((x) => String(x.id) === pid)
     if (!p) return
-    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } = p
+    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, form } = p
+    if (kind === 'supplier') {
+      // 발주처를 바꾸면 그 발주처 양식도 따라온다
+      setO((x) => ({ ...x, supplier: { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone }, form: form ?? 'panel' }))
+      setDirty(true)
+      setMsg('')
+      return
+    }
     set(kind, { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } satisfies PoParty)
   }
 
@@ -209,6 +216,7 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
         </div>
       </Section>
 
+      {(o.form === 'panel' || fls.length > 0) && (
       <Section
         title="후레싱 (절곡)"
         description="판넬 발주처(새롬판넬 등)에 판넬과 같이 절곡 발주. 종류를 고르면 제안 치수가 들어가고, 치수·각도·벤딩 방향을 고치면 단면 그림과 발주서 뒤 '절곡 상세도' 장이 같이 바뀜."
@@ -220,6 +228,7 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
           onSeoul={() => setFls([...fls, ...FL_SEOUL_SET.map((x) => ({ ...emptyPoItem(), name: x.name, note: x.note, fl: structuredClone(x.fl) }))])}
         />
       </Section>
+      )}
 
       <Section title="특기사항" description="한 줄에 한 항목.">
         <textarea value={o.notes} onChange={(e) => set('notes', e.target.value)} rows={4} className="w-full border border-input bg-background p-2 text-sm" />

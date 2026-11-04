@@ -18,8 +18,7 @@ import { JSTECH_PAGE_HTML } from './jstech-page'
 import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS_REV4_KEY, SEOULGLASS_REV5_KEY, SEOULGLASS_REV6_KEY, SEOULGLASS_SEED_KEY, seoulglassQuote } from './seed-seoulglass'
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
-import { defaultProposalHtml } from './proposal'
-import { getContent } from '@/lib/content/get'
+import { GANATM_PAGE_HTML } from './ganatm-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -587,14 +586,8 @@ export function ensureClients(): Promise<void> {
         const c = GANATM_CLIENT
         const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
         if (found.rows.length) return
-        const [home, services, about, settings] = await Promise.all([
-          getContent('home'),
-          getContent('services'),
-          getContent('about'),
-          getContent('settings'),
-        ])
-        const proposal = defaultProposalHtml(c, { home, services, about, settings })
         const quote = ganatmQuote(today())
+        const proposal = GANATM_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
         const { rows } = await pool.query<{ id: string }>(
           `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
            VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,

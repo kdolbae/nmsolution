@@ -303,6 +303,8 @@ export function ensureClients(): Promise<void> {
           const quote = { ...base, discount: discountForGrand({ ...base, discount: 0 }, 167_200_000) ?? KKT_QUOTE.discount }
           return { quote, ...(cur.proposalHtml !== page ? { proposalHtml: page } : {}), summary: KKT_Q1104_SUMMARY }
         })
+      })
+      // 2026-11-04 kevin: 보온재 150T로 바꾸고 금액은 v14(VAT 포함 183,150,000)와 같게
       await seedOnce(KKT_GW48_KEY, async () => {
         const found = await pool.query<{ id: string }>(`SELECT id FROM clients WHERE name = $1 AND parent_id IS NULL AND finalized_at IS NULL ORDER BY id LIMIT 1`, [KKT_CLIENT.name])
         const row = found.rows[0]
@@ -312,10 +314,10 @@ export function ensureClients(): Promise<void> {
           const q = normalizeQuote(cur.quote)
           const code = new Map(KKT_QUOTE.sections.map((x) => [x.name, x]))
           const sections = q.sections.map((x) => (/보온/.test(x.name) && code.has(x.name) ? code.get(x.name)! : x))
-          const quote = { ...q, sections, notes: KKT_QUOTE.notes, discount: KKT_QUOTE.discount }
+          const base = { ...q, sections, notes: KKT_QUOTE.notes }
+          const quote = { ...base, discount: discountForGrand({ ...base, discount: 0 }, 183_150_000) ?? KKT_QUOTE.discount }
           return { quote, ...(cur.proposalHtml !== page ? { proposalHtml: page } : {}), summary: KKT_GW48_SUMMARY }
         })
-      })
       })
       // 신일공업: 처음이면 넣고, 앞선 등록본(빈 견적 틀·기본 제안서)이 있으면 작업계획 페이지·견적으로 바꾼다
       await seedOnce(SINIL_SEED_KEY, async () => {

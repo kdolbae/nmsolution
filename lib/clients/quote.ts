@@ -368,6 +368,7 @@ export const QUOTE_CSS = `
 .nmq tr.q-grand td{font-weight:700;font-size:11pt;color:var(--navy);border-top:2pt solid var(--navy);border-bottom:2pt solid var(--navy)}
 .nmq tr.q-disc td{font-weight:600;color:var(--accent)}
 .nmq table.q-summary td.n,.nmq table.q-summary td:nth-child(2){white-space:nowrap}
+.nmq table.q-cost{table-layout:fixed;width:100%}.nmq table.q-cost th,.nmq table.q-cost td{font-size:9pt;padding:5px 4px}.nmq table.q-cost thead th{white-space:normal;word-break:keep-all;line-height:1.3;vertical-align:bottom}.nmq table.q-cost th:first-child,.nmq table.q-cost td:first-child{width:8.5em;word-break:keep-all}
 .nmq .q-total .v small{display:block;margin:2px 0 0}
 .nmq p.q-hint{font-size:8.5pt;color:var(--muted);margin:4px 0 0}
 .nmq ol.q-notes{margin:0;padding-left:1.4em}
@@ -539,7 +540,7 @@ export function renderQuote(q: Quote, to: QuoteRecipient, mark?: QuoteMark): str
     ? ''
     : multi
       ? `<h2 class="q-sub">공사원가 요약</h2>
-<table class="grid"><thead><tr><th>비목</th>${mainIdx.map((i) => `<th${cls('n', mk?.sec(q.sections[i]))}>${esc(q.sections[i].name)}</th>`).join('')}<th class="n">합계</th></tr></thead><tbody>
+<table class="grid q-cost"><thead><tr><th>비목</th>${mainIdx.map((i) => `<th${cls('n', mk?.sec(q.sections[i]))}>${esc(q.sections[i].name)}</th>`).join('')}<th class="n">합계</th></tr></thead><tbody>
 ${costRows.map(({ label, get, vals }) => `<tr><td>${label}</td>${vals.map((v, k) => `<td${cls('n', mk?.val(q.sections[mainIdx[k]].name, get, v))}>${won(v)}</td>`).join('')}<td${cls('n', mk?.sum(get, vals.reduce((a, b) => a + b, 0)))}>${won(vals.reduce((a, b) => a + b, 0))}</td></tr>`).join('')}
 <tr class="q-sum"><td>${withSummary ? '공정 합계' : '공급가액'}</td>${mainIdx.map((i) => `<td${cls('n', mk?.val(q.sections[i].name, (x) => x.total, calc.sections[i].total))}>${won(calc.sections[i].total)}</td>`).join('')}<td${cls('n', mk?.top('works', calc.works))}>${won(calc.works)}</td></tr>
 </tbody></table>`

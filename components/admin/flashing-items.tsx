@@ -1,10 +1,11 @@
 'use client'
 
-import { ChevronDown, ChevronUp, Copy, Plus, Trash2 } from 'lucide-react'
+import { useRef } from 'react'
+import { ChevronDown, ChevronUp, Copy, Plus, RotateCcw, RotateCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { emptyPoItem, itemAmount, itemMeters, poItemId, type PoItem } from '@/lib/orders/doc'
-import { FL_COLORS, FL_MATERIALS, FL_PRESETS, FL_THICKNESS, emptyFlashing, flSvg, flWidth, type Flashing, type FlSeg } from '@/lib/orders/flashing'
+import { FL_COLORS, FL_MATERIALS, FL_PRESETS, FL_FONTS, FL_THICKNESS, FL_ZOOMS, emptyFlashing, flAutoStart, flSvg, flWidth, type Flashing, type FlSeg } from '@/lib/orders/flashing'
 
 const fmt = (n: number, d = 0) => (n ? n.toLocaleString('ko-KR', { maximumFractionDigits: d }) : '')
 const sel = 'h-8 w-full border border-input bg-background px-2 text-sm'
@@ -75,7 +76,7 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
 
                 <div>
                   <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    절곡 구간 (첫 구간에서 오른쪽으로 출발, 각도 = 두 면 사이 안쪽 각, 90 = 직각)
+                    절곡 구간 (1번 구간부터 차례로, 각도 = 두 면 사이 안쪽 각, 90 = 직각)
                     <b className="ml-auto text-foreground">전개폭 {fmt(flWidth(fl)) || 0} mm</b>
                   </div>
                   <table className="w-full text-sm">
@@ -111,7 +112,21 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
                   총길이 {fmt(itemMeters(it), 2) || 0} m{itemAmount(it) ? ` · 금액 ${fmt(itemAmount(it))}원` : ''}
                 </p>
               </div>
-              <div className="border bg-white" dangerouslySetInnerHTML={{ __html: flSvg(fl, 300, 220, { font: 13 }) }} />
+              <div className="flex flex-col gap-2">
+                <RotatePreview fl={fl} onStart={(start) => setFl(i, { start })} />
+                <div className="grid grid-cols-2 gap-2">
+                  <L label="상세도 그림 크기">
+                    <select value={fl.zoom ?? 1} onChange={(e) => setFl(i, { zoom: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })} className={sel}>
+                      {FL_ZOOMS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+                    </select>
+                  </L>
+                  <L label="치수 글자 크기">
+                    <select value={fl.font ?? 1} onChange={(e) => setFl(i, { font: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })} className={sel}>
+                      {[...new Set([...FL_FONTS.map(([v]) => v), fl.font ?? 1])].sort((a, b) => a - b).map((v) => <option key={v} value={v}>{FL_FONTS.find(([x]) => x === v)?.[1] ?? `${Math.round(v * 100)}%`}</option>)}
+                    </select>
+                  </L>
+                </div>
+              </div>
             </div>
           </div>
         )
@@ -125,6 +140,51 @@ export function FlashingItems({ items, onChange, startNo = 0, onSeoul }: { items
             <Plus /> 서울 처마 제안 9종 넣기
           </Button>
         )}
+      </div>
+    </div>
+  )
+}
+
+const norm = (d: number) => ((Math.round(d) % 360) + 360) % 360
+
+/** 단면 그림: 마우스(터치)로 끌어서 돌림. 90° 단위 근처에서는 딱 맞게 붙음. 치수·각도는 그대로 */
+function RotatePreview({ fl, onStart }: { fl: Flashing; onStart: (start: number | undefined) => void }) {
+  const box = useRef<HTMLDivElement>(null)
+  const drag = useRef<{ a0: number; s0: number } | null>(null)
+  const cur = fl.start ?? flAutoStart(fl.segs)
+  const angleAt = (e: React.PointerEvent) => {
+    const r = box.current!.getBoundingClientRect()
+    return (Math.atan2(-(e.clientY - (r.top + r.height / 2)), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI
+  }
+  const snap = (d: number) => {
+    const n = norm(d)
+    const q = Math.round(n / 90) * 90
+    return Math.abs(n - q) <= 4 ? norm(q) : n
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        ref={box}
+        className="cursor-grab touch-none select-none border bg-white active:cursor-grabbing"
+        title="마우스로 끌어서 돌리기"
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          drag.current = { a0: angleAt(e), s0: cur }
+        }}
+        onPointerMove={(e) => {
+          if (!drag.current) return
+          onStart(snap(drag.current.s0 + angleAt(e) - drag.current.a0))
+        }}
+        onPointerUp={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
+        dangerouslySetInnerHTML={{ __html: flSvg(fl, 300, 220, { font: 13 }) }}
+      />
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <span>끌어서 돌리기 · {norm(cur)}°{fl.start === undefined ? ' (자동)' : ''}</span>
+        <span className="ml-auto" />
+        <button type="button" className="p-1 hover:text-foreground" onClick={() => onStart(norm(cur + 90))} aria-label="왼쪽으로 90° 돌리기" title="왼쪽으로 90°"><RotateCcw className="size-4" /></button>
+        <button type="button" className="p-1 hover:text-foreground" onClick={() => onStart(norm(cur - 90))} aria-label="오른쪽으로 90° 돌리기" title="오른쪽으로 90°"><RotateCw className="size-4" /></button>
+        <button type="button" className="px-1 hover:text-foreground disabled:opacity-40" disabled={fl.start === undefined} onClick={() => onStart(undefined)}>자동</button>
       </div>
     </div>
   )

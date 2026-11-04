@@ -10,7 +10,13 @@
 export type BendDir = 'up' | 'down'
 export type FlSeg = { len: number; angle: number; dir: BendDir }
 /** start = 그림에서 첫 구간이 향하는 각도(0 = 오른쪽, 90 = 위). 그림 모양만 바꾸고 치수에는 영향 없음 */
-export type Flashing = { kind: string; material: string; thickness: number; color: string; segs: FlSeg[]; start?: number }
+/** zoom = 절곡 상세도 칸 크기(1 = 보통 1칸, 2 = 가로 2칸, 3 = 반 장), font = 치수 글자 배율(1 = 보통) */
+export type Flashing = { kind: string; material: string; thickness: number; color: string; segs: FlSeg[]; start?: number; zoom?: number; font?: number }
+
+export const FL_ZOOMS: [number, string][] = [[1, '보통 (1칸)'], [2, '크게 (2칸)'], [3, '아주 크게 (반 장)']]
+export const FL_FONTS: [number, string][] = [[0.8, '작게'], [1, '보통'], [1.3, '크게'], [1.6, '더 크게'], [2, '아주 크게']]
+/** 상세도 칸 수(2열 × 3줄 = 장당 6칸) */
+export const flSlots = (f: Flashing) => (f.zoom === 3 ? 4 : f.zoom === 2 ? 2 : 1)
 
 export const FL_MATERIALS = ['칼라강판', '아연도강판(GI)', '갈바륨(GL)', '스테인리스(STS304)', '알루미늄']
 export const FL_THICKNESS = [0.35, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0]
@@ -57,7 +63,9 @@ export function normalizeFlashing(raw: unknown): Flashing | undefined {
     thickness: n(r.thickness),
     color: String(r.color ?? '').slice(0, 40),
     segs,
-    ...(Number.isFinite(Number(r.start)) && Number(r.start) ? { start: Number(r.start) } : {}),
+    ...([2, 3].includes(Number(r.zoom)) ? { zoom: Number(r.zoom) } : {}),
+    ...(Number.isFinite(Number(r.font)) && Number(r.font) > 0 && Number(r.font) !== 1 ? { font: Math.min(2.5, Math.max(0.6, Number(r.font))) } : {}),
+    ...(r.start !== undefined && r.start !== null && r.start !== '' && Number.isFinite(Number(r.start)) ? { start: ((Math.round(Number(r.start)) % 360) + 360) % 360 } : {}),
   }
 }
 
@@ -99,7 +107,7 @@ function walk(segs: FlSeg[], start: number) {
 }
 
 /** 90°가 아닌 각도가 섞여도 그림이 기울지 않게, 수평·수직에 맞는 구간 길이가 가장 길어지도록 전체를 돌림 */
-function autoStart(segs: FlSeg[]) {
+export function flAutoStart(segs: FlSeg[]) {
   const { heads } = walk(segs, 0)
   const off = (d: number) => {
     const m = ((d % 90) + 90) % 90
@@ -117,12 +125,33 @@ function autoStart(segs: FlSeg[]) {
 }
 
 function points(segs: FlSeg[], start?: number) {
-  return walk(segs, start ?? autoStart(segs)).pts
+  return walk(segs, start ?? flAutoStart(segs)).pts
+}
+
+/** 크게(2칸)일 때 세로 2칸이 가로 2칸보다 그림이 더 크게 나오는지 */
+export function flTall(f: Flashing) {
+  const pts = points(f.segs, f.start)
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1])
+  const w = Math.max(Math.max(...xs) - Math.min(...xs), 1), h = Math.max(Math.max(...ys) - Math.min(...ys), 1)
+  return Math.min(240 / w, 340 / h) > Math.min(560 / w, 70 / h)
+}
+
+/** 점에서 i번째 구간을 뺀 나머지 구간까지의 최소 거리 */
+function clearance(P: [number, number][], skip: number, x: number, y: number) {
+  let m = Infinity
+  for (let k = 0; k + 1 < P.length; k++) {
+    if (k === skip) continue
+    const [ax, ay] = P[k], [bx, by] = P[k + 1]
+    const vx = bx - ax, vy = by - ay
+    const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy || 1)))
+    m = Math.min(m, Math.hypot(x - (ax + vx * t), y - (ay + vy * t)))
+  }
+  return m
 }
 
 /** 단면 그림 SVG. w·h 는 px(화면) 또는 mm(인쇄) 어느 단위든 viewBox 기준 */
 export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {}): string {
-  const font = opts.font ?? 12
+  const font = (opts.font ?? 12) * (f.font ?? 1)
   const pts = points(f.segs, f.start)
   if (pts.length < 2) return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"></svg>`
   const xs = pts.map((p) => p[0])
@@ -145,9 +174,11 @@ export function flSvg(f: Flashing, w = 300, h = 170, opts: { font?: number } = {
     let nx = -(b[1] - a[1]), ny = b[0] - a[0]
     const L = Math.hypot(nx, ny) || 1
     nx /= L; ny /= L
-    // 라벨은 도형 바깥쪽(중심 반대편)으로
-    if ((mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny }
     const d = font * 0.95
+    // 라벨은 다른 구간과 더 멀리 떨어진 쪽으로(같으면 도형 바깥쪽)
+    const clr = (sx: number, sy: number) => clearance(P, i, mx + sx * d * 1.3, my + sy * d * 1.3)
+    const cp = clr(nx, ny), cm = clr(-nx, -ny)
+    if (Math.abs(cp - cm) > font * 0.3 ? cm > cp : (mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny }
     out += `<text x="${r(mx + nx * d)}" y="${r(my + ny * d + font * 0.35)}" font-size="${font}" text-anchor="middle" fill="#1D2430" font-weight="600">${g.len}</text>`
     if (i > 0 && g.angle < 180) {
       const j = P[i]

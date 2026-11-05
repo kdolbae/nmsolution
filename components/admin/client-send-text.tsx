@@ -96,6 +96,9 @@ export function ClientSendText({
                 autoComplete="off"
               />
             </label>
+            {!password.trim() && (
+              <span className="text-xs font-medium text-orange-600">비밀번호를 넣어야 문자에 같이 들어감</span>
+            )}
             {edited && (
               <Button variant="ghost" size="sm" className="rounded-none" onClick={() => setEdited(false)}>
                 다시 만들기

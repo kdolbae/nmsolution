@@ -5,7 +5,8 @@ import { SUPPLIER } from './quote'
  * - 링크는 nm-solution.co.kr 업체 페이지만 넣는다. 그 주소로 열어야 접속·행동 기록이 남는다(프로젝트 1순위 규칙).
  *   PDF 첨부·다른 주소는 넣지 않는다.
  * - 금액·원가·내부 출처는 넣지 않는다(2026-10-28 결정: 링크·비밀번호만 안내).
- * - 비밀번호는 DB 에 해시로만 있어 자동으로 못 채운다. 어드민이 입력한 값만 넣고, 저장하지 않는다.
+ * - 비밀번호는 문자에 같이 넣는다(2026-11-05 kevin). DB 에 해시로만 있어 자동으로 못 채우므로 어드민이 입력한 값을 넣고, 저장하지 않는다.
+ * - 고객용 문안은 존댓말(2026-11-05 kevin).
  */
 export type SendTextStyle = 'full' | 'short'
 
@@ -36,10 +37,10 @@ export function quoteSendText(i: SendTextInput): string {
 
   if (i.style === 'short') {
     return [
-      `[엔엠솔루션] ${title} 견적서`,
-      `${link}`,
-      `비밀번호: ${pw || '별도 안내'}`,
-      `문의 ${SUPPLIER.phoneMobile}`,
+      `[엔엠솔루션] ${title} 견적서를 보내드립니다.`,
+      `▶ 견적 보기: ${link}`,
+      pwLine,
+      `궁금하신 점은 ${SUPPLIER.phoneMobile}로 연락 주세요.`,
     ].join('\n')
   }
 

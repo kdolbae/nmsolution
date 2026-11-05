@@ -108,6 +108,10 @@ export const quoteRequests = pgTable('quote_requests', {
   utmTerm: text('utm_term').notNull().default(''),
   /** 광고그룹·소재 구분 */
   utmContent: text('utm_content').notNull().default(''),
+  /** 손님이 실제로 친 검색어 (네이버 n_query · 리퍼러). 키워드(utmTerm)와 다를 수 있다 */
+  searchQuery: text('search_query').notNull().default(''),
+  /** 어느 창구로 들어온 문의인가: quick(우측 하단 간단 문의) · form(견적 폼) · leak_photo 등 사진 견적 */
+  form: text('form').notNull().default(''),
   /** 매체가 붙이는 클릭 식별자 (gclid / fbclid 등) */
   clickId: text('click_id').notNull().default(''),
   /** 처음 들어온 페이지 */

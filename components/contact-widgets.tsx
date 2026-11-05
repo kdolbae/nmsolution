@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileText, MessageCircle, Phone, Plus, Smartphone, X } from 'lucide-react'
+import { FileText, MessageCircle, MessageSquareText, Phone, Plus, Smartphone, X } from 'lucide-react'
 import { track } from '@/lib/track'
 import { reportConversion } from '@/lib/tracking'
 import { cn } from '@/lib/utils'
 import { kakaoChatUrl, openKakaoChat } from '@/lib/kakao'
+import { QuickInquiry, type QuickStep } from '@/components/quick-inquiry'
 
 type Channel = {
   icon: typeof FileText
@@ -75,23 +76,54 @@ export function FloatingContact({
       return !v
     })
   const CHANNELS = channels(phoneMain, phoneMobile, kakaoUrl)
+  const chat = kakaoChatUrl(kakaoUrl)
+  // 간단 문의를 시작하면 전화·카톡 목록을 한 줄로 줄인다 (없애지는 않는다)
+  const [step, setStep] = useState<QuickStep>('work')
 
   return (
     <div className="fixed bottom-6 right-5 z-40 hidden flex-col items-end gap-3 md:flex lg:bottom-8 lg:right-8">
       <div
         id="contact-menu"
         className={cn(
-          'flex w-72 flex-col overflow-hidden bg-background text-foreground shadow-[0_24px_60px_-20px_rgba(0,0,0,0.35)] ring-1 ring-border transition-all duration-300 origin-bottom-right',
+          'flex max-h-[calc(100vh-7.5rem)] w-80 flex-col overflow-y-auto bg-background text-foreground shadow-[0_24px_60px_-20px_rgba(0,0,0,0.35)] ring-1 ring-border transition-all duration-300 origin-bottom-right',
           open ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-3 scale-95 opacity-0',
         )}
         aria-hidden={!open}
       >
         <div className="flex items-center justify-between bg-navy px-5 py-4 text-navy-foreground">
           <div className="flex flex-col">
-            <span className="text-kicker text-navy-foreground/60">Contact</span>
-            <span className="text-sm font-semibold">어떤 방식이 편하신가요?</span>
+            <span className="text-kicker text-navy-foreground/60">Quick Inquiry</span>
+            <span className="text-sm font-semibold">세 가지만 답하시면 연락드립니다</span>
           </div>
         </div>
+        <QuickInquiry phoneMobile={phoneMobile} from="floating" onStep={setStep} />
+        {step !== 'work' ? (
+          <div className="flex border-t border-border text-xs font-semibold">
+            <a
+              href={`tel:${phoneMobile}`}
+              onClick={() => contactClick('call_mobile', 'floating_quick')}
+              className="flex flex-1 items-center justify-center gap-1.5 py-3 text-navy hover:bg-secondary"
+            >
+              <Smartphone className="size-3.5" strokeWidth={1.75} />
+              바로 전화
+            </a>
+            {chat && (
+              <button
+                type="button"
+                onClick={() => {
+                  contactClick('kakao_chat', 'floating_quick')
+                  openKakaoChat(chat)
+                }}
+                className="flex flex-1 items-center justify-center gap-1.5 border-l border-border py-3 text-navy hover:bg-secondary"
+              >
+                <MessageCircle className="size-3.5" strokeWidth={1.75} />
+                카카오톡 상담
+              </button>
+            )}
+          </div>
+        ) : (
+        <>
+        <p className="border-t border-border px-5 pb-1 pt-3 text-xs font-medium text-muted-foreground">전화 · 카톡이 편하시면</p>
         <ul className="divide-y divide-border">
           {CHANNELS.map((c) => {
             const inner = (
@@ -148,6 +180,8 @@ export function FloatingContact({
             )
           })}
         </ul>
+        </>
+        )}
       </div>
 
       <button
@@ -182,8 +216,51 @@ export function MobileContactBar({
 }) {
   const chat = kakaoChatUrl(kakaoUrl)
   const CELL = 'flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80'
+  // 간단 문의(3문답)는 하단 바 위에 떠 있는 버튼으로 연다. 전화·카톡 칸은 그대로 둔다
+  const [quick, setQuick] = useState(false)
+  useEffect(() => {
+    if (!quick) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [quick])
 
   return (
+    <>
+    <button
+      type="button"
+      onClick={() => {
+        setQuick(true)
+        track('quick_inquiry', { step: 'open', from: 'mobile' })
+      }}
+      className="fixed right-4 z-40 flex h-11 items-center gap-2 bg-electric pl-4 pr-3.5 text-sm font-semibold text-electric-foreground shadow-lg md:hidden"
+      style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom) + 12px)' }}
+    >
+      <MessageSquareText className="size-4" strokeWidth={2} />
+      간단 문의
+    </button>
+    {quick && (
+      <div className="fixed inset-0 z-50 flex flex-col justify-end md:hidden" role="dialog" aria-modal="true" aria-label="간단 문의">
+        <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/40" onClick={() => setQuick(false)} />
+        <div
+          className="relative max-h-[88vh] overflow-y-auto bg-background"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <div className="sticky top-0 z-10 flex items-center justify-between bg-navy px-5 py-3.5 text-navy-foreground">
+            <div className="flex flex-col">
+              <span className="text-kicker text-navy-foreground/60">Quick Inquiry</span>
+              <span className="text-sm font-semibold">세 가지만 답하시면 연락드립니다</span>
+            </div>
+            <button type="button" onClick={() => setQuick(false)} aria-label="닫기" className="flex size-10 items-center justify-center">
+              <X className="size-5" />
+            </button>
+          </div>
+          <QuickInquiry phoneMobile={phoneMobile} from="mobile" />
+        </div>
+      </div>
+    )}
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden"
       aria-label="빠른 상담"
@@ -227,6 +304,7 @@ export function MobileContactBar({
         </a>
       </div>
     </nav>
+    </>
   )
 }
 

@@ -41,7 +41,9 @@ export function ensureQuoteRequests(): Promise<void> {
            ADD COLUMN IF NOT EXISTS click_id      text NOT NULL DEFAULT '',
            ADD COLUMN IF NOT EXISTS landing_path  text NOT NULL DEFAULT '',
            ADD COLUMN IF NOT EXISTS referrer      text NOT NULL DEFAULT '',
-           ADD COLUMN IF NOT EXISTS first_seen_at timestamptz;
+           ADD COLUMN IF NOT EXISTS first_seen_at timestamptz,
+           ADD COLUMN IF NOT EXISTS search_query  text NOT NULL DEFAULT '',
+           ADD COLUMN IF NOT EXISTS form          text NOT NULL DEFAULT '';
          CREATE INDEX IF NOT EXISTS quote_requests_source_created_idx
            ON quote_requests (utm_source, created_at DESC);`,
       )

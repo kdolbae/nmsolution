@@ -5,6 +5,7 @@ import { Phone, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QUOTE_STATUSES, statusLabel } from '@/lib/quote'
 import { attributionSummary } from '@/lib/attribution'
+import { formLabel } from '@/lib/quick-inquiry'
 import { deleteQuote, updateQuoteMemo, updateQuoteStatus } from '@/app/actions/admin'
 import type { QuoteRequest } from '@/lib/db/schema'
 
@@ -99,7 +100,7 @@ export function QuotesManager({
                 </span>
               </div>
 
-              {(q.location || q.categories || attributionSummary(q)) && (
+              {(q.location || q.categories || q.form || attributionSummary(q)) && (
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
                   {q.location && (
                     <>
@@ -118,6 +119,18 @@ export function QuotesManager({
                     <>
                       <dt className="text-muted-foreground">유입</dt>
                       <dd>{attributionSummary(q)}</dd>
+                    </>
+                  )}
+                  {q.searchQuery && q.searchQuery !== q.utmTerm && (
+                    <>
+                      <dt className="text-muted-foreground">검색어</dt>
+                      <dd>{q.searchQuery}</dd>
+                    </>
+                  )}
+                  {q.form && (
+                    <>
+                      <dt className="text-muted-foreground">창구</dt>
+                      <dd>{formLabel(q.form)}</dd>
                     </>
                   )}
                 </dl>

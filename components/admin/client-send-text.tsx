@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Copy, MessageSquareText, Smartphone } from 'lucide-react'
+import { Check, Copy, Download, IdCard, MessageSquareText, Share2, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { quoteSendText, smsHref, type SendTextStyle } from '@/lib/clients/send-text'
+
+/** 대표 명함 이미지 (2026-11-05 kevin 제공) */
+const BUSINESS_CARD = '/brand/business-card.png'
 
 /**
  * 견적서 발송 문자 만들기 (어드민 업체 화면, 모든 업체 공통).
@@ -29,10 +32,13 @@ export function ClientSendText({
 }) {
   const [open, setOpen] = useState(false)
   const [style, setStyle] = useState<SendTextStyle>('full')
-  const [password, setPassword] = useState('')
+  // 기본값 = 업체 연락처 뒤 4자리 (업체용 링크 비밀번호 관례, 2026-11-05 kevin "비번 자동 기본값"). 다르면 고쳐 씀
+  const [password, setPassword] = useState(() => phone.replace(/\D/g, '').slice(-4))
   const [text, setText] = useState('')
   const [edited, setEdited] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [cardMsg, setCardMsg] = useState('')
+  const [canShare, setCanShare] = useState(false)
 
   // 입력이 바뀌면 문안을 다시 만든다. 직접 고친 뒤에는 '다시 만들기' 전까지 그대로 둔다
   const generated = quoteSendText({ clientName, contactPerson, portalSlug, title, number, password, style })
@@ -40,7 +46,44 @@ export function ClientSendText({
     if (!edited) setText(generated)
   }, [generated, edited])
 
+  // 휴대폰(공유 시트에 파일을 넘길 수 있는 브라우저)에서만 '문자+명함 공유' 버튼을 보인다
+  useEffect(() => {
+    try {
+      const f = new File([new Blob()], 'x.png', { type: 'image/png' })
+      setCanShare(typeof navigator.share === 'function' && !!navigator.canShare?.({ files: [f] }))
+    } catch {
+      setCanShare(false)
+    }
+  }, [])
+
   if (!portalSlug) return null
+
+  const flash = (m: string) => {
+    setCardMsg(m)
+    setTimeout(() => setCardMsg(''), 2500)
+  }
+
+  const cardBlob = async () => (await fetch(BUSINESS_CARD)).blob()
+
+  /** 명함 이미지를 클립보드에 복사. 문자 앱·카톡 입력창에 붙여 넣으면 사진으로 들어감 */
+  const copyCard = async () => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': cardBlob() })])
+      flash('명함 이미지 복사됨')
+    } catch {
+      flash('이 브라우저는 이미지 복사가 안 됨. 명함 저장을 쓰세요')
+    }
+  }
+
+  /** 휴대폰 공유 시트로 문자 문안 + 명함 이미지를 함께 넘긴다 (문자 앱 고르면 사진 첨부 문자) */
+  const shareAll = async () => {
+    try {
+      const file = new File([await cardBlob()], '엔엠솔루션_명함.png', { type: 'image/png' })
+      await navigator.share({ text, files: [file] })
+    } catch (e) {
+      if ((e as Error)?.name !== 'AbortError') flash('공유하지 못함. 문자 복사 + 명함 복사를 쓰세요')
+    }
+  }
 
   const copy = async () => {
     await navigator.clipboard.writeText(text).catch(() => {})
@@ -83,7 +126,7 @@ export function ClientSendText({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">
-                비밀번호 {passwordSet ? '(저장된 값은 볼 수 없어 직접 입력, 저장 안 됨)' : '(아직 비밀번호 없음, 업체 정보에서 먼저 설정)'}
+                비밀번호 {passwordSet ? '(기본값 = 연락처 뒤 4자리. 다르게 정했으면 고쳐 넣음)' : '(아직 비밀번호 없음, 업체 정보에서 먼저 설정)'}
               </span>
               <input
                 value={password}
@@ -125,6 +168,22 @@ export function ClientSendText({
             >
               <Smartphone className="size-4" /> 휴대폰 문자 앱으로 열기{phone ? ` (${phone})` : ''}
             </a>
+            <Button variant="outline" className="rounded-none" onClick={copyCard} title="명함 이미지를 복사 (문자·카톡 입력창에 붙여 넣기)">
+              <IdCard /> 명함 이미지 복사
+            </Button>
+            <a
+              href={BUSINESS_CARD}
+              download="엔엠솔루션_명함.png"
+              className="inline-flex h-9 items-center gap-1.5 border border-border px-3 text-sm hover:bg-muted"
+            >
+              <Download className="size-4" /> 명함 저장
+            </a>
+            {canShare && (
+              <Button className="rounded-none" onClick={shareAll} title="휴대폰 공유 창에서 문자 앱을 고르면 문안 + 명함 사진이 함께 들어감">
+                <Share2 /> 문자+명함 공유
+              </Button>
+            )}
+            {cardMsg && <span className="text-xs font-medium text-electric">{cardMsg}</span>}
             <span className="text-xs text-muted-foreground">
               {euckr > 90 ? `장문(LMS) · ${euckr}바이트` : `단문(SMS) · ${euckr}바이트`}
             </span>

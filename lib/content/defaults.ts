@@ -404,7 +404,7 @@ export const DEFAULT_SETTINGS: SettingsContent = {
   showGallery: false,
   companyName: '엔엠솔루션 (NM SOLUTION)',
   ceo: '김성배',
-  address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',
+  address: '경기도 평택시 고덕면 도시지원로 121 지식공장아이티센터 322호',
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   hours: '평일 09:00 – 18:00',

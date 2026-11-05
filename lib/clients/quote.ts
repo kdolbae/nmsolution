@@ -114,7 +114,7 @@ export const SUPPLIER = {
   ceo: '김성배',
   /** 2026-11-04 kevin: 사업자번호가 바뀔 수 있어 견적서·표지에는 찍지 않음 */
   bizNumber: '736-88-01988',
-  address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',
+  address: '경기도 평택시 고덕면 도시지원로 121 지식공장아이티센터 322호',
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   web: 'nm-solution.co.kr',

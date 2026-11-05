@@ -11,7 +11,7 @@ import { FL_SEOUL_SET } from './flashing'
 let ready: Promise<void> | null = null
 
 const SEED_PARTIES: { kind: 'issuer' | 'supplier'; party: PoParty }[] = [
-  { kind: 'issuer', party: { ...emptyParty('엔엠솔루션'), ceo: '김성배', address: '경기도 평택시 고덕면 도시지원로 121 지식공장아이티센터 322호', phone: '1800-5901' } },
+  { kind: 'issuer', party: { ...emptyParty('엔엠솔루션'), ceo: '김성배', address: '경기도 평택시 고덕면 도시지원로 121 지식공장이티센터 322호', phone: '1800-5901' } },
   { kind: 'issuer', party: { ...emptyParty('프레치제'), ceo: '김성배' } },
   { kind: 'supplier', party: { ...emptyParty('(주)새롬판넬 화성공장') } },
 ]

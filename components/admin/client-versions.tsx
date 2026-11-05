@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { finalizeClientVersion, unlockClientVersion } from '@/app/actions/clients'
 import { quoteDocument, won, type Quote, type QuoteRecipient } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
+import { parseVersionSummary, type SummaryKind } from '@/lib/clients/version-summary'
 
 export type VersionRow = {
   no: number
@@ -42,6 +43,59 @@ const CHANGE_LABEL: Record<VersionRow['change'], string> = {
   proposal: '제안서',
   quote: '견적서',
   system: '자동',
+}
+
+const KIND_TAG: Record<SummaryKind, { label: string; cls: string } | null> = {
+  changed: { label: '수정', cls: 'bg-secondary text-muted-foreground' },
+  added: { label: '추가', cls: 'bg-electric/10 text-electric' },
+  removed: { label: '삭제', cls: 'bg-red-50 text-red-600' },
+  note: null,
+}
+const SUMMARY_FOLD = 4
+
+/** 바뀐 내용: 항목별 한 줄 목록, 수정/추가/삭제 표시, 길면 처음 몇 줄만 + 펼치기 */
+function ChangeSummary({ change, summary }: { change: VersionRow['change']; summary: string }) {
+  const [more, setMore] = useState(false)
+  const { head, items } = useMemo(() => parseVersionSummary(summary), [summary])
+  const list = more ? items : items.slice(0, SUMMARY_FOLD)
+  const counts = (['changed', 'added', 'removed'] as const)
+    .map((k) => [k, items.filter((x) => x.kind === k).length] as const)
+    .filter(([, n]) => n > 0)
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <span className="text-xs text-muted-foreground">[{CHANGE_LABEL[change]}]</span>
+        {head ? <span className="font-medium">{head}</span> : items.length <= 1 && <span>{items[0]?.text ?? summary}</span>}
+        {head && items.length > 1 && (
+          <span className="text-xs text-muted-foreground">
+            {counts.map(([k, n]) => `${KIND_TAG[k]!.label} ${n}`).join(' · ')}
+          </span>
+        )}
+      </div>
+      {(head || items.length > 1) && (
+        <ul className="flex flex-col gap-0.5">
+          {list.map((it, i) => {
+            const tag = KIND_TAG[it.kind]
+            return (
+              <li key={i} className="flex items-start gap-1.5 leading-snug">
+                {tag ? (
+                  <span className={cn('mt-px shrink-0 px-1 py-px text-[10px] font-semibold', tag.cls)}>{tag.label}</span>
+                ) : (
+                  <span className="mt-[7px] size-1 shrink-0 bg-muted-foreground/60" />
+                )}
+                <span className={cn(it.kind === 'removed' && 'text-muted-foreground line-through decoration-red-300')}>{it.text}</span>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {items.length > SUMMARY_FOLD && (
+        <button type="button" className="self-start text-xs text-electric underline" onClick={() => setMore((v) => !v)}>
+          {more ? '접기' : `나머지 ${items.length - SUMMARY_FOLD}개 더 보기`}
+        </button>
+      )}
+    </div>
+  )
 }
 
 /** 계약 확정(잠금) 안내 띠 */
@@ -136,16 +190,16 @@ export function VersionHistory({
       </div>
       {message && <p className="text-sm text-destructive">{message}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[980px] text-sm">
           <thead className="bg-secondary text-xs text-muted-foreground">
             <tr>
               <th className="w-10 px-2 py-2" />
-              <th className="w-36 px-2 py-2 text-left font-medium">버전</th>
-              <th className="w-36 px-2 py-2 text-left font-medium">저장 시각</th>
-              <th className="px-2 py-2 text-left font-medium">바뀐 내용</th>
+              <th className="w-28 px-2 py-2 text-left font-medium">버전</th>
+              <th className="w-32 px-2 py-2 text-left font-medium">저장 시각</th>
+              <th className="min-w-[380px] px-2 py-2 text-left font-medium">바뀐 내용</th>
               <th className="w-32 px-2 py-2 text-right font-medium">공급가액</th>
               <th className="w-24 px-2 py-2 text-left font-medium">저장한 사람</th>
-              <th className="w-56 px-2 py-2" />
+              <th className="w-52 px-2 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -154,7 +208,7 @@ export function VersionHistory({
               const diff = prev ? v.supply - prev.supply : 0
               const isViewing = viewing === v.no || (viewing === null && v.no === latest)
               return (
-                <tr key={v.no} className={cn('border-t border-border', isViewing && 'bg-electric/5')}>
+                <tr key={v.no} className={cn('border-t border-border align-top', isViewing && 'bg-electric/5')}>
                   <td className="px-2 py-2 text-center">
                     <input type="checkbox" aria-label={`v${v.no} 비교에 넣기`} checked={picked.includes(v.no)} onChange={() => toggle(v.no)} />
                   </td>
@@ -163,10 +217,9 @@ export function VersionHistory({
                     {i === 0 && v.no === latest && <span className="ml-1.5 bg-electric px-1.5 py-0.5 text-[10px] font-semibold text-white">최신</span>}
                     {finalized?.version === v.no && <span className="ml-1.5 bg-navy px-1.5 py-0.5 text-[10px] font-semibold text-white">계약본</span>}
                   </td>
-                  <td className="px-2 py-2 tabular-nums text-muted-foreground">{fmtAt(v.at)}</td>
+                  <td className="px-2 py-2 whitespace-nowrap tabular-nums text-muted-foreground">{fmtAt(v.at)}</td>
                   <td className="px-2 py-2">
-                    <span className="mr-1.5 text-xs text-muted-foreground">[{CHANGE_LABEL[v.change]}]</span>
-                    {v.summary}
+                    <ChangeSummary change={v.change} summary={v.summary} />
                   </td>
                   <td className="px-2 py-2 text-right tabular-nums">
                     {won(v.supply)}

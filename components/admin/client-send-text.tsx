@@ -32,7 +32,8 @@ export function ClientSendText({
 }) {
   const [open, setOpen] = useState(false)
   const [style, setStyle] = useState<SendTextStyle>('full')
-  const [password, setPassword] = useState('')
+  // 기본값 = 업체 연락처 뒤 4자리 (업체용 링크 비밀번호 관례, 2026-11-05 kevin "비번 자동 기본값"). 다르면 고쳐 씀
+  const [password, setPassword] = useState(() => phone.replace(/\D/g, '').slice(-4))
   const [text, setText] = useState('')
   const [edited, setEdited] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -125,7 +126,7 @@ export function ClientSendText({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">
-                비밀번호 {passwordSet ? '(저장된 값은 볼 수 없어 직접 입력, 저장 안 됨)' : '(아직 비밀번호 없음, 업체 정보에서 먼저 설정)'}
+                비밀번호 {passwordSet ? '(기본값 = 연락처 뒤 4자리. 다르게 정했으면 고쳐 넣음)' : '(아직 비밀번호 없음, 업체 정보에서 먼저 설정)'}
               </span>
               <input
                 value={password}

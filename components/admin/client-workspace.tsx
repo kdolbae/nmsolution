@@ -51,6 +51,7 @@ import {
   type QuoteSection,
 } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
+import { ClientSendText } from '@/components/admin/client-send-text'
 import { PresentOverlay, type PresentDoc } from '@/components/admin/present'
 import { LockBanner, VersionHistory, VersionView, type Finalized, type VersionRow } from '@/components/admin/client-versions'
 
@@ -120,6 +121,16 @@ export function ClientWorkspace({
   return (
     <div className="flex flex-col gap-5">
       <ClientHeader client={client} onSaved={setClient} />
+
+      <ClientSendText
+        clientName={client.name}
+        contactPerson={client.contactPerson}
+        phone={client.phone}
+        portalSlug={client.portalSlug}
+        passwordSet={client.portalPasswordSet}
+        title={initialQuote.title}
+        number={initialQuote.number}
+      />
 
       {finalized && <LockBanner finalized={finalized} />}
 

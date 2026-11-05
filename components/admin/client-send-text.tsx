@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Copy, Download, IdCard, MessageSquareText, Share2, Smartphone } from 'lucide-react'
+import { Check, Copy, Download, IdCard, Share2, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { quoteSendText, smsHref, type SendTextStyle } from '@/lib/clients/send-text'
 
@@ -21,6 +21,7 @@ export function ClientSendText({
   passwordSet,
   title,
   number,
+  open,
 }: {
   clientName: string
   contactPerson: string
@@ -29,8 +30,9 @@ export function ClientSendText({
   passwordSet: boolean
   title: string
   number: string
+  /** 업체 정보 칸의 '문자 만들기' 버튼으로 연다 */
+  open: boolean
 }) {
-  const [open, setOpen] = useState(false)
   const [style, setStyle] = useState<SendTextStyle>('full')
   // 기본값 = 업체 연락처 뒤 4자리 (업체용 링크 비밀번호 관례, 2026-11-05 kevin "비번 자동 기본값"). 다르면 고쳐 씀
   const [password, setPassword] = useState(() => phone.replace(/\D/g, '').slice(-4))
@@ -95,20 +97,10 @@ export function ClientSendText({
   const euckr = [...text].reduce((n, ch) => n + (ch.charCodeAt(0) > 127 ? 2 : 1), 0)
 
   return (
-    <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">견적서 발송 문자</h2>
-          <p className="text-xs text-muted-foreground">
-            업체 페이지 링크(열람 기록 남는 주소)와 비밀번호로 문자 문안을 만듦. 복사하거나 휴대폰 문자 앱으로 열어 직접 보냄.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" className="rounded-none" onClick={() => setOpen((v) => !v)}>
-          <MessageSquareText /> {open ? '닫기' : '문자 만들기'}
-        </Button>
-      </div>
+    <>
       {open && (
-        <div className="flex flex-col gap-3 border-t border-border pt-3">
+        <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5">
+          <p className="text-xs text-muted-foreground">업체 페이지 링크(열람 기록 남는 주소)와 비밀번호로 문안을 만듦. 복사하거나 휴대폰 문자 앱으로 열어 직접 보냄.</p>
           <div className="flex flex-wrap items-end gap-3 text-sm">
             <label className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">문안</span>
@@ -190,6 +182,6 @@ export function ClientSendText({
           </div>
         </div>
       )}
-    </section>
+    </>
   )
 }

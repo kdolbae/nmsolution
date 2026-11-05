@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FileText, MessageCircle, Phone, Plus, Smartphone, X } from 'lucide-react'
 import { track } from '@/lib/track'
 import { reportConversion } from '@/lib/tracking'
@@ -55,7 +55,25 @@ export function FloatingContact({
   phoneMobile: string
   kakaoUrl: string
 }) {
-  const [open, setOpen] = useState(false)
+  // 2026-11-05 광고 방문의 58%가 PC(평일 낮 사무실)인데, 접힌 '상담하기' 버튼은 눌러야 번호가 보여 문의로 이어지지 않았다.
+  // PC 에서는 번호·카톡·견적이 처음부터 펼쳐져 있게 하고, 손님이 한 번 닫으면 이 탭에서는 닫아 둔다.
+  const [open, setOpen] = useState(true)
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem('nm-contact-closed') === '1') setOpen(false)
+    } catch {
+      /* 저장소를 못 쓰는 환경이면 펼친 채로 둔다 */
+    }
+  }, [])
+  const toggle = () =>
+    setOpen((v) => {
+      try {
+        window.sessionStorage.setItem('nm-contact-closed', v ? '1' : '0')
+      } catch {
+        /* 무시 */
+      }
+      return !v
+    })
   const CHANNELS = channels(phoneMain, phoneMobile, kakaoUrl)
 
   return (
@@ -134,7 +152,7 @@ export function FloatingContact({
 
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         aria-expanded={open}
         aria-controls="contact-menu"
         aria-label={open ? '상담 메뉴 닫기' : '상담 메뉴 열기'}

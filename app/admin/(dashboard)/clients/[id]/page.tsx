@@ -6,6 +6,8 @@ import { ClientPortal } from "@/components/admin/client-portal";
 import { ClientSends } from "@/components/admin/client-sends";
 import { ClientWorkOrders } from "@/components/admin/client-work-orders";
 import { ClientMaterials } from "@/components/admin/client-materials";
+import { ClientExpenses } from "@/components/admin/client-expenses";
+import { listExpenses } from "@/lib/expenses/table";
 import { getMaterials } from "@/lib/materials/table";
 import { getWorkOrder, listWorkOrders } from "@/lib/work-orders/table";
 import { headers } from "next/headers";
@@ -61,6 +63,7 @@ export default async function AdminClientPage({
     portalVersion,
     workOrders,
     materials,
+    expenses,
     h,
   ] = await Promise.all([
     listVersions(client.id),
@@ -79,6 +82,7 @@ export default async function AdminClientPage({
     getPortalVersion(client.id),
     listWorkOrders(client.id),
     getMaterials(client.id),
+    listExpenses(client.id),
     headers(),
   ]);
   const editingWo = wo ? await getWorkOrder(client.id, Number(wo)) : null;
@@ -209,6 +213,10 @@ export default async function AdminClientPage({
       {/* 프로젝트 단계: 적산·자재 리스트 → 발주 (전 업체 공통) */}
       <div className="mt-5">
         <ClientMaterials clientId={client.id} clientName={client.name} initial={materials} />
+      </div>
+      {/* 프로젝트 단계: 발주·지출(원가). 어드민 전용, 고객 자료에 안 나감 */}
+      <div className="mt-5">
+        <ClientExpenses clientId={client.id} contractSupply={calcQuote(client.quote).supply} initial={expenses} />
       </div>
       {/* 프로젝트 마지막 단계: 현장 업무 지시서 (전 업체 공통) */}
       <div className="mt-5">

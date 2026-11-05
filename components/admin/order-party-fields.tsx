@@ -19,12 +19,21 @@ const FIELDS: [Exclude<keyof PoParty, 'form'>, string, string?][] = [
 export function PartyFields({ value, onChange }: { value: PoParty; onChange: (p: PoParty) => void }) {
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {FIELDS.map(([k, label, ph]) => (
+      {FIELDS.filter(([k]) => k !== 'memo').map(([k, label, ph]) => (
         <label key={k} className={k === 'address' ? 'flex flex-col gap-1 sm:col-span-2' : 'flex flex-col gap-1'}>
           <span className="text-xs text-muted-foreground">{label}</span>
           <TextIn value={value[k]} placeholder={ph} onChange={(v) => onChange({ ...value, [k]: v })} />
         </label>
       ))}
+      <label className="flex flex-col gap-1 sm:col-span-2">
+        <span className="text-xs text-muted-foreground">발주 메모 (내부용, 발주서에 안 찍힘 — 출고 공장·운임·결제·지난 단가)</span>
+        <textarea
+          value={value.memo}
+          onChange={(e) => onChange({ ...value, memo: e.target.value })}
+          rows={3}
+          className="w-full border border-input bg-background px-2 py-1 text-sm"
+        />
+      </label>
     </div>
   )
 }

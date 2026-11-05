@@ -81,3 +81,34 @@ https://www.nm-solution.co.kr/services/recovery?utm_source=naver&utm_medium=cpc&
 광고비·노출·클릭·순위는 이 사이트가 만들지 않습니다. **마케팅 상황판**과 **검색광고 상황판**은
 나노마스터 관리 화면의 같은 상황판(`?brand=nmsolution`)으로 열립니다(`lib/board-urls.ts`).
 나노마스터와 엔엠솔루션은 광고계정이 아예 달라 상황판도 갈립니다(도구에서 `--brand nmsolution`).
+
+---
+
+## 간단 문의(우측 하단 3문답)와 문의 알림
+
+우측 하단 박스(모바일은 하단 바 위 '간단 문의' 버튼)에서 **어떤 작업 → 위치(시·군) → 연락처** 순서로 받고,
+현장 사진은 선택으로 3장까지 붙습니다. 접수는 `quote_requests` 에 `form = 'quick'` 으로 들어가고
+관리자 → 견적 문의에 다른 문의와 같이 보입니다(`components/quick-inquiry.tsx`, `app/api/quick-inquiry/route.ts`).
+
+- **키워드와 검색어를 따로 저장합니다.** `utm_term` 은 등록 키워드(네이버 `n_keyword`), `search_query` 는 손님이 실제로 친
+  검색어(네이버 `n_query`, 없으면 네이버·다음 리퍼러의 검색어)입니다. 확장검색이면 둘이 다릅니다.
+- 관리자 → 자체 방문 기록 → **창구별 문의 비교**: 최근 N일과 직전 N일의 간단 문의·견적 폼·사진 견적·전화·카톡 버튼 수.
+  간단 문의를 켠 뒤 '최근 14일'로 보면 켜기 전 2주와 비교됩니다.
+
+### 알림 (관리자 → 견적 문의 맨 위에 켜짐/꺼짐이 보입니다)
+
+모든 접수 창구(간단 문의 · 견적 폼 · 사진 견적)가 켜진 수단으로 모두 알립니다. 비어 있으면 그 수단만 건너뜁니다.
+
+| 수단 | Vercel 변수 | 비고 |
+| --- | --- | --- |
+| 텔레그램 | `TELEGRAM_BOT_TOKEN` | 이미 설정됨 |
+| 메일 | `RESEND_API_KEY`, (선택) `NOTIFY_EMAIL`, `MAIL_FROM` | 받는 주소 기본값은 관리자 계정 메일. 보내는 도메인 nm-solution.co.kr 을 Resend 에서 인증해야 함 |
+| 카카오톡 | `KAKAO_REST_API_KEY`, (선택) `KAKAO_CLIENT_SECRET` | '나에게 보내기'. 무료, 비즈 심사 없음. 아래 설정 후 관리자 화면에서 '카카오톡 알림 연결하기' 한 번 |
+
+카카오 개발자 콘솔(developers.kakao.com) 설정:
+1. 내 애플리케이션 → 앱 만들기 → 앱 키의 **REST API 키**를 `KAKAO_REST_API_KEY` 로
+2. 카카오 로그인 → 활성화 ON, Redirect URI 에 `https://nm-solution.co.kr/api/admin/kakao/callback` 과
+   `https://www.nm-solution.co.kr/api/admin/kakao/callback` 등록
+3. 동의항목 → **카카오톡 메시지 전송(talk_message)** 선택 동의로 설정
+4. 플랫폼 → Web 사이트 도메인에 `https://nm-solution.co.kr`, `https://www.nm-solution.co.kr`
+5. Vercel 재배포 후 관리자 → 견적 문의 → '카카오톡 알림 연결하기' → 본인 카카오 계정으로 동의

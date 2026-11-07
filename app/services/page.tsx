@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: '사업소개',
-  description: '공장 개보수를 중심으로 누수 피해복구, 단열·곰팡이, 나노·UV 코팅, 코팅제 판매, 시공 교육까지.',
+  description:
+    '산업시설 구독형 턴키: 대형 탱크·장비 이전설치·설비배관·공압·덕트·공장 증축. 누수 복구·단열·코팅까지 한 팀이 맡습니다.',
   alternates: { canonical: '/services' },
 }
 

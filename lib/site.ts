@@ -87,11 +87,21 @@ export function localBusinessJsonLd({
     '@type': 'GeneralContractor',
     '@id': `${url}/#organization`,
     name: settings.companyName,
+    // '엔엠솔루션' · 'NM솔루션' · 'nm-solution' 어느 쪽으로 찾아도 같은 회사로 묶이게 한다
+    alternateName: BRAND_ALIASES,
     url,
+    logo: `${url}/apple-icon.png`,
     image: `${url}/images/hero-factory.png`,
+    slogan: '산업시설 구독형 턴키 전문회사',
     description:
-      '평택 고덕 기반 공장 개보수 전문. 철골·지붕·벽체, 배관 수리, 탱크 용접 보수, 스텐 고압배관 제작, 생산 장비 수리, 방음·흡음, 크린룸, 반도체 공장 공압·냉각수 배관까지 공장에서 생기는 수리를 범위를 나누지 않고 진행합니다.',
-    telephone: [toE164(settings.phoneMobile), toE164(settings.phoneMain)],
+      '산업시설 구독형 턴키 전문회사. 대형 탱크 제작·보수, 생산 장비 이전설치·셋업, 설비배관·스텐 고압배관, 공압·수배관·덕트, 냉동기 배관, 공장 증축·개축까지 공장 설비 공사를 한 팀이 처음부터 끝까지 맡습니다. 판넬·에폭시 같은 보수 공사도 함께 진행합니다. 평택 고덕 기반, 경기·충청 출장.',
+    // 대표번호를 먼저 둔다. 검색 결과에 한 번호만 보일 때 대표번호가 나가게 한다.
+    telephone: toE164(settings.phoneMain),
+    contactPoint: [
+      { '@type': 'ContactPoint', telephone: toE164(settings.phoneMain), contactType: 'customer service', areaServed: 'KR', availableLanguage: 'Korean' },
+      { '@type': 'ContactPoint', telephone: toE164(settings.phoneMobile), contactType: 'sales', areaServed: 'KR', availableLanguage: 'Korean' },
+    ],
+    knowsAbout: ['대형 탱크 제작', '장비 이전설치', '설비배관', '공압 배관', '덕트 공사', '냉동기 배관', '공장 증축', '산업시설 유지보수'],
     email: undefined,
     founder: { '@type': 'Person', name: settings.ceo },
     address: {
@@ -128,6 +138,27 @@ export function localBusinessJsonLd({
         },
       })),
     },
+  }
+}
+
+/** 회사 이름을 사람들이 검색하는 여러 표기 */
+export const BRAND_ALIASES = ['엔엠솔루션', 'NM SOLUTION', 'NM솔루션', '엔엠 솔루션', 'nm-solution']
+
+/**
+ * 사이트 이름 구조화 데이터. 구글은 검색 결과 맨 위 사이트 이름을 여기서 읽는다
+ * (없으면 도메인 'nm-solution.co.kr' 이 그대로 나간다).
+ */
+export function websiteJsonLd() {
+  const url = siteUrl()
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${url}/#website`,
+    name: '엔엠솔루션',
+    alternateName: BRAND_ALIASES,
+    url: `${url}/`,
+    inLanguage: 'ko-KR',
+    publisher: { '@id': `${url}/#organization` },
   }
 }
 

@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: '회사소개',
-  description: '엔엠솔루션 대표 인사말과 회사 정보.',
+  description:
+    '엔엠솔루션(NM SOLUTION) 회사소개. 플랜트 설비·공조·철골 현장 경험으로 산업시설 설비 공사를 턴키로 맡습니다. 평택 고덕, 대표번호 1800-5901.',
   alternates: { canonical: '/about' },
 }
 

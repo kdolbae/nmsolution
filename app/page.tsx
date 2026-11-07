@@ -9,7 +9,7 @@ import { ContactCta } from '@/components/contact-cta'
 import { SiteFooter } from '@/components/site-footer'
 import { FloatingContact, MobileContactBar } from '@/components/contact-widgets'
 import { getContent, getPublishedProjects } from '@/lib/content/get'
-import { jsonLdScript, localBusinessJsonLd } from '@/lib/site'
+import { jsonLdScript, localBusinessJsonLd, websiteJsonLd } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +29,7 @@ export default async function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(localBusinessJsonLd({ settings, services })) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
       <SiteHeader showProjects={settings.showProjects} showGallery={settings.showGallery} />
       <main>
         <Hero content={home.hero} />

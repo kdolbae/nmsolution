@@ -19,7 +19,7 @@ import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
-import { JJY_CLIENT, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
+import { JJY_CLIENT, JJY_REV2_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -623,6 +623,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'JJY', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
+      await seedOnce(JJY_REV2_KEY, () => refreshJjy('판넬 칸막이·도어와 위생 마감을 한 공종으로 합침, 공통(운반·폐기물)은 따로'))
     })().catch((e) => {
       ready = null
       throw e
@@ -1069,4 +1070,18 @@ export async function unfinalizeClient(id: number) {
 export async function removeClient(id: number) {
   await ensureClients()
   await pool.query(`DELETE FROM clients WHERE id = $1`, [id])
+}
+
+/** 정준영 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). 어드민에서 고친 메모는 건드리지 않는다. */
+async function refreshJjy(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [JJY_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = jjyQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }

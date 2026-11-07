@@ -8,6 +8,8 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
 export const JJY_SEED_KEY = 'jjy-food-factory-panel-2611-v1'
 /** 2026-11-07 kevin: 공종 세 개를 한 공종으로 합침 */
 export const JJY_REV2_KEY = 'jjy-food-factory-panel-2611-v2-one-section'
+/** 2026-11-07 kevin: 준불연 판넬 50T 단가 20,000 */
+export const JJY_REV3_KEY = 'jjy-food-factory-panel-2611-v3-panel-20k'
 
 export const JJY_CLIENT = {
   // 정식 상호·사업자번호·상세 주소는 아직 받지 못함. 받으면 업체 정보에서 넣는다
@@ -57,7 +59,7 @@ export function jjyQuote(date: string): Quote {
     title: '식품공장 판넬 칸막이·위생 마감',
     sections: [
       sec('식품공장 판넬 칸막이·위생 마감', '도면 빨간 선 구간(약 41m, 층고 2.6m)에 준불연 EPS 판넬 50T로 칸막이를 세우고 스윙도어·슬라이딩 도어를 설치함. 가공실·가열실·냉각실은 벽·천정·바닥 모서리를 알루미늄 라운드몰드로 둥글게 마감하고(참고 사진과 같은 방식), 기존 텍스 천정 위에 리빙우드를 덧붙임', [
-        ['재료비', '준불연 EPS 샌드위치 판넬', '50T, 품질인정 성적서, 양면 아이보리, 폭 1,000', 118, '㎡', 26100, '벽 106㎡ + 여유 10%'],
+        ['재료비', '준불연 EPS 샌드위치 판넬', '50T, 품질인정 성적서, 양면 아이보리, 폭 1,000', 118, '㎡', 20000, '벽 106㎡ + 여유 10%'],
         ['재료비', 'U바', '50T용, 바닥·천정 고정, 3m', 31, 'EA', 15500, ''],
         ['재료비', '코너 카바', '50T용 외·내코너, 3m', 14, 'EA', 10300, ''],
         ['재료비', '스윙도어 세트 (편개)', '900 × 2100, 50T, 문틀·도어록 포함', 5, '조', 140000, '가공실·냉각실·위생전실·탈의실·사무실'],

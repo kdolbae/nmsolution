@@ -19,7 +19,7 @@ import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
-import { JJY_CLIENT, JJY_REV2_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
+import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -624,6 +624,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`UPDATE clients SET quote_code = 'JJY', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
       await seedOnce(JJY_REV2_KEY, () => refreshJjy('판넬 칸막이·도어와 위생 마감을 한 공종으로 합침, 공통(운반·폐기물)은 따로'))
+      await seedOnce(JJY_REV3_KEY, () => refreshJjy('준불연 판넬 50T 단가 ㎡당 20,000'))
     })().catch((e) => {
       ready = null
       throw e

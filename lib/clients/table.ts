@@ -19,6 +19,8 @@ import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
+import { JJY_CLIENT, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
+import { JJY_PAGE_HTML } from './jjy-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -600,6 +602,26 @@ export function ensureClients(): Promise<void> {
         )
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'GNT', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
+      })
+      // 정준영: 부천 지식산업센터 식품공장 판넬 칸막이(2026-11-07). 휴대폰·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(JJY_SEED_KEY, async () => {
+        const c = JJY_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = jjyQuote(today())
+        const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', $1, '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'JJY', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
     })().catch((e) => {
       ready = null

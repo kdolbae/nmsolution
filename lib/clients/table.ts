@@ -19,7 +19,7 @@ import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
-import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
+import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -631,6 +631,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(JJY_REV7_KEY, () => refreshJjy('슬라이딩(행거) 도어 조당 600,000, 폐기물 처리 600,000'))
       await seedOnce(JJY_REV8_KEY, () => refreshJjy('자재 단가 조정(판넬·도어·라운드몰드·U바 등), 운반비 500,000'))
       await seedOnce(JJY_REV9_KEY, () => refreshJjy('공사 기간 6일, 6일차 2명 (총 22 인·일)'))
+      await seedOnce(JJY_REV10_KEY, () => refreshJjy('준불연 판넬 ㎡ 단위 (122.2㎡ × 23,100)'))
     })().catch((e) => {
       ready = null
       throw e

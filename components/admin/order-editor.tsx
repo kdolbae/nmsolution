@@ -9,13 +9,15 @@ import { Section } from '@/components/admin/form'
 import { NumInput, TextIn } from '@/components/admin/inputs'
 import { PartyFields } from '@/components/admin/order-party-fields'
 import { FlashingItems } from '@/components/admin/flashing-items'
+import { PricePicker } from '@/components/admin/order-prices'
+import type { PoPriceRow } from '@/lib/orders/prices'
 import { FL_SEOUL_SET } from '@/lib/orders/flashing'
 import { createOrder, deleteOrder, saveOrder } from '@/app/actions/orders'
 import { calcOrder, emptyPoItem, itemAmount, itemMeters, PO_STATUSES, renderOrderHtml, type PoItem, type PoParty, type PoPartyRow, type PoStatus, type PurchaseOrder, PO_FORMS, type PoForm } from '@/lib/orders/doc'
 
 const fmt = (n: number, d = 0) => (n ? n.toLocaleString('ko-KR', { maximumFractionDigits: d }) : '')
 
-export function OrderEditor({ id, initial, parties }: { id: number; initial: PurchaseOrder; parties: PoPartyRow[] }) {
+export function OrderEditor({ id, initial, parties, prices = [] }: { id: number; initial: PurchaseOrder; parties: PoPartyRow[]; prices?: PoPriceRow[] }) {
   const router = useRouter()
   const [o, setO] = useState(initial)
   const [dirty, setDirty] = useState(false)
@@ -205,6 +207,16 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
           <Button size="sm" variant="outline" onClick={() => setPlain([...plain, emptyPoItem()])}>
             <Plus /> 품목 추가
           </Button>
+          <PricePicker
+            prices={prices}
+            supplierName={o.supplier.name}
+            onPick={(p) => {
+              // 빈 줄이 있으면 그 줄을 채우고, 없으면 새 줄. 판넬(m 기준)은 길이·수량을 넣으면 금액이 나옴
+              const item: PoItem = { ...emptyPoItem(), name: p.name, spec: p.spec, unit: p.basis === 'm' ? '장' : p.unit, basis: p.basis, price: p.price, note: '' }
+              const blank = plain.findIndex((it) => !it.name && !it.spec && !it.qty && !it.price)
+              setPlain(blank >= 0 ? plain.map((it, i) => (i === blank ? { ...item, id: it.id } : it)) : [...plain, item])
+            }}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={o.hidePrice} onChange={(e) => set('hidePrice', e.target.checked)} /> 금액란 숨김 (수량만 발주)
           </label>

@@ -1,16 +1,17 @@
 import { PageHeader } from '@/components/admin/form'
 import { OrdersList } from '@/components/admin/orders-list'
 import { calcOrder } from '@/lib/orders/doc'
-import { listOrders, listParties } from '@/lib/orders/table'
+import { listOrders, listParties, listPrices } from '@/lib/orders/table'
+import { PriceBook } from '@/components/admin/order-prices'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminOrdersPage() {
   let error = false
-  const [orders, parties] = await Promise.all([listOrders(), listParties()]).catch((e) => {
+  const [orders, parties, prices] = await Promise.all([listOrders(), listParties(), listPrices()]).catch((e) => {
     console.error('[admin] 발주서 조회 실패', e)
     error = true
-    return [[], []] as [Awaited<ReturnType<typeof listOrders>>, Awaited<ReturnType<typeof listParties>>]
+    return [[], [], []] as [Awaited<ReturnType<typeof listOrders>>, Awaited<ReturnType<typeof listParties>>, Awaited<ReturnType<typeof listPrices>>]
   })
   return (
     <>
@@ -33,6 +34,7 @@ export default async function AdminOrdersPage() {
           parties={parties}
         />
       )}
+      {!error && <PriceBook prices={prices} />}
     </>
   )
 }

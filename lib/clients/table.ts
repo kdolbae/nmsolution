@@ -19,7 +19,7 @@ import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
-import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
+import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -627,6 +627,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(JJY_REV3_KEY, () => refreshJjy('준불연 판넬 50T 단가 ㎡당 20,000'))
       await seedOnce(JJY_REV4_KEY, () => refreshJjy('공사 기간 7일: 실측 2명 1일, 자재 반입 2명 1일, 시공·마무리 4명 5일'))
       await seedOnce(JJY_REV5_KEY, () => refreshJjy('클린룸(가공·가열·냉각실) 안팎 천정·바닥 한쪽 R, 안·밖 모서리 기둥 양쪽 R 라운드몰드'))
+      await seedOnce(JJY_REV6_KEY, () => refreshJjy('판넬 2,600 × 47m(47장), U바 35본'))
     })().catch((e) => {
       ready = null
       throw e

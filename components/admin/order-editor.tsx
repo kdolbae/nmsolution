@@ -80,8 +80,8 @@ export function OrderEditor({ id, initial, parties }: { id: number; initial: Pur
   const pickParty = (kind: 'issuer' | 'supplier', pid: string) => {
     const p = parties.find((x) => String(x.id) === pid)
     if (!p) return
-    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } = p
-    set(kind, { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } satisfies PoParty)
+    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, memo } = p
+    set(kind, { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, memo } satisfies PoParty)
   }
 
   return (

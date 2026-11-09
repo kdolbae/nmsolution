@@ -20,6 +20,7 @@ import {
   updateQuote,
   updateQuoteLabel,
   setPortalPasswordHash,
+  phonePortalPassword,
   LOCKED_MESSAGE,
   type ClientInfo,
 } from '@/lib/clients/table'
@@ -66,8 +67,16 @@ function portalSlug(v: unknown) {
   return s
 }
 
-async function savePortalPassword(id: number, password: unknown) {
-  const pw = String(password ?? '')
+/**
+ * 비밀번호를 직접 넣으면 그것으로, 비워 두면 연락처 뒤 4자리로 자동 설정(kevin 2026-11-09).
+ * 자동 설정은 비밀번호가 아직 없거나 연락처가 바뀌었을 때만 함.
+ */
+async function savePortalPassword(id: number, password: unknown, auto?: { phone: string; prevPhone: string; hasPassword: boolean }) {
+  let pw = String(password ?? '')
+  if (!pw && auto) {
+    const next = phonePortalPassword(auto.phone)
+    if (next && (!auto.hasPassword || phonePortalPassword(auto.prevPhone) !== next)) pw = next
+  }
   if (!pw) return
   if (pw.length < 4) throw new Error('업체용 링크 비밀번호는 4자 이상으로 입력해 주세요.')
   await setPortalPasswordHash(id, await hashPortalPassword(pw))
@@ -94,6 +103,7 @@ export async function createClient(input: ClientInfo, copyFrom?: number | null) 
     quote = emptyQuote()
   }
   const id = await insertClient(info, proposal, quote, who(user))
+  await savePortalPassword(id, '', { phone: info.phone, prevPhone: '', hasPassword: false })
   after(() => notifySbworks(id, 'company'))
   revalidatePath('/admin/clients')
   return { ok: true as const, id }
@@ -145,12 +155,14 @@ export async function saveClientInfo(id: number, input: ClientInfo, portalPasswo
     if (!root) throw new Error('업체를 찾을 수 없습니다.')
     const info = cleanInfo({ ...input, portalSlug: root.portalSlug, portalLogin: root.portalLogin, memo: root.memo })
     await updateClientInfo(root.id, info)
+    await savePortalPassword(root.id, '', { phone: info.phone, prevPhone: root.phone, hasPassword: root.portalPasswordSet })
     after(() => notifySbworks(root.id, 'company'))
     revalidatePath('/admin/clients', 'layout')
     return { ok: true as const }
   }
-  await updateClientInfo(id, cleanInfo(input))
-  await savePortalPassword(id, portalPassword)
+  const info = cleanInfo(input)
+  await updateClientInfo(id, info)
+  await savePortalPassword(id, portalPassword, cur ? { phone: info.phone, prevPhone: cur.phone, hasPassword: cur.portalPasswordSet } : undefined)
   after(() => notifySbworks(id, 'company'))
   revalidatePath('/admin/clients', 'layout')
   return { ok: true as const }

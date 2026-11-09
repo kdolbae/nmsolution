@@ -118,7 +118,7 @@ export function ClientSendText({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">
-                비밀번호 {passwordSet ? '(기본값 = 연락처 뒤 4자리. 다르게 정했으면 고쳐 넣음)' : '(아직 비밀번호 없음, 업체 정보에서 먼저 설정)'}
+                비밀번호 {passwordSet ? '(기본값 = 연락처 뒤 4자리. 다르게 정했으면 고쳐 넣음)' : '(아직 비밀번호 없음. 업체 정보에 연락처를 넣고 저장하면 뒤 4자리로 자동 설정)'}
               </span>
               <input
                 value={password}

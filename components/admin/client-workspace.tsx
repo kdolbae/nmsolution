@@ -285,7 +285,7 @@ function ClientHeader({
       setError('')
       try {
         await saveClientInfo(client.id, form, portalPassword)
-        const next = { ...form, portalPasswordSet: form.portalPasswordSet || !!portalPassword }
+        const next = { ...form, portalPasswordSet: form.portalPasswordSet || !!portalPassword || form.phone.replace(/\D/g, '').length >= 4 }
         setForm(next)
         setPortalPassword('')
         onSaved(next)
@@ -387,7 +387,7 @@ function ClientHeader({
               label="업체용 링크 새 비밀번호"
               value={portalPassword}
               onChange={setPortalPassword}
-              hint={form.portalPasswordSet ? '업체는 이 비밀번호만 넣고 들어옴. 비워 두면 지금 비밀번호를 그대로 씀' : '업체는 이 비밀번호만 넣고 들어옴. 아직 비밀번호가 없음'}
+              hint="업체는 이 비밀번호만 넣고 들어옴. 비워 두면 연락처 뒤 4자리로 자동 설정(연락처를 바꾸면 같이 바뀜), 이미 있으면 그대로 씀"
             />
             <div className="sm:col-span-2">
               <Field label="메모·조사 자료 (내부용, 인쇄 안 됨)" value={form.memo} onChange={set('memo')} multiline rows={8} />

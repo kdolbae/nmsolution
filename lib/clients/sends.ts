@@ -282,6 +282,7 @@ const DEFAULT_CODES: [slug: string, code: string, work: string][] = [
   ['seoulglass', 'SCG', 'PANEL'],
   ['ganatm', 'GNT', 'PANEL'],
   ['jjy', 'JJY', 'PANEL'],
+  ['decopave', 'DCP', 'MECH'],
   ['kkt', 'KKT', 'HEAVY'],
 ]
 

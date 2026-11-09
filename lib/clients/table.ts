@@ -21,6 +21,8 @@ import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
 import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
+import { DECOPAVE_CLIENT, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -632,6 +634,26 @@ export function ensureClients(): Promise<void> {
       await seedOnce(JJY_REV8_KEY, () => refreshJjy('자재 단가 조정(판넬·도어·라운드몰드·U바 등), 운반비 500,000'))
       await seedOnce(JJY_REV9_KEY, () => refreshJjy('공사 기간 6일, 6일차 2명 (총 22 인·일)'))
       await seedOnce(JJY_REV10_KEY, () => refreshJjy('준불연 판넬 ㎡ 단위 (122.2㎡ × 23,100)'))
+      // (주)데코페이브: 단양 양생굴 15·16번 CO₂ 개조 배관·덕트(2026-11-09). 링크 비밀번호는 담당자 휴대폰 뒷번호 4자리, 휴대폰은 어드민에서 입력(공개 저장소)
+      await seedOnce(DECOPAVE_SEED_KEY, async () => {
+        const c = DECOPAVE_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = decopaveQuote(today())
+        const proposal = DECOPAVE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login, portal_password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin, await hashPortalPassword(c.portalPassword)],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'DCP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
+      })
     })().catch((e) => {
       ready = null
       throw e

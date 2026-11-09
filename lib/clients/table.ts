@@ -632,6 +632,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(JJY_REV8_KEY, () => refreshJjy('자재 단가 조정(판넬·도어·라운드몰드·U바 등), 운반비 500,000'))
       await seedOnce(JJY_REV9_KEY, () => refreshJjy('공사 기간 6일, 6일차 2명 (총 22 인·일)'))
       await seedOnce(JJY_REV10_KEY, () => refreshJjy('준불연 판넬 ㎡ 단위 (122.2㎡ × 23,100)'))
+      await seedOnce('portal-password-from-phone-261109', fillPortalPasswordsFromPhone)
     })().catch((e) => {
       ready = null
       throw e
@@ -711,6 +712,26 @@ async function refreshSeoulglass(summary: string) {
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = SEOULGLASS_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/**
+ * 업체 링크 비밀번호가 아직 없는 업체는 연락처 뒤 4자리로 채운다(kevin 2026-11-09).
+ * 이미 비밀번호가 있는 업체(보낸 링크)는 건드리지 않는다.
+ */
+async function fillPortalPasswordsFromPhone() {
+  const { rows } = await pool.query<{ id: string; phone: string | null }>(
+    `SELECT id, phone FROM clients WHERE parent_id IS NULL AND portal_password_hash IS NULL AND COALESCE(phone, '') <> ''`,
+  )
+  for (const r of rows) {
+    const pw = phonePortalPassword(r.phone ?? '')
+    if (pw) await pool.query(`UPDATE clients SET portal_password_hash = $2 WHERE id = $1`, [r.id, await hashPortalPassword(pw)])
+  }
+}
+
+/** 연락처 뒤 4자리 = 업체 링크 기본 비밀번호. 숫자가 4자리보다 적으면 빈 값 */
+export function phonePortalPassword(phone: string): string {
+  const d = phoneDigits(phone)
+  return d.length >= 4 ? d.slice(-4) : ''
 }
 
 /**

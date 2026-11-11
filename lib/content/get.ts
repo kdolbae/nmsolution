@@ -41,7 +41,3 @@ export async function getPublishedProjects() {
     return []
   }
 }
-
-export async function getAllProjects() {
-  return db.select().from(projects).orderBy(asc(projects.sortOrder), desc(projects.createdAt))
-}

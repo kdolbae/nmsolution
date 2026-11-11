@@ -3,29 +3,22 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Layers, User, Images, Settings, Download, ExternalLink, LogOut, LayoutDashboard, Building2, Inbox, BarChart3, Search, KeyRound, Activity, Menu, X, Eye, ClipboardList } from 'lucide-react'
+import { Home, ExternalLink, LogOut, Building2, Inbox, KeyRound, Menu, X, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
-import { BOARD_ADS_URL, BOARD_STATS_URL } from '@/lib/board-urls'
 import { ADMIN_MARK_COOKIE } from '@/components/admin-fab'
 import { LogoImage } from '@/components/brand'
 
 
+// 홈페이지 내용·견적 문의·업체 접속 기록·발주서는 N-CMS(sbworks.bond)로 옮겼다(kevin 2026-11-10·11).
+// 업체 관리(견적·업무지시서·자재·적산·명함)만 N-CMS 1차-b 까지 여기 남긴다.
+const NCMS = 'https://sbworks.bond'
 const LINKS: Array<{ href: string; label: string; icon: typeof Home; external?: boolean }> = [
-  { href: '/admin', label: '대시보드', icon: LayoutDashboard },
   { href: '/admin/clients', label: '업체 관리', icon: Building2 },
-  { href: '/admin/access', label: '업체 접속 기록', icon: Eye },
-  { href: '/admin/orders', label: '발주서', icon: ClipboardList },
-  { href: BOARD_STATS_URL, label: '마케팅 상황판', icon: BarChart3, external: true },
-  { href: BOARD_ADS_URL, label: '검색광고 상황판', icon: Search, external: true },
-  { href: '/admin/stats', label: '자체 방문 기록', icon: Activity },
-  { href: '/admin/quotes', label: '견적 문의', icon: Inbox },
-  { href: '/admin/home', label: '메인 페이지', icon: Home },
-  { href: '/admin/services', label: '사업소개', icon: Layers },
-  { href: '/admin/about', label: '회사소개', icon: User },
-  { href: '/admin/projects', label: '시공사례', icon: Images },
-  { href: '/admin/settings', label: '사이트 설정', icon: Settings },
   { href: '/admin/account', label: '계정 · 비밀번호', icon: KeyRound },
+  { href: `${NCMS}/homepage`, label: '홈페이지 내용 (N-CMS)', icon: Home, external: true },
+  { href: `${NCMS}/inbox`, label: '견적 문의 (N-CMS)', icon: Inbox, external: true },
+  { href: `${NCMS}/orders`, label: '발주서 (N-CMS)', icon: ClipboardList, external: true },
 ]
 
 export function AdminSidebar({ userName }: { userName: string }) {
@@ -80,7 +73,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
                 <ExternalLink className="ml-auto size-3.5 opacity-50" strokeWidth={1.75} />
               </a>
             )
-          const active = l.href === '/admin' ? pathname === '/admin' : pathname.startsWith(l.href)
+          const active = pathname.startsWith(l.href)
           return (
             <Link
               key={l.href}
@@ -98,13 +91,6 @@ export function AdminSidebar({ userName }: { userName: string }) {
 
         <div className="my-3 border-t border-border" />
 
-        <a
-          href="/api/admin/export"
-          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-secondary hover:text-foreground"
-        >
-          <Download className="size-4" strokeWidth={1.75} />
-          코드 다운로드
-        </a>
         <Link
           href="/"
           target="_blank"

@@ -6,7 +6,7 @@ import { geoOf, sendToBoard, type BoardEvent } from '@/lib/board-sync'
 export const dynamic = 'force-dynamic'
 
 /**
- * 방문·유입·문의 기록 받기 (lib/site-events.ts 가 보낸다). 화면은 /admin/stats.
+ * 방문·유입·문의 기록 받기 (lib/site-events.ts 가 보낸다). 자체 방문 기록 화면(/admin/stats)은 없앴고, 사본이 나노마스터 상황판으로 간다(lib/board-sync.ts).
  * 개인정보는 받지 않는다. 봇·관리자 화면은 거른다. 실패해도 방문자에게는 204 를 돌려준다.
  * 적은 줄은 나노마스터 상황판으로 사본을 보낸다(lib/board-sync.ts). 응답 뒤에 보내 방문자를 기다리게 하지 않는다.
  */

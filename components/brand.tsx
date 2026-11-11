@@ -6,7 +6,7 @@ export const COMPANY = {
   name: '엔엠솔루션 (NM SOLUTION)',
   ceo: '김성배',
   bizNumber: '736-88-01988',
-  address: '경기도 평택시 고덕동 도시지원로 121 지식공장아이타워 906호',
+  address: '경기도 평택시 고덕면 도시지원로 121 지식공장아이티센터 322호',
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   telMain: 'tel:1800-5901',
@@ -26,6 +26,7 @@ export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidde
 
 /** 헤더 배너에 노출되는 기타 사업분야 (사업소개 상세 페이지로 이동) */
 export const OTHER_SERVICES = [
+  { label: '대형플랜트 설비', href: '/services/plant' },
   { label: '누수 피해복구', href: '/services/recovery' },
   { label: '단열 · 결로 · 곰팡이', href: '/services/insulation' },
   { label: '나노 · UV 코팅', href: '/services/coating' },

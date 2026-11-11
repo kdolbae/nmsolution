@@ -16,6 +16,7 @@ import {
   ImagePlus,
   Loader2,
   Lock,
+  MessageSquareText,
   MonitorPlay,
   Pencil,
   Plus,
@@ -51,6 +52,7 @@ import {
   type QuoteSection,
 } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
+import { ClientSendText } from '@/components/admin/client-send-text'
 import { PresentOverlay, type PresentDoc } from '@/components/admin/present'
 import { LockBanner, VersionHistory, VersionView, type Finalized, type VersionRow } from '@/components/admin/client-versions'
 
@@ -119,7 +121,7 @@ export function ClientWorkspace({
 
   return (
     <div className="flex flex-col gap-5">
-      <ClientHeader client={client} onSaved={setClient} />
+      <ClientHeader client={client} onSaved={setClient} quoteTitle={initialQuote.title} quoteNumber={initialQuote.number} />
 
       {finalized && <LockBanner finalized={finalized} />}
 
@@ -257,7 +259,18 @@ export function ClientWorkspace({
 
 // ---------- 업체 정보 ----------
 
-function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: ClientInfo) => void }) {
+function ClientHeader({
+  client,
+  onSaved,
+  quoteTitle,
+  quoteNumber,
+}: {
+  client: ClientInfo
+  onSaved: (c: ClientInfo) => void
+  quoteTitle: string
+  quoteNumber: string
+}) {
+  const [smsOpen, setSmsOpen] = useState(false)
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(client)
@@ -318,6 +331,16 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
                 {copied ? <Check className="size-3" /> : <Copy className="size-3" />} {copied ? '복사됨' : '링크 복사'}
               </button>
               <span className="text-muted-foreground"> · 비밀번호만 입력해 열람{client.portalPasswordSet ? '' : ' · 비밀번호 미정'}</span>
+              <button
+                type="button"
+                onClick={() => setSmsOpen((v) => !v)}
+                className={cn(
+                  'ml-3 inline-flex items-center gap-1 border px-1.5 py-0.5 align-middle text-xs',
+                  smsOpen ? 'border-navy bg-navy text-white' : 'border-border hover:bg-muted',
+                )}
+              >
+                <MessageSquareText className="size-3" /> {smsOpen ? '문자 닫기' : '문자 만들기'}
+              </button>
             </p>
           )}
         </div>
@@ -334,6 +357,16 @@ function ClientHeader({ client, onSaved }: { client: ClientInfo; onSaved: (c: Cl
           </Button>
         </div>
       </div>
+      <ClientSendText
+        open={smsOpen && !!client.portalSlug}
+        clientName={client.name}
+        contactPerson={client.contactPerson}
+        phone={client.phone}
+        portalSlug={client.portalSlug}
+        passwordSet={client.portalPasswordSet}
+        title={quoteTitle}
+        number={quoteNumber}
+      />
       {open && (
         <div className="mt-5 flex flex-col gap-4 border-t border-border pt-5">
           <div className="grid gap-4 sm:grid-cols-2">

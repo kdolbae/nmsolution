@@ -19,6 +19,10 @@ import { SEOULGLASS_CLIENT, SEOULGLASS_REV2_KEY, SEOULGLASS_REV3_KEY, SEOULGLASS
 import { SEOULGLASS_PAGE_HTML } from './seoulglass-page'
 import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
+import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
+import { JJY_PAGE_HTML } from './jjy-page'
+import { DESIAN_CLIENT, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
+import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -601,6 +605,55 @@ export function ensureClients(): Promise<void> {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'GNT', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
+      // 정준영: 부천 지식산업센터 식품공장 판넬 칸막이(2026-11-07). 휴대폰·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(JJY_SEED_KEY, async () => {
+        const c = JJY_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = jjyQuote(today())
+        const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', $1, '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'JJY', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
+      })
+      await seedOnce(JJY_REV2_KEY, () => refreshJjy('판넬 칸막이·도어와 위생 마감을 한 공종으로 합침, 공통(운반·폐기물)은 따로'))
+      await seedOnce(JJY_REV3_KEY, () => refreshJjy('준불연 판넬 50T 단가 ㎡당 20,000'))
+      await seedOnce(JJY_REV4_KEY, () => refreshJjy('공사 기간 7일: 실측 2명 1일, 자재 반입 2명 1일, 시공·마무리 4명 5일'))
+      await seedOnce(JJY_REV5_KEY, () => refreshJjy('클린룸(가공·가열·냉각실) 안팎 천정·바닥 한쪽 R, 안·밖 모서리 기둥 양쪽 R 라운드몰드'))
+      await seedOnce(JJY_REV6_KEY, () => refreshJjy('판넬 2,600 × 47m(47장), U바 35본'))
+      await seedOnce(JJY_REV7_KEY, () => refreshJjy('슬라이딩(행거) 도어 조당 600,000, 폐기물 처리 600,000'))
+      await seedOnce(JJY_REV8_KEY, () => refreshJjy('자재 단가 조정(판넬·도어·라운드몰드·U바 등), 운반비 500,000'))
+      await seedOnce(JJY_REV9_KEY, () => refreshJjy('공사 기간 6일, 6일차 2명 (총 22 인·일)'))
+      await seedOnce(JJY_REV10_KEY, () => refreshJjy('준불연 판넬 ㎡ 단위 (122.2㎡ × 23,100)'))
+      // 생각공장 데시앙플렉스 관리사무소: 오배수 패키지 펌프·집수정 펌프·부스터 펌프 정비(2026-11-11). 담당자·연락처·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(DESIAN_SEED_KEY, async () => {
+        const c = DESIAN_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = desianQuote(today())
+        const proposal = DESIAN_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'DSP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
+      })
     })().catch((e) => {
       ready = null
       throw e
@@ -1047,4 +1100,18 @@ export async function unfinalizeClient(id: number) {
 export async function removeClient(id: number) {
   await ensureClients()
   await pool.query(`DELETE FROM clients WHERE id = $1`, [id])
+}
+
+/** 정준영 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(최종본 확정 전일 때만, 견적번호 유지). 어드민에서 고친 메모는 건드리지 않는다. */
+async function refreshJjy(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [JJY_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = jjyQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }

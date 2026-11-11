@@ -1,5 +1,7 @@
 'use client'
 
+import { isPreview } from '@/lib/preview'
+
 /**
  * 방문·유입·문의 기록 (우리 원장). 관리자 화면 /admin/stats 가 이걸로 채널·검색어별 성과를 본다.
  * 나노마스터(nanomaster.co.kr)의 site_events 와 같은 방식이다.
@@ -118,7 +120,7 @@ function visitor(): { visitor_id: string; is_new: boolean } {
 }
 
 function send(type: Kind, extra: { label?: string; seconds?: number; scroll?: number } = {}) {
-  if (typeof window === 'undefined' || location.pathname.startsWith('/admin') || isInternal()) return
+  if (typeof window === 'undefined' || location.pathname.startsWith('/admin') || isInternal() || isPreview()) return
   const body = JSON.stringify({
     type,
     ...extra,

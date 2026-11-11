@@ -6,7 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { quoteDocument, type Quote, type QuoteRecipient } from '@/lib/clients/quote'
 import { withBrandFont } from '@/lib/clients/proposal'
-import { PresentOverlay, type PresentDoc } from '@/components/admin/present'
+import { PresentOverlay, type PresentDoc } from '@/components/portal/present'
 
 type Tab = 'proposal' | 'quote'
 

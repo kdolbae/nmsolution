@@ -23,6 +23,8 @@ import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY
 import { JJY_PAGE_HTML } from './jjy-page'
 import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
 import { DESIAN_PAGE_HTML } from './desianplex-page'
+import { AIRRANE_CLIENT, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
+import { AIRRANE_PAGE_HTML } from './airrane-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -657,6 +659,26 @@ export function ensureClients(): Promise<void> {
       await seedOnce(DESIAN_REV2_KEY, () => refreshDesian('1안 제안 이유: 이물로 인한 과부하(오버로드)'))
       await seedOnce(DESIAN_REV3_KEY, () => refreshDesian('펌프 2안 커터형 1,300,000, 3안 패키지 7,700,000(설치 포함)·관리 인력 축소, 기존 설비 반출 별도'))
       await seedOnce(DESIAN_REV4_KEY, () => refreshDesian('펌프 3안 패키지 8,100,000(설치 포함)'))
+      // (주)에어레인: 청주 세정액실 판넬 구획·제전커튼·국소배기(2026-11-11). 담당자·연락처·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(AIRRANE_SEED_KEY, async () => {
+        const c = AIRRANE_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = airraneQuote(today())
+        const proposal = AIRRANE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'ARN', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
+      })
     })().catch((e) => {
       ready = null
       throw e

@@ -8,7 +8,11 @@ export function quoteSummaryHtml(q: Quote): string {
   return `<div class="qsum">
   <div class="qcard main"><div class="l">합계 금액 (부가세 포함)</div><div class="v">₩${won(calc.grand)}</div><div class="s">공급가액 ${won(calc.supply)} + 부가세 ${won(calc.vat)}</div></div>
   ${
-    calc.options > 0
+    calc.options > 0 && q.optionEach
+      ? q.sections
+          .map((s, i) => (s.option ? `<div class="qcard opt"><div class="l">${esc(q.optionLabel || '선택 항목')} · ${esc(s.name)}</div><div class="v">₩${won(calc.sections[i].total)}</div><div class="s">부가세 별도</div></div>` : ''))
+          .join('')
+      : calc.options > 0
       ? `<div class="qcard opt"><div class="l">${esc(q.optionLabel || '선택 항목')} · ${esc(optNames.join(', '))}</div><div class="v">+₩${won(calc.options)}</div><div class="s">부가세 별도 · 적용 시 견적금액에 더함</div></div>`
       : ''
   }

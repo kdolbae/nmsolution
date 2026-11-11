@@ -6,25 +6,17 @@ import { auth, partnerSignup } from '@/lib/auth'
 import { adminEmails, requireAdmin } from '@/lib/admin'
 import { isAdminEmail } from '@/lib/auth-roles'
 import { mailEnabled, mailLayout, sendMail } from '@/lib/mail'
-import { siteUrl } from '@/lib/site'
 import {
   addMember,
   deletePartnerUser,
-  emailTaken,
-  endSessions,
   findClientByCode,
   formatCode,
-  isPhone,
-  memberAccount,
-  phoneDigits,
-  setPasswordHash,
   regenerateCode,
   removeMember,
-  setMemberStatus,
   setPortalOpen,
   type MemberStatus,
 } from '@/lib/portal/members'
-import { getClient } from '@/lib/clients/table'
+import { approveUrl, changeStatus, createAccounts, resetPasswordToPhone, type AccountInput, type AccountResult } from '@/lib/portal/admin'
 
 /** 코드 맞히기 막기: IP 마다 10분에 20번 */
 const tries = new Map<string, { n: number; t: number }>()
@@ -97,7 +89,7 @@ export async function partnerSignUp(input: SignupInput): Promise<{ ok: true; ver
       html: mailLayout({
         title: '새 관계자 가입',
         lines: [`${client.name} · ${name}${title ? ` ${title}` : ''} (${email}${phone ? `, ${phone}` : ''})`, '업체 관리에서 승인해야 포털을 쓸 수 있습니다.'],
-        button: { label: '승인하러 가기', url: `${siteUrl()}/admin/clients/${client.id}` },
+        button: { label: '승인하러 가기', url: approveUrl(client.id) },
       }),
     })
   }
@@ -121,19 +113,7 @@ export async function togglePortal(clientId: number, open: boolean) {
 
 export async function changeMemberStatus(memberId: number, status: MemberStatus) {
   const admin = await requireAdmin()
-  if (!['approved', 'suspended', 'pending'].includes(status)) throw new Error('잘못된 상태')
-  const m = await setMemberStatus(memberId, status, admin.name || admin.email)
-  if (status === 'approved' && m.email) {
-    await sendMail({
-      to: m.email,
-      subject: '[엔엠솔루션] 협력업체 포털 가입이 승인되었습니다',
-      html: mailLayout({
-        title: '가입 승인 완료',
-        lines: [`${m.name}님, 이제 엔엠솔루션 협력업체 포털에 로그인할 수 있습니다.`],
-        button: { label: '로그인', url: `${siteUrl()}/portal/login` },
-      }),
-    })
-  }
+  const m = await changeStatus(memberId, status, admin.name || admin.email)
   revalidatePath(`/admin/clients/${m.clientId}`)
 }
 
@@ -143,8 +123,7 @@ export async function deleteMember(memberId: number, clientId: number) {
   revalidatePath(`/admin/clients/${clientId}`)
 }
 
-export type AccountInput = { name: string; title: string; phone: string; email: string }
-export type AccountResult = { email: string; ok: true } | { email: string; ok: false; error: string }
+export type { AccountInput, AccountResult }
 
 /**
  * 관리자가 업체 관계자 계정을 바로 만든다. 아이디는 이메일, 비밀번호는 휴대폰 번호 숫자만.
@@ -152,46 +131,7 @@ export type AccountResult = { email: string; ok: true } | { email: string; ok: f
  */
 export async function createPortalAccounts(clientId: number, people: AccountInput[]): Promise<AccountResult[]> {
   const admin = await requireAdmin()
-  const client = await getClient(clientId)
-  if (!client) return people.map((p) => ({ email: p.email, ok: false, error: '업체를 찾을 수 없습니다.' }))
-  const h = await headers()
-  const out: AccountResult[] = []
-  for (const p of people.slice(0, 20)) {
-    const t = (v: unknown, max = 100) => String(v ?? '').trim().slice(0, max)
-    const name = t(p.name, 50)
-    const title = t(p.title, 50)
-    const password = phoneDigits(t(p.phone, 30))
-    const phone = password.replace(/^(\d{3})(\d{3,4})(\d{4})$/, '$1-$2-$3')
-    const email = t(p.email, 200).toLowerCase()
-    const fail = (error: string) => out.push({ email: email || name, ok: false, error })
-    if (!name) { fail('이름이 없습니다.'); continue }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fail('이메일 주소를 확인해 주세요.'); continue }
-    if (isAdminEmail(email)) { fail('이 이메일로는 만들 수 없습니다.'); continue }
-    if (!isPhone(password)) { fail('휴대폰 번호를 확인해 주세요. (예: 010-1234-5678)'); continue }
-    if (await emailTaken(email)) { fail('이미 계정이 있는 이메일입니다.'); continue }
-
-    let userId: string
-    try {
-      const res = await partnerSignup.run({ clientId, verified: true }, () =>
-        auth.api.signUpEmail({ body: { name, email, password }, headers: h }),
-      )
-      userId = res.user.id
-    } catch (e) {
-      console.error('[portal] 계정 만들기 실패', e)
-      fail('계정을 만들지 못했습니다.')
-      continue
-    }
-    // 가입하면서 생긴 로그인(세션)은 관리자 것이 아니므로 지운다
-    await endSessions(userId).catch(() => {})
-    try {
-      await addMember({ clientId, userId, name, title, phone, approvedBy: admin.name || admin.email })
-      out.push({ email, ok: true })
-    } catch (e) {
-      console.error('[portal] 관계자 등록 실패', e)
-      await deletePartnerUser(userId).catch(() => {})
-      fail('계정을 만들지 못했습니다.')
-    }
-  }
+  const out = await createAccounts(clientId, people, admin.name || admin.email, await headers())
   revalidatePath(`/admin/clients/${clientId}`)
   return out
 }
@@ -199,18 +139,7 @@ export async function createPortalAccounts(clientId: number, people: AccountInpu
 /** 관계자 비밀번호를 등록된 휴대폰 번호(숫자만)로 되돌린다. 그 계정의 로그인은 끊는다 */
 export async function resetMemberPasswordToPhone(memberId: number): Promise<{ ok: true } | { ok: false; error: string }> {
   await requireAdmin()
-  const m = await memberAccount(memberId)
-  if (!m) return { ok: false, error: '관계자를 찾을 수 없습니다.' }
-  const password = phoneDigits(m.phone)
-  if (!isPhone(password)) return { ok: false, error: '등록된 휴대폰 번호가 없거나 형식이 맞지 않습니다.' }
-  try {
-    const ctx = await auth.$context
-    await setPasswordHash(m.userId, await ctx.password.hash(password))
-    await endSessions(m.userId)
-  } catch (e) {
-    console.error('[portal] 비밀번호 되돌리기 실패', e)
-    return { ok: false, error: e instanceof Error ? e.message : '비밀번호를 바꾸지 못했습니다.' }
-  }
-  revalidatePath(`/admin/clients/${m.clientId}`)
-  return { ok: true }
+  const { clientId, ...r } = await resetPasswordToPhone(memberId)
+  if (clientId) revalidatePath(`/admin/clients/${clientId}`)
+  return r
 }

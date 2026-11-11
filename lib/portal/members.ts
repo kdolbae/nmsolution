@@ -263,3 +263,11 @@ export async function removeMember(memberId: number) {
 export async function deletePartnerUser(userId: string) {
   await pool.query(`DELETE FROM "user" WHERE id = $1 AND role = 'partner'`, [userId])
 }
+
+/** 관계자가 어느 업체 사람인지 (없으면 null). 다른 업체 관계자를 건드리지 못하게 확인할 때 쓴다 */
+export async function memberClientId(memberId: number): Promise<number | null> {
+  if (!Number.isSafeInteger(memberId) || memberId < 1) return null
+  await ensurePortal()
+  const { rows } = await pool.query<{ client_id: string }>(`SELECT client_id FROM client_members WHERE id = $1`, [memberId])
+  return rows[0] ? Number(rows[0].client_id) : null
+}

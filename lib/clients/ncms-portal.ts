@@ -35,7 +35,8 @@ export async function ncmsPortal(req: Request, slug: string): Promise<Response |
     console.error('[ncms-portal] 연결 실패', slug, e)
     return null
   }
-  if (res.status === 404) return null
+  // 없는 주소(404)·N-CMS 오류(5xx)·방화벽 차단(403)이면 예전 엔엠 자료로
+  if (res.status === 404 || res.status === 403 || res.status >= 500) return null
 
   const out = new Headers()
   for (const k of ['content-type', 'content-disposition', 'cache-control', 'x-robots-tag', 'referrer-policy']) {

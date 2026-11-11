@@ -21,7 +21,7 @@ import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
 import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
-import { DESIAN_CLIENT, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
+import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -654,6 +654,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'DSP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
       })
+      await seedOnce(DESIAN_REV2_KEY, () => refreshDesian('1안 제안 이유: 이물로 인한 과부하(오버로드)'))
     })().catch((e) => {
       ready = null
       throw e
@@ -1113,5 +1114,19 @@ async function refreshJjy(summary: string) {
   const quote = jjyQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 데시앙플렉스 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만, 견적번호 유지). */
+async function refreshDesian(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [DESIAN_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = desianQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = DESIAN_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }

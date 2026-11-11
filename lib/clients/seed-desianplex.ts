@@ -6,6 +6,7 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
  * 저장소가 공개라 담당자 이름·연락처는 코드에 넣지 않는다. 어드민 업체 정보에서 입력한다.
  * 업체 링크 비밀번호도 어드민에서 정한다(정하기 전에는 아무도 열 수 없음).
  */
+export const DESIAN_REV2_KEY = 'desianplex-sewage-pump-2611-v2-overload'
 export const DESIAN_SEED_KEY = 'desianplex-sewage-pump-2611-v1'
 
 export const DESIAN_CLIENT = {
@@ -57,7 +58,7 @@ export function desianQuote(date: string): Quote {
     sections: [
       sec(
         '[펌프 1안] 오배수 패키지 펌프 분해 점검·정비 (1대)',
-        '소음이 나는 펌프 1대만 탱크 점검구로 꺼내 흡입 커버·케이싱을 열고 임펠러와 커터부까지 확인함. 걸린 이물을 빼고 씻은 뒤 다시 조립해 시운전함. 나머지 1대로 운전을 계속하므로 배수는 멈추지 않음',
+        '현재 과부하(오버로드)가 걸리는 것은 이물로 펌프가 원활하게 돌지 못하는 상황으로 보고, 교체 전에 먼저 제안함. 해당 펌프 1대만 탱크 점검구로 꺼내 흡입 커버·케이싱을 열고 임펠러와 커터부까지 확인함. 걸린 이물을 빼고 씻은 뒤 다시 조립해 시운전함. 나머지 1대로 운전을 계속하므로 배수는 멈추지 않음',
         [
           ['노무비', '펌프 정비 기능공', '탱크 개방·펌프 인양, 흡입 커버·케이싱 분해, 임펠러·커터부 점검·이물 제거·세척, 조립·재설치·시운전', 2, '인·일', P, '2명 1일'],
           ['노무비', '간접노무비', '현장 관리 (직접노무비 × 15%)', 1, '식', ind(2), ''],

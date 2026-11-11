@@ -23,7 +23,7 @@ import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY
 import { JJY_PAGE_HTML } from './jjy-page'
 import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
 import { DESIAN_PAGE_HTML } from './desianplex-page'
-import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
+import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -680,6 +680,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`UPDATE clients SET quote_code = 'ARN', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
       await seedOnce(AIRRANE_REV2_KEY, () => refreshAirrane('3D 모델 직접 돌려 보기 추가'))
+      await seedOnce(AIRRANE_REV3_KEY, () => refreshAirrane('배기 자재 온라인 단가 + 여분 15%, 품목별 수량 × 단가'))
     })().catch((e) => {
       ready = null
       throw e

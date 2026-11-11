@@ -71,11 +71,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         <button class="opt" data-v="side">측면(지붕 단면)</button>
         <button class="opt" id="lbls" aria-pressed="true">설비명</button>
         <button class="opt" id="bldg" aria-pressed="true">건물</button>
+        <button class="opt" id="dimb" aria-pressed="true">치수</button>
       </div>
     </div>
     <div class="legend">
       <span><i style="background:#9FB3C8"></i>판넬 50T 준불연 우레탄</span>
       <span><i style="background:#E8A23A"></i>제전 커튼</span>
+      <span><i style="background:#4A5D72"></i>각파이프 □100×50</span>
+      <span><i style="background:#E8742A"></i>치수(mm)</span>
       <span><i style="background:var(--air)"></i>급기</span>
       <span><i style="background:var(--exh)"></i>배기</span>
     </div>
@@ -131,7 +134,11 @@ room.add(box(W,H,T,pMat,0,H/2,hd));           // 뒤
 room.add(box(W,T,D,pMat,0,H,0));              // 천장
 room.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W,H,D)),new THREE.LineBasicMaterial({color:0x0f2a44}))).children;
 room.children[room.children.length-1].position.set(0,H/2,0);
-room.add(box(W,0.1,0.05,M(0x4a5d72,{metalness:.5}),0,H-0.05,-hd)); // 전면 헤더
+// 각파이프 □100×50 골조: 기둥 4, 길이방향 보 2(커튼 자리·천장 가운데), 폭방향 보 3
+const stMat=M(0x4a5d72,{metalness:.5,roughness:.4});
+[[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]].forEach(([x,z])=>room.add(box(0.1,2.6,0.05,stMat,x,1.3,z)));
+[-hd,0].forEach(z=>room.add(box(W,0.1,0.05,stMat,0,H-0.05,z)));
+[-hw,0,hw].forEach(x=>room.add(box(0.05,0.1,D,stMat,x,H-0.05,0)));
 // 커튼(양개, 반쯤 열림)
 const cMat=M(0xe8a23a,{transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false});
 const gap=1.6,sideW=(W-gap)/2,n=12,pw=sideW/n;
@@ -206,12 +213,32 @@ tag('양개 자바라 제전 커튼 (출입문)',0,0.4,-hd-0.6);
 tag('ㅅ자 판넬 지붕 · 최고 6m',BL/2-4,RIDGE+0.4,0);
 scene.add(labels);
 
+// 치수
+const dims=new THREE.Group();
+const dimMat=new THREE.LineBasicMaterial({color:0xE8742A,depthTest:false});
+function dimLabel(txt,x,y,z){const c=document.createElement('canvas'),g=c.getContext('2d');const f='700 28px "IBM Plex Mono", monospace';g.font=f;const w=g.measureText(txt).width+20;c.width=w;c.height=42;g.fillStyle='#E8742A';g.fillRect(0,0,w,42);g.fillStyle='#fff';g.font=f;g.textBaseline='middle';g.fillText(txt,10,22);
+ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,sizeAttenuation:false}));sp.scale.set(w*0.00055,42*0.00055,1);sp.position.set(x,y,z);sp.renderOrder=12;dims.add(sp);}
+function dim(a,b,tick,txt){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),T=new THREE.Vector3(...tick).multiplyScalar(0.12);
+ const pts=[A,B,A.clone().add(T),A.clone().sub(T),B.clone().add(T),B.clone().sub(T)];
+ const l=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),dimMat);l.renderOrder=11;dims.add(l);
+ const m=A.clone().add(B).multiplyScalar(0.5);dimLabel(txt,m.x,m.y+0.12,m.z);}
+dim([-hw,H+0.35,-hd-0.3],[hw,H+0.35,-hd-0.3],[0,1,0],'6,700');
+dim([hw+0.35,H+0.35,-hd],[hw+0.35,H+0.35,hd],[0,1,0],'2,300');
+dim([hw+0.45,0,-hd-0.3],[hw+0.45,H,-hd-0.3],[1,0,0],'H 2,650');
+dim([-hw-0.4,0,-hd-0.3],[-hw-0.4,2.6,-hd-0.3],[1,0,0],'기둥 2,600');
+dim([rx-0.5,H,rz],[rx-0.5,ry,rz],[1,0,0],'약 '+(Math.round((ry-H)*20)*50).toLocaleString()+' (가정)');
+dim([BL/2+0.6,0,0],[BL/2+0.6,RIDGE,0],[0,0,1],'최고 6,000');
+dim([BL/2+0.6,0,-BW/2],[BL/2+0.6,EAVE,-BW/2],[0,0,1],'처마 4,500 (가정)');
+scene.add(dims);
+
+
 // 보기
 const VIEWS={'3d':[[13,10,-14],[0,2.6,0]],room:[[6.5,4.2,-6.5],[0,1.6,0]],front:[[0,2.2,-11],[0,2.4,0]],side:[[16,3.5,0.01],[0,3,0]]};
 function view(v){const [p,t]=VIEWS[v];camera.position.set(...p);controls.target.set(...t);controls.update();}
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>view(b.dataset.v));
 view(innerWidth<700?'room':'3d');
 const lb=document.getElementById('lbls');lb.onclick=()=>{labels.visible=!labels.visible;lb.setAttribute('aria-pressed',labels.visible);};
+const db=document.getElementById('dimb');db.onclick=()=>{dims.visible=!dims.visible;db.setAttribute('aria-pressed',dims.visible);};
 const bb=document.getElementById('bldg');bb.onclick=()=>{bldg.visible=!bldg.visible;bb.setAttribute('aria-pressed',bldg.visible);};
 const tg=document.getElementById('toggle'),pb=document.getElementById('pbody');
 tg.onclick=()=>{pb.hidden=!pb.hidden;tg.textContent=pb.hidden?'펼치기':'접기';tg.setAttribute('aria-expanded',!pb.hidden);};

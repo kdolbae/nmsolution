@@ -12,6 +12,7 @@ import { exposedDoc } from './exposure'
 import type { Quote } from './quote'
 import { historyBar, notReadyHtml } from './send-compare'
 import { after } from 'next/server'
+import { ncmsPortal } from './ncms-portal'
 
 /**
  * 업체용 링크 (예: app/sinil/route.ts → nm-solution.co.kr/sinil).
@@ -66,6 +67,9 @@ function notFound() {
 }
 
 export async function portalGet(req: Request, slug: string): Promise<Response> {
+  // N-CMS 에 있으면 N-CMS 자료로 (없을 때만 아래 예전 엔엠 자료)
+  const ncms = await ncmsPortal(req.clone(), slug)
+  if (ncms) return ncms
   const client = await getClientBySlug(slug)
   if (!client) return notFound()
   const params = new URL(req.url).searchParams
@@ -190,6 +194,8 @@ function keepInside(html: string): string {
 }
 
 export async function portalPost(req: Request, slug: string): Promise<Response> {
+  const ncms = await ncmsPortal(req.clone(), slug)
+  if (ncms) return ncms
   const client = await getClientBySlug(slug)
   if (!client) return notFound()
   const form = await req.formData().catch(() => null)

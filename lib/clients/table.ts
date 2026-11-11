@@ -21,6 +21,8 @@ import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
 import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
+import { DESIAN_CLIENT, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
+import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -632,6 +634,26 @@ export function ensureClients(): Promise<void> {
       await seedOnce(JJY_REV8_KEY, () => refreshJjy('자재 단가 조정(판넬·도어·라운드몰드·U바 등), 운반비 500,000'))
       await seedOnce(JJY_REV9_KEY, () => refreshJjy('공사 기간 6일, 6일차 2명 (총 22 인·일)'))
       await seedOnce(JJY_REV10_KEY, () => refreshJjy('준불연 판넬 ㎡ 단위 (122.2㎡ × 23,100)'))
+      // 생각공장 데시앙플렉스 관리사무소: 오배수 패키지 펌프·집수정 펌프·부스터 펌프 정비(2026-11-11). 담당자·연락처·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(DESIAN_SEED_KEY, async () => {
+        const c = DESIAN_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = desianQuote(today())
+        const proposal = DESIAN_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'DSP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
+      })
     })().catch((e) => {
       ready = null
       throw e

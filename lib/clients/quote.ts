@@ -91,6 +91,8 @@ export type Quote = {
   recipientCeo?: string
   /** 선택 항목 표의 이름. 없으면 '선택 항목' (예: '상황에 따라 추가되는 비용') */
   optionLabel?: string
+  /** 선택 항목이 서로 바꿔 고르는 안(1안 대신 2안 등)이라 합계를 내지 않고 안마다 금액만 보여 준다 */
+  optionEach?: boolean
   /** 감액 표의 이름. 없으면 '필요 없을 경우 감액' */
   deductLabel?: string
   /** 적산 입력값 (lib/clients/takeoff.ts). 인쇄에는 쓰지 않고 견적 줄을 만들 때만 쓴다 */
@@ -626,7 +628,7 @@ ${
 <table class="grid"><thead><tr><th class="c">번호</th><th>품명</th><th>규격</th><th class="n">수량</th><th class="c">단위</th><th class="n">단가</th><th class="n">금액</th><th>비고</th></tr></thead>
 <tbody>
 ${optRows.join('\n')}
-<tr class="q-grand"><td></td><td colspan="5">${esc(q.optionLabel || '선택 항목')} 합계 (VAT 별도)</td><td class="n">${won(calc.options)}</td><td></td></tr>
+${q.optionEach ? '' : `<tr class="q-grand"><td></td><td colspan="5">${esc(q.optionLabel || '선택 항목')} 합계 (VAT 별도)</td><td class="n">${won(calc.options)}</td><td></td></tr>`}
 </tbody></table>`
     : ''
 }

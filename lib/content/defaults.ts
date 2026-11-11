@@ -337,7 +337,7 @@ export const DEFAULT_SERVICES: ServicesContent = {
       summary: '함께 개발하고, 설계하고, 실행하는 모든 업무를 대행합니다.',
       description:
         '대형 플랜트 설비는 처음 구상부터 설치와 시운전까지 이어지는 긴 과정입니다. 엔엠솔루션은 고객과 함께 개발하고, 현장 조건에 맞게 설계하고, 직접 실행하는 모든 업무를 대행할 수 있습니다. 풍부한 현장 경험과 능동적인 대처로 공정 중에 생기는 어떤 문제든 해결합니다.',
-      image: '/images/gallery/g-pipe-line.jpg',
+      image: '/images/plant/overview.webp',
       points: [
         '설비 구상 · 사양 검토를 함께 개발',
         '현장 조건을 반영한 설비 · 배관 · 구조 설계',
@@ -350,21 +350,22 @@ export const DEFAULT_SERVICES: ServicesContent = {
       areasTitle: '함께 개발하고, 설계하고,\n실행하는 모든 업무 대행.',
       areasDescription:
         '풍부한 현장 경험과 능동적인 대처로 어떤 문제든 해결합니다. 단계마다 업체를 따로 찾지 않으셔도 됩니다. 개발부터 설계, 실행까지 모두 맡겨 주세요.',
+      areasImage: '/images/plant/overview.webp',
       areas: [
         {
           title: '함께 개발',
           description: '처음 구상 단계부터 함께합니다. 공정과 설비 조건을 같이 검토하고 가장 현실적인 방안을 찾습니다.',
-          image: '',
+          image: '/images/plant/develop.webp',
         },
         {
           title: '설계',
           description: '현장 치수와 유틸리티 조건을 반영해 설비 · 배관 · 구조를 설계합니다. 시공을 아는 팀이 그리는 도면입니다.',
-          image: '',
+          image: '/images/plant/design.webp',
         },
         {
           title: '실행',
           description: '제작, 설치, 배관 연결, 시운전까지 직접 진행합니다. 현장에서 생기는 변수는 능동적으로 바로 대응합니다.',
-          image: '',
+          image: '/images/plant/build.webp',
         },
       ],
     },

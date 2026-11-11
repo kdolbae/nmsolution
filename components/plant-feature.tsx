@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { MultilineText } from './multiline-text'
@@ -9,10 +10,11 @@ import type { ServiceItem } from '@/lib/content/defaults'
  */
 export function PlantFeature({ item }: { item: ServiceItem }) {
   const steps = item.areas ?? []
+  const hasImages = !!item.areasImage || steps.some((s) => s.image)
 
   return (
     <div className="mt-16 border border-border bg-secondary px-5 py-12 sm:px-8 lg:mt-20 lg:px-12 lg:py-16">
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center lg:gap-14">
         <div className="flex flex-col gap-6 lg:col-span-5">
           <p className="text-kicker flex items-center gap-3 text-muted-foreground">
             <span className="h-px w-8 bg-electric" aria-hidden />
@@ -47,22 +49,49 @@ export function PlantFeature({ item }: { item: ServiceItem }) {
           </div>
         </div>
 
-        {steps.length > 0 && (
-          <ol className="flex flex-col gap-px bg-border lg:col-span-7">
-            {steps.map((s, i) => (
-              <li key={s.title} className="flex gap-5 bg-background p-6 lg:gap-8 lg:p-8">
-                <span className="w-12 shrink-0 font-mono text-3xl font-bold leading-none text-electric lg:w-14 lg:text-4xl">
+        {item.areasImage && (
+          <div className="relative aspect-[4/3] overflow-hidden lg:col-span-7">
+            <Image
+              src={item.areasImage}
+              alt="대형 플랜트 설비 예시 이미지"
+              fill
+              sizes="(min-width: 1024px) 55vw, 100vw"
+              className="object-cover"
+            />
+          </div>
+        )}
+      </div>
+
+      {steps.length > 0 && (
+        <ol className="mt-12 grid grid-cols-1 gap-px bg-border md:grid-cols-3">
+          {steps.map((s, i) => (
+            <li key={s.title} className="group flex flex-col bg-background">
+              {s.image && (
+                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                  <Image
+                    src={s.image}
+                    alt={s.title}
+                    fill
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                </div>
+              )}
+              <div className="flex gap-4 p-6">
+                <span className="w-10 shrink-0 font-mono text-2xl font-bold leading-none text-electric lg:text-3xl">
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <div className="flex flex-col gap-2">
-                  <h4 className="text-lg font-bold tracking-tight lg:text-xl">{s.title}</h4>
+                  <h4 className="text-lg font-bold tracking-tight">{s.title}</h4>
                   <p className="text-sm leading-relaxed text-muted-foreground">{s.description}</p>
                 </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {hasImages && <p className="mt-5 text-xs text-muted-foreground">이미지는 작업 범위를 설명하기 위한 3D 예시입니다.</p>}
     </div>
   )
 }

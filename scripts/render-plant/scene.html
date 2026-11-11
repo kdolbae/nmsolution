@@ -1,0 +1,235 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+const P = new URLSearchParams(location.search)
+const VIEW = P.get('view') || 'hero'
+const W = +(P.get('w') || 1600), H = +(P.get('h') || 1200)
+const BLUE = VIEW === 'design'
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
+renderer.setPixelRatio(1); renderer.setSize(W, H)
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.82
+document.body.appendChild(renderer.domElement)
+
+const scene = new THREE.Scene()
+const pm = new THREE.PMREMGenerator(renderer)
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture
+
+// sky gradient
+function sky(top, bottom) {
+  const c = document.createElement('canvas'); c.width = 4; c.height = 512
+  const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 512)
+  gr.addColorStop(0, top); gr.addColorStop(1, bottom); g.fillStyle = gr; g.fillRect(0, 0, 4, 512)
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t
+}
+scene.background = BLUE ? new THREE.Color('#0b1a33') : sky('#7f9bbd', '#dfe6ee')
+if (!BLUE) scene.fog = new THREE.Fog('#d9e1ea', 90, 260)
+
+const sun = new THREE.DirectionalLight('#fff4e6', 2.6)
+sun.position.set(60, 90, 40); sun.castShadow = true
+sun.shadow.mapSize.set(4096, 4096)
+Object.assign(sun.shadow.camera, { left: -120, right: 120, top: 120, bottom: -120, near: 1, far: 300 })
+sun.shadow.bias = -0.0004
+scene.add(sun)
+scene.add(new THREE.HemisphereLight('#cfe0ff', '#8a8580', 0.6))
+
+const M = {
+  steel: new THREE.MeshStandardMaterial({ color: '#3d5a80', metalness: 0.4, roughness: 0.55 }),
+  steelY: new THREE.MeshStandardMaterial({ color: '#c9a227', metalness: 0.3, roughness: 0.5 }),
+  ss: new THREE.MeshStandardMaterial({ color: '#d8dde2', metalness: 0.85, roughness: 0.28 }),
+  ins: new THREE.MeshStandardMaterial({ color: '#b9c0c7', metalness: 0.7, roughness: 0.4 }),
+  green: new THREE.MeshStandardMaterial({ color: '#4f8a5b', metalness: 0.2, roughness: 0.5 }),
+  yellow: new THREE.MeshStandardMaterial({ color: '#d9b43a', metalness: 0.2, roughness: 0.5 }),
+  red: new THREE.MeshStandardMaterial({ color: '#b5463c', metalness: 0.2, roughness: 0.5 }),
+  white: new THREE.MeshStandardMaterial({ color: '#eef0f2', metalness: 0.3, roughness: 0.45 }),
+  concrete: new THREE.MeshStandardMaterial({ color: '#9c9a95', roughness: 0.95 }),
+  asphalt: new THREE.MeshStandardMaterial({ color: '#5d6066', roughness: 0.95 }),
+  haze: new THREE.MeshStandardMaterial({ color: '#aab4bf', roughness: 1 }),
+  grate: new THREE.MeshStandardMaterial({ color: '#6b7682', metalness: 0.5, roughness: 0.6 }),
+  crane: new THREE.MeshStandardMaterial({ color: '#e0a21b', metalness: 0.3, roughness: 0.45 }),
+  dark: new THREE.MeshStandardMaterial({ color: '#2a2f36', metalness: 0.3, roughness: 0.6 }),
+  person: new THREE.MeshStandardMaterial({ color: '#ff7a1a', roughness: 0.6 }),
+  helmet: new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4 }),
+}
+
+const root = new THREE.Group(); scene.add(root)
+function add(geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz)
+  m.castShadow = true; m.receiveShadow = true; root.add(m); return m
+}
+const box = (w, h, d, mat, x, y, z, ry = 0) => add(new THREE.BoxGeometry(w, h, d), mat, x, y, z, 0, ry)
+const cyl = (r, h, mat, x, y, z, rx = 0, ry = 0, rz = 0, seg = 32) => add(new THREE.CylinderGeometry(r, r, h, seg), mat, x, y, z, rx, ry, rz)
+
+// ground
+const ground = add(new THREE.PlaneGeometry(600, 600), M.concrete, 0, 0, 0, -Math.PI / 2)
+ground.castShadow = false
+box(600, 0.02, 7, M.asphalt, 0, 0.005, 14); box(7, 0.02, 600, M.asphalt, 66, 0.005, 0)
+for (let i = 0; i < 14; i++) box(14 + (i*7)%12, 6 + (i*5)%14, 12, M.haze, -150 + i * 24, 5, -120 - (i*13)%30)
+// road markings
+for (let i = -8; i < 8; i++) box(4, 0.02, 0.25, M.white, i * 9, 0.01, 14)
+
+// H column helper
+function hcol(x, z, h, mat = M.steel) { box(0.45, h, 0.45, mat, x, h / 2, z) }
+
+// ===== pipe rack along X =====
+const RACK_Z = 0, RACK_X0 = -60, RACK_X1 = 50, BAYS = 12
+const tiers = [5, 8, 11]
+for (let i = 0; i <= BAYS; i++) {
+  const x = RACK_X0 + (RACK_X1 - RACK_X0) * i / BAYS
+  hcol(x, RACK_Z - 3, 12); hcol(x, RACK_Z + 3, 12)
+  for (const t of tiers) box(0.4, 0.4, 6.6, M.steel, x, t, RACK_Z)
+  box(0.25, 0.25, 8.5, M.steel, x, 6.5, RACK_Z, 0).rotation.x = Math.atan2(6, 7) // brace-ish
+}
+// longitudinal beams
+for (const t of tiers) for (const z of [-3, 3]) box(RACK_X1 - RACK_X0, 0.3, 0.3, M.steel, (RACK_X0 + RACK_X1) / 2, t, RACK_Z + z)
+// pipes on tiers
+const L = RACK_X1 - RACK_X0 + 4, CX = (RACK_X0 + RACK_X1) / 2
+const pipeSets = [
+  [5, [[-2.3, 0.45, M.ins], [-1.2, 0.35, M.ss], [-0.2, 0.3, M.green], [0.8, 0.5, M.ins], [2.0, 0.35, M.ss]]],
+  [8, [[-2.2, 0.3, M.yellow], [-1.3, 0.4, M.ss], [-0.2, 0.55, M.ins], [1.0, 0.3, M.red], [2.0, 0.4, M.ss]]],
+  [11, [[-2.0, 0.6, M.ins], [-0.4, 0.45, M.ss], [1.0, 0.3, M.green], [2.0, 0.3, M.ss]]],
+]
+for (const [t, ps] of pipeSets) for (const [dz, r, mat] of ps) {
+  cyl(r, L, mat, CX, t + 0.2 + r, RACK_Z + dz, 0, 0, Math.PI / 2, 24)
+}
+
+// ===== distillation columns =====
+function column(x, z, r, h) {
+  cyl(r, h, M.white, x, h / 2 + 1, z)
+  add(new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), M.white, x, h + 1, z)
+  cyl(r + 0.6, 1, M.concrete, x, 0.5, z)
+  for (let y = 6; y < h; y += 7) {
+    add(new THREE.TorusGeometry(r + 0.9, 0.08, 6, 48), M.steelY, x, y + 1.1, z, Math.PI / 2)
+    add(new THREE.RingGeometry(r + 0.05, r + 0.9, 48), M.grate, x, y, z, -Math.PI / 2).material.side = THREE.DoubleSide
+  }
+  box(0.6, h, 0.08, M.steelY, x + r + 0.35, h / 2, z)
+  // overhead line down to rack
+  cyl(0.25, h - 10, M.ss, x - r - 0.5, h / 2 + 5, z)
+}
+column(-30, -16, 2.2, 42); column(-20, -18, 1.6, 34); column(-10, -16, 2.6, 46)
+
+// ===== storage tanks =====
+function tank(x, z, r, h) {
+  cyl(r, h, M.white, x, h / 2, z, 0, 0, 0, 64)
+  add(new THREE.ConeGeometry(r * 1.01, 1.5, 64), M.white, x, h + 0.75, z)
+  add(new THREE.TorusGeometry(r + 0.05, 0.1, 6, 64), M.steelY, x, h, z, Math.PI / 2)
+  // spiral stair approx
+  for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 1.2; box(1.2, 0.12, 0.6, M.steelY, x + Math.cos(a) * (r + 0.7), (i / 24) * h, z + Math.sin(a) * (r + 0.7), -a) }
+}
+tank(30, -24, 9, 14); tank(52, -22, 7, 12); tank(10, -30, 6, 10)
+// spheres
+function sphere(x, z, r) {
+  add(new THREE.SphereGeometry(r, 48, 32), M.white, x, r + 3, z)
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; cyl(0.25, r + 3, M.steel, x + Math.cos(a) * r * 0.85, (r + 3) / 2, z + Math.sin(a) * r * 0.85) }
+}
+sphere(-50, -22, 6); sphere(-62, -20, 5)
+
+// ===== steel structure (process unit) =====
+function structure(x0, z0, nx, nz, levels, sp = 5, lh = 6) {
+  for (let i = 0; i <= nx; i++) for (let k = 0; k <= nz; k++) hcol(x0 + i * sp, z0 + k * sp, levels * lh)
+  for (let l = 1; l <= levels; l++) {
+    const y = l * lh
+    for (let i = 0; i <= nx; i++) box(0.35, 0.5, nz * sp, M.steel, x0 + i * sp, y, z0 + nz * sp / 2)
+    for (let k = 0; k <= nz; k++) box(nx * sp, 0.5, 0.35, M.steel, x0 + nx * sp / 2, y, z0 + k * sp)
+    if (l < levels) box(nx * sp, 0.08, nz * sp, M.grate, x0 + nx * sp / 2, y + 0.3, z0 + nz * sp / 2)
+    // handrail
+    box(nx * sp, 0.06, 0.06, M.steelY, x0 + nx * sp / 2, y + 1.3, z0)
+  }
+  // equipment on levels
+  cyl(1.4, 5, M.ss, x0 + sp, lh + 2.9, z0 + sp, Math.PI / 2, 0, 0)
+  cyl(1.2, 4, M.ins, x0 + sp * 2.4, lh * 2 + 2.6, z0 + sp * 0.9, 0, 0, Math.PI / 2)
+  cyl(1.0, 6, M.white, x0 + sp * 1.5, lh * 3 + 3.2, z0 + sp)
+}
+structure(8, 10, 4, 2, 3)
+structure(-48, 9, 3, 2, 2)
+
+// pumps & small equipment along rack
+for (let i = 0; i < 8; i++) {
+  const x = -54 + i * 12
+  box(2.2, 0.4, 1.2, M.concrete, x, 0.2, -6)
+  cyl(0.45, 1.6, M.green, x - 0.4, 0.9, -6, 0, 0, Math.PI / 2)
+  box(0.7, 0.9, 0.9, M.dark, x + 0.7, 0.85, -6)
+  cyl(0.15, 4.6, M.ss, x - 0.4, 3.0, -5.3)
+}
+
+// ===== construction: crane + hanging pipe spool + workers (실행 view) =====
+const BUILD = VIEW === 'build'
+let SPOOL = null
+if (BUILD) {
+  const cx = 36, cz = 12
+  box(4, 2, 12, M.crane, cx, 1.6, cz)
+  for (const dz of [-4.5, -1.5, 1.5, 4.5]) for (const dx of [-2.1, 2.1]) cyl(0.8, 0.7, M.dark, cx + dx, 0.8, cz + dz, 0, 0, Math.PI / 2)
+  box(3.2, 2.4, 3.6, M.crane, cx, 3.6, cz - 2)
+  box(2, 1.8, 2, M.dark, cx + 1.4, 3.4, cz + 3.6) // cab
+  // boom
+  const boomLen = 40, ang = THREE.MathUtils.degToRad(70)
+  const boom = new THREE.Mesh(new THREE.BoxGeometry(1.1, boomLen, 1.1), M.crane)
+  boom.castShadow = true
+  const pivot = new THREE.Group(); pivot.position.set(cx, 4.4, cz - 3); root.add(pivot)
+  pivot.rotation.set(0, -0.42, 0)
+  const arm = new THREE.Group(); pivot.add(arm); arm.rotation.x = -(Math.PI / 2 - ang)
+  boom.position.y = boomLen / 2; arm.add(boom)
+  // tip world pos
+  scene.updateMatrixWorld(true)
+  const tip = new THREE.Vector3(0, boomLen, 0).applyMatrix4(arm.matrixWorld)
+  const hookY = 19
+  cyl(0.05, tip.y - hookY, M.dark, tip.x, (tip.y + hookY) / 2, tip.z)
+  box(0.6, 0.8, 0.4, M.crane, tip.x, hookY, tip.z)
+  // sling + spool
+  const spoolY = hookY - 3.5
+  for (const dx of [-3, 3]) {
+    const s = cyl(0.03, 3.6, M.dark, tip.x + dx / 2, (hookY + spoolY) / 2, tip.z, 0, 0, Math.atan2(dx / 2, 3.5))
+  }
+  cyl(0.55, 9, M.ss, tip.x, spoolY, tip.z, 0, 0, Math.PI / 2)
+  SPOOL = new THREE.Vector3(tip.x, spoolY, tip.z)
+  for (const dx of [-3, -1.5, 1.5, 3]) for (const dz of [-6.5, 6.5]) box(0.5, 0.15, 0.5, M.dark, cx + (dx>0?2.6:-2.6), 0.08, cz + dz*(Math.abs(dx)>2?1:0.6))
+  add(new THREE.TorusGeometry(0.75, 0.15, 12, 32), M.ss, tip.x + 4.5, spoolY, tip.z, 0, Math.PI / 2)
+  add(new THREE.TorusGeometry(0.75, 0.15, 12, 32), M.ss, tip.x - 4.5, spoolY, tip.z, 0, Math.PI / 2)
+  // workers on rack top tier
+  function worker(x, y, z, ry = 0) {
+    box(0.45, 0.9, 0.3, M.person, x, y + 1.15, z, ry)
+    box(0.4, 0.75, 0.25, M.dark, x, y + 0.38, z, ry)
+    add(new THREE.SphereGeometry(0.17, 16, 12), M.helmet, x, y + 1.8, z)
+  }
+  worker(tip.x - 2, 11.2, RACK_Z - 2.6); worker(tip.x + 3, 11.2, RACK_Z + 2.4, 1)
+  worker(cx - 4, 0, cz + 2); worker(cx - 6, 0, cz + 6, 0.6)
+  // scaffold near rack
+  for (let i = 0; i < 4; i++) for (let k = 0; k < 2; k++) cyl(0.06, 14, M.steelY, 18 + i * 2, 7, 4.5 + k * 1.8)
+  for (let y = 2; y < 14; y += 2) { box(6, 0.06, 0.06, M.steelY, 21, y, 4.5); box(6, 0.06, 0.06, M.steelY, 21, y, 6.3); box(6, 0.05, 1.8, M.grate, 21, y, 5.4) }
+}
+
+// ===== blueprint mode: replace with edges =====
+if (BLUE) {
+  const lines = new THREE.Group()
+  root.traverse((o) => {
+    if (!o.isMesh || o === ground || o.material === M.haze || o.material === M.asphalt) return
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry, 25), new THREE.LineBasicMaterial({ color: '#8fc1ff', transparent: true, opacity: 0.85 }))
+    o.updateMatrixWorld(); e.applyMatrix4(o.matrixWorld); lines.add(e)
+    const f = new THREE.Mesh(o.geometry, new THREE.MeshBasicMaterial({ color: '#163a6e', transparent: true, opacity: 0.55, depthWrite: false }))
+    f.applyMatrix4(o.matrixWorld); lines.add(f)
+  })
+  root.visible = false; scene.add(lines)
+  const grid = new THREE.GridHelper(400, 160, '#2d5a9a', '#173563'); grid.position.y = 0.01; scene.add(grid)
+}
+
+// ===== cameras =====
+const cam = new THREE.PerspectiveCamera(40, W / H, 0.5, 1000)
+const views = {
+  hero: [[82, 26, 58], [-8, 12, -8], 40],
+  develop: [[-20, 120, 110], [-4, 0, -6], 34],
+  design: [[70, 52, 70], [-6, 8, -6], 40],
+  build: [[50, 7, 30], [28, 12, 0], 50],
+}
+let [p, t, fov] = views[VIEW]
+if (VIEW === 'build' && SPOOL) { t = [SPOOL.x - 2, SPOOL.y - 1, SPOOL.z]; p = [SPOOL.x + 24, 5, SPOOL.z + 14] }
+cam.fov = fov; cam.position.set(...p); cam.lookAt(...t); cam.updateProjectionMatrix()
+renderer.render(scene, cam)
+window.__done = true
+</script></body></html>

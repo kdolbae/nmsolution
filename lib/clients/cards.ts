@@ -174,6 +174,37 @@ const SYSTEM = `명함을 읽어 담당자 정보를 옮긴다.
 - phone 은 사무실 전화, mobile 은 휴대폰(010 등), fax 는 팩스다. 숫자 사이 하이픈은 명함 표기를 따른다.
 - 한글·영문이 함께 있으면 한글을 쓴다.`
 
+/** 명함 사진(또는 글) 한 장을 읽어 담당자 정보를 돌려준다. 발주서 업체 명함에서도 같이 쓴다 */
+export async function readCardContent(input: { text: string; image: { mime: string; data: Buffer } | null }): Promise<CardContact> {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('명함 읽기를 쓰려면 Vercel 환경변수 ANTHROPIC_API_KEY 가 필요함.')
+  const content: Anthropic.ContentBlockParam[] = []
+  if (input.image) {
+    content.push({ type: 'image', source: { type: 'base64', media_type: input.image.mime as 'image/jpeg' | 'image/png' | 'image/webp', data: input.image.data.toString('base64') } })
+  }
+  content.push({ type: 'text', text: input.text ? `명함 글:\n${input.text}\n\n이 명함을 읽어 줘.` : '이 명함을 읽어 줘.' })
+  const msg = await new Anthropic().messages.create({
+    model: CARD_MODEL,
+    max_tokens: 4000,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: CARD_SCHEMA } },
+    system: SYSTEM,
+    messages: [{ role: 'user', content }],
+  })
+  if (msg.stop_reason === 'refusal') throw new Error('이 명함은 읽지 못했음.')
+  const text = msg.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('')
+  return cleanContact(JSON.parse(text) as CardContact)
+}
+
+/** 읽기 실패를 사람이 읽을 문구로 */
+export function cardErrorText(e: unknown) {
+  return e instanceof Anthropic.AuthenticationError
+    ? 'ANTHROPIC_API_KEY 가 올바르지 않음.'
+    : e instanceof Anthropic.APIError
+      ? `명함 읽기 실패 (${e.status ?? '연결'}): ${e.message}`
+      : e instanceof Error
+        ? e.message
+        : '명함을 읽지 못했음.'
+}
+
 /** 명함 한 장을 읽어 담당자 정보를 저장한다. 처음 읽은 담당자는 비어 있는 업체 담당자·연락처 칸에도 넣는다 */
 export async function readCard(clientId: number, cardId: number): Promise<void> {
   try {
@@ -184,21 +215,7 @@ export async function readCard(clientId: number, cardId: number): Promise<void> 
     )
     const r = rows[0]
     if (!r) return
-    const content: Anthropic.ContentBlockParam[] = []
-    if (r.image && r.mime) {
-      content.push({ type: 'image', source: { type: 'base64', media_type: r.mime as 'image/jpeg' | 'image/png' | 'image/webp', data: r.image.toString('base64') } })
-    }
-    content.push({ type: 'text', text: r.card_text ? `명함 글:\n${r.card_text}\n\n이 명함을 읽어 줘.` : '이 명함을 읽어 줘.' })
-    const msg = await new Anthropic().messages.create({
-      model: CARD_MODEL,
-      max_tokens: 4000,
-      output_config: { effort: 'low', format: { type: 'json_schema', schema: CARD_SCHEMA } },
-      system: SYSTEM,
-      messages: [{ role: 'user', content }],
-    })
-    if (msg.stop_reason === 'refusal') throw new Error('이 명함은 읽지 못했음.')
-    const text = msg.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('')
-    const contact = cleanContact(JSON.parse(text) as CardContact)
+    const contact = await readCardContent({ text: r.card_text ?? '', image: r.image && r.mime ? { mime: r.mime, data: r.image } : null })
     await pool.query(`UPDATE client_cards SET status = 'done', error = NULL, contact = $3, updated_at = now() WHERE id = $1 AND client_id = $2`, [
       cardId,
       clientId,

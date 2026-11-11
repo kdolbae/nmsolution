@@ -91,7 +91,7 @@ export function PlantFeature({ item }: { item: ServiceItem }) {
         </ol>
       )}
 
-      {hasImages && <p className="mt-5 text-xs text-muted-foreground">이미지는 작업 범위를 설명하기 위한 3D 예시입니다.</p>}
+      {hasImages && <p className="mt-5 text-xs text-muted-foreground">이미지는 이해를 돕기 위한 예시입니다.</p>}
     </div>
   )
 }

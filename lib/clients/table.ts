@@ -21,7 +21,7 @@ import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
 import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
-import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
+import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -656,6 +656,7 @@ export function ensureClients(): Promise<void> {
       })
       await seedOnce(DESIAN_REV2_KEY, () => refreshDesian('1안 제안 이유: 이물로 인한 과부하(오버로드)'))
       await seedOnce(DESIAN_REV3_KEY, () => refreshDesian('펌프 2안 커터형 1,300,000, 3안 패키지 7,700,000(설치 포함)·관리 인력 축소, 기존 설비 반출 별도'))
+      await seedOnce(DESIAN_REV4_KEY, () => refreshDesian('펌프 3안 패키지 8,100,000(설치 포함)'))
     })().catch((e) => {
       ready = null
       throw e

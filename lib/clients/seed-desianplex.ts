@@ -51,7 +51,7 @@ const ind = (manDays: number) => Math.round(manDays * P * 0.15)
  */
 export function desianQuote(date: string): Quote {
   return {
-    number: `NM-${date.slice(2, 4)}${date.slice(5, 7)}-03`,
+    number: `NM-${date.slice(2, 4)}${date.slice(5, 7)}-04`,
     date,
     title: '오배수 패키지 펌프·집수정 펌프·부스터 펌프 정비',
     sections: [

@@ -7,6 +7,7 @@ import { attributionValues, type Attribution } from '@/lib/attribution'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
 import { WORK_CATEGORIES } from '@/lib/work-landings'
+import { notifyInquiry } from '@/lib/notify/inquiry'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
         location,
         categories: category,
         message: body,
+        form: 'photo',
         ...attributionValues(attribution),
       })
       .returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
@@ -119,6 +121,12 @@ export async function POST(req: Request) {
       page = new URL(req.headers.get('referer') || '').pathname.slice(0, 300)
     } catch {}
     after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'photo', phone, source_page: page }]).then(() => undefined))
+    after(() =>
+      notifyInquiry({
+        title: `사진 견적 · ${category}${location ? ` · ${location}` : ''}`,
+        lines: [`연락처 ${phone}${name ? ` (${name})` : ''}`, `사진 ${photos.length}장`, symptom, message, page ? `들어온 페이지 ${page}` : ''],
+      }),
+    )
     return Response.json({ ok: true })
   } catch (e) {
     console.error('[quote-photo] 접수 실패', e)

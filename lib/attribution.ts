@@ -16,6 +16,11 @@ export type Attribution = {
   utmCampaign: string
   utmTerm: string
   utmContent: string
+  /**
+   * 손님이 실제로 친 검색어. 확장검색이면 등록 키워드(utmTerm)와 다르다.
+   * 네이버 자동 추적의 `n_query`, 없으면 리퍼러 주소의 검색어(네이버 query · 다음 q)
+   */
+  searchQuery: string
   /** 광고 매체가 붙이는 클릭 식별자 (gclid / fbclid / 네이버 n_ad 등) */
   clickId: string
   /** 처음 들어온 페이지 경로 */
@@ -31,6 +36,7 @@ export const EMPTY_ATTRIBUTION: Attribution = {
   utmCampaign: '',
   utmTerm: '',
   utmContent: '',
+  searchQuery: '',
   clickId: '',
   landingPath: '',
   referrer: '',
@@ -63,6 +69,18 @@ function trim(value: string | null, max: number): string {
   return (value ?? '').trim().slice(0, max)
 }
 
+/** 리퍼러 주소에 남은 검색어. 네이버(query)·다음(q)·빙(q)만. 구글은 검색어를 넘겨주지 않는다. */
+export function queryFromReferrer(referrer: string): string {
+  try {
+    const u = new URL(referrer)
+    const host = u.hostname
+    const q = host.includes('naver.') ? u.searchParams.get('query') : /daum\.|bing\./.test(host) ? u.searchParams.get('q') : null
+    return (q ?? '').trim().slice(0, 120)
+  } catch {
+    return ''
+  }
+}
+
 /** 현재 주소와 리퍼러에서 유입 정보를 읽는다. 브라우저에서만 호출한다. */
 export function readFromLocation(): Attribution {
   if (typeof window === 'undefined') return EMPTY_ATTRIBUTION
@@ -81,6 +99,7 @@ export function readFromLocation(): Attribution {
     // 대신 자동 추적을 켜면 `n_keyword` 로 실제 키워드가, `n_query` 로 검색어가 붙는다.
     utmTerm: trim(params.get('utm_term'), 120) || trim(params.get('n_keyword'), 120) || trim(params.get('n_query'), 120),
     utmContent: trim(params.get('utm_content'), 120) || trim(params.get('n_ad_group'), 120),
+    searchQuery: trim(params.get('n_query'), 120) || queryFromReferrer(referrer),
     clickId: trim(params.get('gclid'), 200) || trim(params.get('fbclid'), 200) || trim(params.get('n_ad'), 200) || '',
     landingPath: (window.location.pathname + window.location.search).slice(0, 300),
     referrer: referrer.slice(0, 300),
@@ -184,6 +203,7 @@ export function attributionValues(a: Partial<Attribution> | undefined) {
     utmCampaign: s(a?.utmCampaign, 120),
     utmTerm: s(a?.utmTerm, 120),
     utmContent: s(a?.utmContent, 120),
+    searchQuery: s(a?.searchQuery, 120),
     clickId: s(a?.clickId, 200),
     landingPath: s(a?.landingPath, 300),
     referrer: s(a?.referrer, 300),

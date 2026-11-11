@@ -1,0 +1,10 @@
+{
+  "name": "엔엠솔루션 관리자",
+  "short_name": "NM 관리자",
+  "start_url": "/admin/quotes",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f2a44",
+  "icons": [{ "src": "/apple-icon.png", "sizes": "180x180", "type": "image/png" }]
+}

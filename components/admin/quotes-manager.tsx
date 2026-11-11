@@ -5,16 +5,22 @@ import { Phone, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QUOTE_STATUSES, statusLabel } from '@/lib/quote'
 import { attributionSummary } from '@/lib/attribution'
+import { formLabel } from '@/lib/quick-inquiry'
 import { deleteQuote, updateQuoteMemo, updateQuoteStatus } from '@/app/actions/admin'
 import type { QuoteRequest } from '@/lib/db/schema'
+import type { ChatMessage } from '@/lib/inquiry-chat'
+import { QuoteChat } from '@/components/admin/quote-chat'
 
 const FILTERS = [{ value: 'all', label: '전체' }, ...QUOTE_STATUSES] as const
 
 export function QuotesManager({
   quotes,
   photos = {},
+  messages = {},
 }: {
   quotes: QuoteRequest[]
+  /** 견적 id → 간단 문의 대화 */
+  messages?: Record<number, ChatMessage[]>
   /** 견적 id → 현장 사진 id (누수 사진 견적 등). 사진은 /api/admin/quote-photo/[id] 로 관리자만 본다 */
   photos?: Record<number, number[]>
 }) {
@@ -66,6 +72,9 @@ export function QuotesManager({
                 <div className="flex flex-col gap-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base font-bold tracking-tight">{q.name}</span>
+                    {messages[q.id]?.at(-1)?.sender === 'customer' && (
+                      <span className="bg-electric px-2 py-0.5 text-xs font-semibold text-electric-foreground">새 메시지</span>
+                    )}
                     {q.company && <span className="text-sm text-muted-foreground">{q.company}</span>}
                     <span
                       className={cn(
@@ -99,7 +108,7 @@ export function QuotesManager({
                 </span>
               </div>
 
-              {(q.location || q.categories || attributionSummary(q)) && (
+              {(q.location || q.categories || q.form || attributionSummary(q)) && (
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
                   {q.location && (
                     <>
@@ -118,6 +127,18 @@ export function QuotesManager({
                     <>
                       <dt className="text-muted-foreground">유입</dt>
                       <dd>{attributionSummary(q)}</dd>
+                    </>
+                  )}
+                  {q.searchQuery && q.searchQuery !== q.utmTerm && (
+                    <>
+                      <dt className="text-muted-foreground">검색어</dt>
+                      <dd>{q.searchQuery}</dd>
+                    </>
+                  )}
+                  {q.form && (
+                    <>
+                      <dt className="text-muted-foreground">창구</dt>
+                      <dd>{formLabel(q.form)}</dd>
                     </>
                   )}
                 </dl>
@@ -158,6 +179,8 @@ export function QuotesManager({
                   className="w-full rounded-none border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:border-electric"
                 />
               </div>
+
+              {(q.form === 'quick' || messages[q.id]?.length) && <QuoteChat quoteId={q.id} initial={messages[q.id] ?? []} />}
 
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                 {QUOTE_STATUSES.map((s) => (

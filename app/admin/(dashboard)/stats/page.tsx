@@ -38,7 +38,7 @@ type Ev = {
   scroll: number | null
 }
 
-const DAYS = [1, 7, 30, 90]
+const DAYS = [1, 7, 14, 30, 90]
 const GROUPS: Record<string, string> = {
   'NM-01': '사고·긴급',
   'NM-02': '철골·증축·지붕·벽체',
@@ -169,7 +169,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams
   const days = DAYS.includes(Number(sp.days)) ? Number(sp.days) : 7
   const { events, quotes, error } = await load(days)
-  const quoteAttribution = await quotesByKeyword(days)
+  const [quoteAttribution, compare] = await Promise.all([quotesByKeyword(days), channelCompare(days)])
   const ps = people(events)
   const total = ps.length
   const engaged = ps.filter(meaningful).length
@@ -286,6 +286,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
         )}
       </section>
 
+      <ChannelCompare days={days} rows={compare} />
       <QuoteAttribution days={days} data={quoteAttribution} />
     </>
   )
@@ -298,25 +299,41 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
  * 실제로 저장된 문의에서 나온다. 버튼을 눌렀지만 접수가 안 된 건이 있어 둘은 어긋날 수 있고,
  * "이 키워드가 문의를 만들었다"는 판단은 저장된 쪽이 맞다.
  */
-type QuoteRow = { created_at: Date; utm_source: string; utm_medium: string; utm_campaign: string; utm_term: string; utm_content: string }
+type QuoteRow = {
+  created_at: Date
+  utm_source: string
+  utm_medium: string
+  utm_campaign: string
+  utm_term: string
+  utm_content: string
+  search_query: string
+  form: string
+}
+type KeywordStat = { count: number; quick: number; last: Date; group: string; queries: Map<string, number> }
 
 async function quotesByKeyword(days: number) {
   try {
     await ensureQuoteRequests()
     const { rows } = await pool.query<QuoteRow>(
-      `SELECT created_at, utm_source, utm_medium, utm_campaign, utm_term, utm_content
+      `SELECT created_at, utm_source, utm_medium, utm_campaign, utm_term, utm_content, search_query, form
          FROM quote_requests
         WHERE created_at >= now() - ($1 || ' days')::interval
         ORDER BY created_at DESC`,
       [String(days)],
     )
     const paid = rows.filter((r) => isPaid(r.utm_source ?? '', r.utm_medium ?? ''))
-    const by = new Map<string, { count: number; last: Date; group: string }>()
+    const by = new Map<string, KeywordStat>()
     for (const r of paid) {
       const key = r.utm_term || '(키워드 미확인)'
-      const cur = by.get(key)
-      if (cur) cur.count += 1
-      else by.set(key, { count: 1, last: new Date(r.created_at), group: r.utm_content || r.utm_campaign || '' })
+      let cur = by.get(key)
+      if (!cur) {
+        cur = { count: 0, quick: 0, last: new Date(r.created_at), group: r.utm_content || r.utm_campaign || '', queries: new Map() }
+        by.set(key, cur)
+      }
+      cur.count += 1
+      if (r.form === 'quick') cur.quick += 1
+      // 확장검색이면 손님이 친 검색어가 등록 키워드와 다르다. 어떤 말로 찾아왔는지 같이 본다
+      if (r.search_query && r.search_query !== r.utm_term) cur.queries.set(r.search_query, (cur.queries.get(r.search_query) ?? 0) + 1)
     }
     return {
       total: rows.length,
@@ -328,7 +345,7 @@ async function quotesByKeyword(days: number) {
   } catch (e) {
     // 유입 출처 열이 아직 없는 DB 에서도 화면은 떠야 한다.
     console.error('[admin] 문의 유입 조회 실패', e)
-    return { total: 0, paid: 0, naver: 0, noKeyword: 0, keywords: [] as [string, { count: number; last: Date; group: string }][] }
+    return { total: 0, paid: 0, naver: 0, noKeyword: 0, keywords: [] as [string, KeywordStat][] }
   }
 }
 
@@ -345,12 +362,14 @@ function QuoteAttribution({ days, data }: { days: number; data: Awaited<ReturnTy
         <p className="text-sm text-muted-foreground">아직 광고로 들어온 문의가 없습니다. 광고 주소에 utm 을 붙여야 남습니다.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="text-left text-xs text-muted-foreground">
               <tr>
                 <th className="py-2 pr-3 font-medium">키워드</th>
+                <th className="py-2 pr-3 font-medium">실제 검색어</th>
                 <th className="py-2 pr-3 font-medium">광고 그룹</th>
                 <th className="py-2 pr-3 text-right font-medium">문의</th>
+                <th className="py-2 pr-3 text-right font-medium">간단 문의</th>
                 <th className="py-2 pr-3 text-right font-medium">마지막</th>
               </tr>
             </thead>
@@ -358,8 +377,16 @@ function QuoteAttribution({ days, data }: { days: number; data: Awaited<ReturnTy
               {data.keywords.map(([kw, v]) => (
                 <tr key={kw} className="border-t border-border">
                   <td className="py-2 pr-3 font-semibold">{kw}</td>
+                  <td className="py-2 pr-3 text-muted-foreground">
+                    {[...v.queries.entries()]
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 3)
+                      .map(([q, n]) => (n > 1 ? `${q} ${n}` : q))
+                      .join(', ') || '—'}
+                  </td>
                   <td className="py-2 pr-3 text-muted-foreground">{v.group || '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{v.count}건</td>
+                  <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{v.quick ? `${v.quick}건` : '—'}</td>
                   <td className="py-2 pr-3 text-right text-muted-foreground tabular-nums">{v.last.toLocaleDateString('ko-KR')}</td>
                 </tr>
               ))}
@@ -367,6 +394,99 @@ function QuoteAttribution({ days, data }: { days: number; data: Awaited<ReturnTy
           </table>
         </div>
       )}
+    </section>
+  )
+}
+
+/**
+ * 창구별 문의: 이번 기간 vs 바로 앞 같은 길이 기간.
+ * 간단 문의를 2주쯤 쓰고 기존 견적 폼·전화보다 문의가 늘었는지 보려고 둔다 (2026-11-05 kevin).
+ * 접수는 quote_requests.form, 전화·카톡은 버튼을 누른 기록(site_events)이다.
+ */
+type CompareRow = { label: string; now: number; prev: number; note?: string }
+
+async function channelCompare(days: number): Promise<CompareRow[]> {
+  const rows: CompareRow[] = []
+  try {
+    await ensureQuoteRequests()
+    const { rows: q } = await pool.query<{ form: string; cur: number; prev: number }>(
+      `SELECT form,
+              count(*) FILTER (WHERE created_at >= now() - ($1 || ' days')::interval)::int AS cur,
+              count(*) FILTER (WHERE created_at <  now() - ($1 || ' days')::interval)::int AS prev
+         FROM quote_requests
+        WHERE created_at >= now() - ($2 || ' days')::interval
+        GROUP BY form`,
+      [String(days), String(days * 2)],
+    )
+    const get = (f: string) => q.find((r) => (r.form ?? '') === f) ?? { cur: 0, prev: 0 }
+    rows.push({ label: '간단 문의 (우측 하단)', now: get('quick').cur, prev: get('quick').prev })
+    rows.push({ label: '견적 폼', now: get('form').cur, prev: get('form').prev })
+    rows.push({ label: '사진 견적', now: get('photo').cur, prev: get('photo').prev })
+    const old = get('')
+    if (old.cur || old.prev) rows.push({ label: '창구 기록 이전 문의', now: old.cur, prev: old.prev, note: '창구를 남기기 전(11/5 이전) 접수' })
+  } catch (e) {
+    console.error('[admin/stats] 창구별 문의 조회 실패', e)
+  }
+  try {
+    await ensureSiteEvents()
+    const { rows: ev } = await pool.query<{ type: string; cur: number; prev: number }>(
+      `SELECT type,
+              count(*) FILTER (WHERE created_at >= now() - ($1 || ' days')::interval)::int AS cur,
+              count(*) FILTER (WHERE created_at <  now() - ($1 || ' days')::interval)::int AS prev
+         FROM site_events
+        WHERE type IN ('call','kakao') AND created_at >= now() - ($2 || ' days')::interval
+        GROUP BY type`,
+      [String(days), String(days * 2)],
+    )
+    const get = (t: string) => ev.find((r) => r.type === t) ?? { cur: 0, prev: 0 }
+    rows.push({ label: '전화 버튼', now: get('call').cur, prev: get('call').prev, note: '누른 횟수 (통화 연결 여부는 모름)' })
+    rows.push({ label: '카카오톡 버튼', now: get('kakao').cur, prev: get('kakao').prev, note: '누른 횟수' })
+  } catch (e) {
+    console.error('[admin/stats] 전화·카톡 조회 실패', e)
+  }
+  return rows
+}
+
+function ChannelCompare({ days, rows }: { days: number; rows: CompareRow[] }) {
+  const sum = (k: 'now' | 'prev') => rows.reduce((a, r) => a + r[k], 0)
+  const diff = (a: number, b: number) => (a === b ? '—' : `${a > b ? '+' : ''}${a - b}`)
+  return (
+    <section className="mb-6 bg-background p-6 ring-1 ring-border lg:p-8">
+      <h2 className="mb-1 text-lg font-bold tracking-tight">창구별 문의 비교</h2>
+      <p className="mb-4 text-sm text-muted-foreground">
+        최근 {days}일과 그 바로 앞 {days}일을 나란히 봅니다. 간단 문의를 켠 뒤 &lsquo;최근 14일&rsquo;로 보면 켜기 전 2주와 비교됩니다.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px] text-sm">
+          <thead className="text-left text-xs text-muted-foreground">
+            <tr>
+              <th className="py-2 pr-3 font-medium">창구</th>
+              <th className="py-2 pr-3 text-right font-medium">최근 {days}일</th>
+              <th className="py-2 pr-3 text-right font-medium">직전 {days}일</th>
+              <th className="py-2 pr-3 text-right font-medium">차이</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label} className="border-t border-border">
+                <td className="py-2 pr-3">
+                  <span className="font-semibold">{r.label}</span>
+                  {r.note && <span className="ml-2 text-xs text-muted-foreground">{r.note}</span>}
+                </td>
+                <td className="py-2 pr-3 text-right tabular-nums">{r.now}</td>
+                <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">{r.prev}</td>
+                <td className="py-2 pr-3 text-right tabular-nums">{diff(r.now, r.prev)}</td>
+              </tr>
+            ))}
+            <tr className="border-t-2 border-border font-bold">
+              <td className="py-2 pr-3">합계</td>
+              <td className="py-2 pr-3 text-right tabular-nums">{sum('now')}</td>
+              <td className="py-2 pr-3 text-right tabular-nums">{sum('prev')}</td>
+              <td className="py-2 pr-3 text-right tabular-nums">{diff(sum('now'), sum('prev'))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }

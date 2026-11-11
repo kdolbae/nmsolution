@@ -98,7 +98,7 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
             categories.length ? `분야 ${categories.join(', ')}` : '',
             message ? `\n${message.slice(0, 1500)}` : '',
             page ? `\n들어온 페이지 ${page}` : '',
-            'https://nm-solution.co.kr/admin/quotes',
+            'https://sbworks.bond/inbox',
           ]
             .filter(Boolean)
             .join('\n'),

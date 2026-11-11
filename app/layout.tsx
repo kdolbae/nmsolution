@@ -1,4 +1,5 @@
-import { Analytics } from '@vercel/analytics/next'
+import { SiteAnalytics } from '@/components/analytics'
+import { PreviewBand } from '@/components/preview-band'
 import { SiteTracker } from '@/components/site-tracker'
 import { AdminFab } from '@/components/admin-fab'
 import type { Metadata, Viewport } from 'next'
@@ -103,8 +104,9 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         {children}
         <TrackingScripts />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === 'production' && <SiteAnalytics />}
         <SiteTracker />
+        <PreviewBand />
         <AdminFab />
       </body>
     </html>

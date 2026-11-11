@@ -6,6 +6,7 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
  * 저장소가 공개라 담당자 이름·연락처는 코드에 넣지 않는다. 어드민 업체 정보에서 입력한다.
  * 업체 링크 비밀번호도 어드민에서 정한다(정하기 전에는 아무도 열 수 없음).
  */
+export const AIRRANE_REV2_KEY = 'airrane-cleaning-room-2611-v2-3d-viewer'
 export const AIRRANE_SEED_KEY = 'airrane-cleaning-room-2611-v1'
 
 export const AIRRANE_CLIENT = {

@@ -2,19 +2,22 @@ import { notifyAdmin, telegramEnabled } from '@/lib/notify/telegram'
 import { notifyKakao, kakaoConfigured, kakaoSaved } from '@/lib/notify/kakao'
 import { mailEnabled, mailLayout, sendMail } from '@/lib/mail'
 import { adminEmails } from '@/lib/admin'
+import { adminDeviceCount, pushAdmins } from '@/lib/notify/push'
 
 const ADMIN_URL = 'https://nm-solution.co.kr/admin/quotes'
 
 /**
  * 문의 접수 즉시 관리자에게 알린다. 켜진 수단으로 모두 보내고, 꺼진 것은 건너뛴다.
+ *  - 휴대폰 푸시: 관리자 → 견적 문의 → '이 휴대폰으로 알림 받기' (lib/notify/push.ts)
  *  - 텔레그램: TELEGRAM_BOT_TOKEN
  *  - 카카오톡(나에게 보내기): KAKAO_REST_API_KEY + 관리자 화면에서 한 번 연결
  *  - 메일: RESEND_API_KEY. 받는 주소는 NOTIFY_EMAIL(쉼표로 여러 개), 없으면 관리자 계정 메일
  * 어느 하나가 실패해도 접수는 그대로 성공이다.
  */
-export async function notifyInquiry({ title, lines }: { title: string; lines: string[] }) {
+export async function notifyInquiry({ title, lines, tag }: { title: string; lines: string[]; tag?: string }) {
   const body = lines.filter(Boolean)
   await Promise.all([
+    pushAdmins({ title, body: body.join('\n'), url: '/admin/quotes', tag }),
     notifyAdmin([title, ...body, ADMIN_URL].join('\n')),
     notifyKakao([title, ...body].join('\n'), ADMIN_URL),
     (async () => {
@@ -34,6 +37,7 @@ export async function notifyInquiry({ title, lines }: { title: string; lines: st
 export async function notifyStatus() {
   const kakao = kakaoConfigured() ? await kakaoSaved() : null
   return {
+    pushDevices: await adminDeviceCount(),
     telegram: telegramEnabled(),
     mail: mailEnabled(),
     mailTo: process.env.NOTIFY_EMAIL || '',

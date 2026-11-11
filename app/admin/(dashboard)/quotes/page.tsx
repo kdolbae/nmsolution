@@ -6,6 +6,9 @@ import { desc } from 'drizzle-orm'
 import { photoIdsByQuote } from '@/lib/quote-photos'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { notifyStatus } from '@/lib/notify/inquiry'
+import { messagesByQuote } from '@/lib/inquiry-chat'
+import { AutoRefresh } from '@/components/admin/quote-chat'
+import { AdminPushButton } from '@/components/admin/admin-push'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +23,7 @@ async function getQuotes() {
 }
 
 export default async function AdminQuotesPage({ searchParams }: { searchParams: Promise<{ kakao?: string }> }) {
-  const [quotes, photos, notify, sp] = await Promise.all([getQuotes(), photoIdsByQuote(), notifyStatus(), searchParams])
+  const [quotes, photos, notify, sp, messages] = await Promise.all([getQuotes(), photoIdsByQuote(), notifyStatus(), searchParams, messagesByQuote()])
   const newCount = quotes.filter((q) => q.status === 'new').length
 
   return (
@@ -34,7 +37,8 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams: 
         }
       />
       <NotifyStatus status={notify} result={sp.kakao} />
-      <QuotesManager quotes={quotes} photos={photos} />
+      <AutoRefresh />
+      <QuotesManager quotes={quotes} photos={photos} messages={messages} />
     </>
   )
 }
@@ -54,6 +58,10 @@ function NotifyStatus({ status, result }: { status: Awaited<ReturnType<typeof no
       {result === 'on' && <p className="mb-3 text-electric">카카오톡 알림이 연결되었습니다.</p>}
       {result === 'fail' && <p className="mb-3 text-destructive">카카오톡 연결에 실패했습니다. 앱 설정(Redirect URI·동의항목)을 확인하고 다시 눌러 주세요.</p>}
       <ul className="flex flex-col gap-2">
+        <Row on={status.pushDevices > 0} name="휴대폰 푸시">
+          {status.pushDevices > 0 ? `${status.pushDevices}대 등록됨. ` : '이 화면을 휴대폰에서 열고 눌러 주세요. '}
+          <AdminPushButton />
+        </Row>
         <Row on={status.telegram} name="텔레그램">{status.telegram ? '봇으로 바로 옵니다.' : 'TELEGRAM_BOT_TOKEN 을 넣으면 켜집니다.'}</Row>
         <Row on={!!status.kakao} name="카카오톡 (나에게 보내기)">
           {!status.kakaoKey ? (

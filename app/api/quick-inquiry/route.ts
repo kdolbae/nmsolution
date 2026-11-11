@@ -8,6 +8,7 @@ import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
 import { QUICK_MAX_PHOTOS, QUICK_WORKS } from '@/lib/quick-inquiry'
 import { notifyInquiry } from '@/lib/notify/inquiry'
+import { newChatToken, setChatToken } from '@/lib/inquiry-chat'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,6 +98,10 @@ export async function POST(req: Request) {
         await pool.query('INSERT INTO quote_photos (quote_id, mime, bytes, data) VALUES ($1, $2, $3, $4)', [row.id, p.mime, p.data.length, p.data])
     }
 
+    // 손님이 이 문의로 계속 대화할 수 있게 비밀 토큰을 준다 (lib/inquiry-chat.ts)
+    const token = newChatToken()
+    await setChatToken(row.id, token)
+
     after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'quote', phone, source_page: page }]).then(() => undefined))
     const source = attributionSummary(attr)
     after(() =>
@@ -109,9 +114,10 @@ export async function POST(req: Request) {
           source ? `유입 ${source}` : '',
           attr.searchQuery && attr.searchQuery !== attr.utmTerm ? `검색어 ${attr.searchQuery}` : '',
         ],
+        tag: `quote-${row.id}`,
       }),
     )
-    return Response.json({ ok: true })
+    return Response.json({ ok: true, token })
   } catch (e) {
     console.error('[quick-inquiry] 접수 실패', e)
     return fail('접수 중 문제가 발생했습니다. 전화나 카카오톡으로 연락해 주세요.', 500)

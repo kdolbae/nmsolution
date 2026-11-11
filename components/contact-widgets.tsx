@@ -6,7 +6,7 @@ import { track } from '@/lib/track'
 import { reportConversion } from '@/lib/tracking'
 import { cn } from '@/lib/utils'
 import { kakaoChatUrl, openKakaoChat } from '@/lib/kakao'
-import { QuickInquiry, type QuickStep } from '@/components/quick-inquiry'
+import { QuickInquiry, useChatUnread, type QuickStep } from '@/components/quick-inquiry'
 
 type Channel = {
   icon: typeof FileText
@@ -79,6 +79,14 @@ export function FloatingContact({
   const chat = kakaoChatUrl(kakaoUrl)
   // 간단 문의를 시작하면 전화·카톡 목록을 한 줄로 줄인다 (없애지는 않는다)
   const [step, setStep] = useState<QuickStep>('work')
+  // 관리자 답장이 왔거나 알림을 눌러 들어오면(?chat=1) 박스를 연다
+  const unread = useChatUnread()
+  useEffect(() => {
+    if (unread > 0) setOpen(true)
+  }, [unread])
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('chat')) setOpen(true)
+  }, [])
 
   return (
     <div className="fixed bottom-6 right-5 z-40 hidden flex-col items-end gap-3 md:flex lg:bottom-8 lg:right-8">
@@ -218,6 +226,10 @@ export function MobileContactBar({
   const CELL = 'flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80'
   // 간단 문의(3문답)는 하단 바 위에 떠 있는 버튼으로 연다. 전화·카톡 칸은 그대로 둔다
   const [quick, setQuick] = useState(false)
+  const unread = useChatUnread()
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('chat')) setQuick(true)
+  }, [])
   useEffect(() => {
     if (!quick) return
     const prev = document.body.style.overflow
@@ -239,7 +251,10 @@ export function MobileContactBar({
       style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom) + 12px)' }}
     >
       <MessageSquareText className="size-4" strokeWidth={2} />
-      간단 문의
+      {unread > 0 ? '답장 도착' : '간단 문의'}
+      {unread > 0 && (
+        <span className="flex size-5 items-center justify-center rounded-full bg-white text-xs font-bold text-electric">{unread}</span>
+      )}
     </button>
     {quick && (
       <div className="fixed inset-0 z-50 flex flex-col justify-end md:hidden" role="dialog" aria-modal="true" aria-label="간단 문의">

@@ -101,6 +101,7 @@ https://www.nm-solution.co.kr/services/recovery?utm_source=naver&utm_medium=cpc&
 
 | 수단 | Vercel 변수 | 비고 |
 | --- | --- | --- |
+| 휴대폰 푸시 | 없음 | 관리자 → 견적 문의 → '이 기기로 알림 받기'. 안드로이드 크롬은 바로, 아이폰은 사파리 공유 → '홈 화면에 추가' 후 그 아이콘으로 열어서 누름(iOS 16.4+). 서버 키는 처음 쓸 때 자동 생성(site_content 'vapid') |
 | 텔레그램 | `TELEGRAM_BOT_TOKEN` | 이미 설정됨 |
 | 메일 | `RESEND_API_KEY`, (선택) `NOTIFY_EMAIL`, `MAIL_FROM` | 받는 주소 기본값은 관리자 계정 메일. 보내는 도메인 nm-solution.co.kr 을 Resend 에서 인증해야 함 |
 | 카카오톡 | `KAKAO_REST_API_KEY`, (선택) `KAKAO_CLIENT_SECRET` | '나에게 보내기'. 무료, 비즈 심사 없음. 아래 설정 후 관리자 화면에서 '카카오톡 알림 연결하기' 한 번 |
@@ -112,3 +113,11 @@ https://www.nm-solution.co.kr/services/recovery?utm_source=naver&utm_medium=cpc&
 3. 동의항목 → **카카오톡 메시지 전송(talk_message)** 선택 동의로 설정
 4. 플랫폼 → Web 사이트 도메인에 `https://nm-solution.co.kr`, `https://www.nm-solution.co.kr`
 5. Vercel 재배포 후 관리자 → 견적 문의 → '카카오톡 알림 연결하기' → 본인 카카오 계정으로 동의
+
+### 대화 (손님 ↔ 관리자)
+
+- 간단 문의를 남기면 박스가 대화창으로 바뀝니다. 손님은 추가 메시지를 보낼 수 있고, 관리자 답장은 15초 안에 박스에 뜹니다.
+  다음에 다시 들어와도(같은 브라우저, 60일) 대화가 이어지고, 안 읽은 답장이 있으면 PC는 박스가 열리고 모바일은 '답장 도착' 버튼이 됩니다.
+- 손님은 '답장 오면 휴대폰 알림 받기'를 누르면 답장이 푸시로 갑니다(안드로이드. 아이폰 사파리는 웹 푸시가 안 됨 → 전화로 연락).
+- 관리자는 견적 문의 화면에서 문의마다 대화창으로 답합니다. 손님 메시지가 오면 '새 메시지' 표시 + 휴대폰 푸시·텔레그램 등으로 알림.
+- 저장: `inquiry_messages`, 손님 열쇠는 `quote_requests.chat_token`(로그인 없이 그 문의 대화만 열림). 구독은 `push_subscriptions`.

@@ -35,7 +35,8 @@ for (const kind of ['login_page', 'pdf', 'login_ok', 'login_fail'])
   if (!pr.includes(`'${kind}'`)) problems.push(`lib/clients/portal-route.ts: '${kind}' 기록이 없음`)
 if (!existsSync(path.join(root, 'public/js/pv.js'))) problems.push('public/js/pv.js 없음')
 if (!existsSync(path.join(root, 'app/api/pv/route.ts'))) problems.push('app/api/pv/route.ts 없음')
-for (const f of ['app/portal/page.tsx', 'app/api/portal/print/route.ts', 'app/api/portal/files/[file]/route.ts', 'app/work/[key]/route.ts'])
+// 현장 팀 링크 /work/<키> 는 N-CMS(sbworks.bond/s/work/<키>)로 넘긴다(next.config.mjs). 열람 기록은 N-CMS 가 남긴다
+for (const f of ['app/portal/page.tsx', 'app/api/portal/print/route.ts', 'app/api/portal/files/[file]/route.ts'])
   if (!/logAccess\(/.test(read(f))) problems.push(`${f}: logAccess 가 없음`)
 
 if (problems.length) {

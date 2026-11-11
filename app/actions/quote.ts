@@ -9,6 +9,7 @@ import { after } from 'next/server'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { sendToBoard } from '@/lib/board-sync'
 import { notifyAdmin } from '@/lib/notify/telegram'
+import { ncmsUtm, sendInquiryToNcms } from '@/lib/ncms'
 
 export type QuoteInput = {
   name: string
@@ -73,18 +74,26 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
     }
 
     await ensureQuoteRequests()
+    const attr = attributionValues(input.attribution)
+    const company = (input.company ?? '').trim().slice(0, 100)
+    const location = (input.location ?? '').trim().slice(0, 200)
     const [row] = await db.insert(quoteRequests).values({
       name: name.slice(0, 100),
       phone: phone.slice(0, 40),
-      company: (input.company ?? '').trim().slice(0, 100),
-      location: (input.location ?? '').trim().slice(0, 200),
+      company,
+      location,
       categories: categories.join(','),
       message: message,
-      ...attributionValues(input.attribution),
+      ...attr,
     }).returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
 
     // 나노마스터 상황판으로 건수·시각만 보낸다(이름·연락처 원문은 안 나간다. lib/board-sync.ts)
     const page = pathOf(h.get('referer'))
+    // N-CMS 문의·상담으로 보낸다(엔엠 어드민 대신). 못 보내도 이 줄은 엔엠 DB 에 있어 N-CMS 「엔엠 자료 가져오기」로 들어간다
+    if (row)
+      after(() =>
+        sendInquiryToNcms({ quoteId: row.id, name, phone, company, location, categories: categories.join(','), message, sourcePage: page, utm: ncmsUtm(attr) }).then(() => undefined),
+      )
     if (row) after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'quote', phone, source_page: page }]).then(() => undefined))
     // 관리자 휴대폰(텔레그램)으로 문의 내용을 바로 알린다
     if (row)
@@ -98,7 +107,7 @@ export async function submitQuote(input: QuoteInput): Promise<QuoteResult> {
             categories.length ? `분야 ${categories.join(', ')}` : '',
             message ? `\n${message.slice(0, 1500)}` : '',
             page ? `\n들어온 페이지 ${page}` : '',
-            'https://nm-solution.co.kr/admin/quotes',
+            'https://sbworks.bond/inbox',
           ]
             .filter(Boolean)
             .join('\n'),

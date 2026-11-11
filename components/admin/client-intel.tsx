@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ChevronUp, ExternalLink, ImagePlus, Loader2, Lock, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, ExternalLink, Loader2, Lock, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { CardDropZone } from '@/components/admin/card-drop-zone'
 import { Field } from '@/components/admin/form'
 import { TextIn } from '@/components/admin/inputs'
 import { shrink } from '@/components/photo-quote-form'
@@ -120,23 +121,7 @@ function Contacts({ clientId, cards, onChange }: { clientId: number; cards: Card
         </ul>
       )}
       <div className="flex flex-col gap-3 bg-secondary/40 p-4">
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <ImagePlus className="size-4" />
-          <span className="font-medium">명함 사진 고르기 (여러 장)</span>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => setFiles((f) => [...f, ...Array.from(e.target.files ?? [])].slice(0, 10))}
-          />
-          {files.length > 0 && <span className="text-muted-foreground">{files.length}장 고름</span>}
-          {files.length > 0 && (
-            <button type="button" onClick={() => setFiles([])} className="text-muted-foreground hover:text-foreground">
-              <X className="size-4" />
-            </button>
-          )}
-        </label>
+        <CardDropZone files={files} onChange={setFiles} />
         <Field label="명함 글 (사진 대신 붙여 넣어도 됨)" value={text} onChange={setText} multiline rows={3} />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={research} onChange={(e) => setResearch(e.target.checked)} /> 명함을 읽은 뒤 업체 다시 조사

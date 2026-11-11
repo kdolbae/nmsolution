@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Calculator, Plus, Loader2, ImagePlus, X } from 'lucide-react'
+import { FileText, Calculator, Plus, Loader2 } from 'lucide-react'
 import { uploadCards } from '@/components/admin/client-intel'
+import { CardDropZone } from '@/components/admin/card-drop-zone'
 import { Section, Field } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/app/actions/clients'
@@ -69,23 +70,7 @@ export function ClientsList({ clients }: { clients: Item[] }) {
             <Field label="현장 주소" value={form.siteAddress} onChange={set('siteAddress')} />
           </div>
           <div className="flex flex-col gap-3 bg-secondary/40 p-4">
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <ImagePlus className="size-4" />
-              <span className="font-medium">명함 사진 (여러 장 가능)</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => setCardFiles((f) => [...f, ...Array.from(e.target.files ?? [])].slice(0, 10))}
-              />
-              {cardFiles.length > 0 && <span className="text-muted-foreground">{cardFiles.length}장 고름</span>}
-              {cardFiles.length > 0 && (
-                <button type="button" onClick={() => setCardFiles([])} className="text-muted-foreground hover:text-foreground">
-                  <X className="size-4" />
-                </button>
-              )}
-            </label>
+            <CardDropZone files={cardFiles} onChange={setCardFiles} />
             <Field label="명함 글 (사진 대신 붙여 넣어도 됨)" value={cardText} onChange={setCardText} multiline rows={3} />
             <p className="text-xs text-muted-foreground">조사 내용과 명함은 내부자료로만 저장되고 업체 링크·견적서에는 나오지 않습니다.</p>
           </div>

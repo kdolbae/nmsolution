@@ -20,17 +20,35 @@ function merge<T extends Record<string, unknown>>(base: T, saved: unknown): T {
 }
 
 /**
- * 페이지 내용. 순서: N-CMS(마케팅 › 홈페이지, 5분 캐시) → 엔엠 DB site_content(어드민을 지우기 전 마지막 내용) → 코드 기본값.
+ * 관리자에서 사업소개를 저장해 둔 경우, 그 뒤에 기본값에 추가한 사업(대형플랜트 설비)은 저장본에 없어 안 보인다.
+ * 저장본에 없으면 기본값 항목을 공장 개보수 바로 뒤에 끼워 넣는다. 관리자에서 저장하면 그대로 저장본에 들어간다.
+ */
+const ADDED_SERVICE_SLUGS = ['plant']
+function withNewServices(c: ContentMap['services']): ContentMap['services'] {
+  const items = [...c.items]
+  for (const slug of ADDED_SERVICE_SLUGS) {
+    if (items.some((s) => s.slug === slug)) continue
+    const def = CONTENT_DEFAULTS.services.items.find((s) => s.slug === slug)
+    if (!def) continue
+    const at = items.findIndex((s) => s.slug === 'factory')
+    items.splice(at === -1 ? 0 : at + 1, 0, def)
+  }
+  return { ...c, items }
+}
+
+/**
+ * 페이지 내용. 순서: N-CMS(플랜트사업부 › 홈페이지, 5분 캐시) → 엔엠 DB site_content(어드민을 지우기 전 마지막 내용) → 코드 기본값.
  * 엔엠 어드민은 지우고 내용은 N-CMS 에서 고친다(kevin 2026-11-10, lib/ncms.ts).
  */
 export async function getContent<K extends ContentKey>(key: K): Promise<ContentMap[K]> {
   const base = CONTENT_DEFAULTS[key] as ContentMap[K]
   const ncms = await ncmsHomepageOrNull()
   const remote = ncms?.savedKeys?.includes(key) ? ncms.pages?.[key] : null
-  if (remote && typeof remote === 'object' && !Array.isArray(remote)) return merge(base as Record<string, unknown>, remote) as ContentMap[K]
+  const fix = (out: ContentMap[K]) => (key === 'services' ? withNewServices(out as ContentMap['services']) : out) as ContentMap[K]
+  if (remote && typeof remote === 'object' && !Array.isArray(remote)) return fix(merge(base as Record<string, unknown>, remote) as ContentMap[K])
   try {
     const [row] = await db.select().from(siteContent).where(eq(siteContent.key, key)).limit(1)
-    return merge(base as Record<string, unknown>, row?.data) as ContentMap[K]
+    return fix(merge(base as Record<string, unknown>, row?.data) as ContentMap[K])
   } catch (e) {
     console.error('[content] failed to load', key, e)
     return base

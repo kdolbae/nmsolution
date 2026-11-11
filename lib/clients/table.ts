@@ -23,7 +23,7 @@ import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY
 import { JJY_PAGE_HTML } from './jjy-page'
 import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
 import { DESIAN_PAGE_HTML } from './desianplex-page'
-import { AIRRANE_CLIENT, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
+import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -679,6 +679,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'ARN', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
       })
+      await seedOnce(AIRRANE_REV2_KEY, () => refreshAirrane('3D 모델 직접 돌려 보기 추가'))
     })().catch((e) => {
       ready = null
       throw e
@@ -1138,6 +1139,20 @@ async function refreshJjy(summary: string) {
   const quote = jjyQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 에어레인 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만, 견적번호 유지). */
+async function refreshAirrane(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [AIRRANE_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = airraneQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = AIRRANE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

@@ -85,7 +85,7 @@ export function WorkLandingView({ w, settings }: { w: WorkLanding; settings: Set
 
       {/* Hero — 검색한 작업을 첫 줄에, 그 작업의 실제 현장 사진을 옆(모바일은 아래)에 */}
       <section className="bg-navy text-navy-foreground">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 py-10 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-20">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 pb-10 pt-5 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-20">
           <div className="flex flex-col gap-6 lg:col-span-7 lg:justify-center">
             <p className="text-kicker flex items-center gap-3 text-navy-foreground/60">
               <span className="h-px w-8 bg-electric" aria-hidden />
@@ -135,7 +135,7 @@ export function WorkLandingView({ w, settings }: { w: WorkLanding; settings: Set
             </ul>
           </div>
 
-          <div className="relative aspect-[4/3] overflow-hidden bg-charcoal lg:col-span-5 lg:aspect-auto lg:min-h-[420px]">
+          <div className="relative order-first aspect-[16/9] overflow-hidden bg-charcoal sm:aspect-[4/3] lg:order-none lg:col-span-5 lg:aspect-auto lg:min-h-[420px]">
             <Image src={w.hero.src} alt={w.hero.label} fill priority sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
             <span className="absolute bottom-0 left-0 bg-navy px-3 py-2 text-sm font-semibold">
               {w.hero.label} · 엔엠솔루션 현장

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
 import { MultilineText } from '@/components/multiline-text'
+import { PhotoStrip, SERVICE_PHOTOS } from '@/components/photo-strip'
 import { getContent } from '@/lib/content/get'
 import { getWorkLanding } from '@/lib/work-landings'
 import { WorkLandingView, workLandingMetadata } from '@/components/work-landing'
@@ -30,30 +31,38 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const idx = services.items.findIndex((s) => s.slug === slug)
   if (idx === -1) notFound()
   const item = services.items[idx]
+  // 실제 현장 사진이 있으면 그것, 없으면 사업 대표 이미지
+  const photos = SERVICE_PHOTOS[slug] ?? []
+  const main = photos[0] ?? { src: item.image, label: item.name }
   const others = services.items.filter((s) => s.slug !== slug)
 
   return (
     <PageShell settings={settings}>
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden bg-navy text-navy-foreground">
-        <Image src={item.image} alt={item.name} fill priority sizes="100vw" className="object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/70 to-navy/30" aria-hidden />
-        <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-5 py-20 lg:px-8 lg:py-28">
-          <Link
-            href="/services"
-            className="inline-flex w-fit items-center gap-2 text-sm text-navy-foreground/70 transition-colors hover:text-navy-foreground"
-          >
-            <ArrowLeft className="size-4" />
-            사업소개
-          </Link>
-          <p className="text-kicker flex items-center gap-3 text-navy-foreground/60">
-            <span className="h-px w-8 bg-electric" aria-hidden />
-            {item.en}
-          </p>
-          <h1 className="max-w-3xl text-balance text-4xl font-black leading-[1.08] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
-            {item.name}
-          </h1>
-          <p className="max-w-2xl text-pretty text-lg leading-relaxed text-navy-foreground/80">{item.summary}</p>
+      {/* Hero — 휴대폰 첫 화면에 실제 현장 사진이 먼저 보이게(kevin 2026-11-12 "모든 랜딩에 이미지") */}
+      <section className="bg-navy text-navy-foreground">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 pb-12 pt-5 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-24">
+          <div className="flex flex-col gap-6 lg:col-span-7 lg:justify-center">
+            <Link
+              href="/services"
+              className="inline-flex w-fit items-center gap-2 text-sm text-navy-foreground/70 transition-colors hover:text-navy-foreground"
+            >
+              <ArrowLeft className="size-4" />
+              사업소개
+            </Link>
+            <p className="text-kicker flex items-center gap-3 text-navy-foreground/60">
+              <span className="h-px w-8 bg-electric" aria-hidden />
+              {item.en}
+            </p>
+            <h1 className="max-w-3xl text-balance text-4xl font-black leading-[1.08] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
+              {item.name}
+            </h1>
+            <p className="max-w-2xl text-pretty text-lg leading-relaxed text-navy-foreground/80">{item.summary}</p>
+            {photos.length > 1 && <PhotoStrip photos={photos.slice(1)} className="max-w-md" />}
+          </div>
+          <div className="relative order-first aspect-[16/9] overflow-hidden bg-charcoal sm:aspect-[4/3] lg:order-none lg:col-span-5 lg:aspect-auto lg:min-h-[420px]">
+            <Image src={main.src} alt={main.label} fill priority sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
+            <span className="absolute bottom-0 left-0 bg-navy px-3 py-2 text-sm font-semibold">{main.label}</span>
+          </div>
         </div>
       </section>
 

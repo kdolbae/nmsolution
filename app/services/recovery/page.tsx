@@ -251,7 +251,7 @@ export default async function LeakRecoveryPage() {
 
       {/* Hero — 광고 소재와 같은 문구 · 같은 사진으로 맞춘다 */}
       <section className="bg-navy text-navy-foreground">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 py-14 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-24">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 pb-14 pt-5 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-24">
           <div className="flex flex-col gap-7 lg:col-span-7 lg:justify-center">
             <Link
               href="/services"
@@ -308,7 +308,7 @@ export default async function LeakRecoveryPage() {
             </ul>
           </div>
 
-          <div className="grid grid-cols-2 gap-1 lg:col-span-5 lg:grid-cols-1 lg:grid-rows-2">
+          <div className="order-first grid grid-cols-2 gap-1 lg:order-none lg:col-span-5 lg:grid-cols-1 lg:grid-rows-2">
             {CASES.map((c) => (
               <div key={c.title} className="relative aspect-[4/3] overflow-hidden bg-charcoal lg:aspect-auto lg:min-h-56">
                 <Image src={c.hero.src} alt={c.hero.alt} fill priority sizes="(min-width: 1024px) 40vw, 50vw" className="object-cover" />

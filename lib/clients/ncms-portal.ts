@@ -15,14 +15,37 @@ import { notifyAdmin } from '@/lib/notify/telegram'
  * - 고객 위치(x-vercel-ip-*)를 x-client-* 로 실어 보낸다(N-CMS 가 보는 cf-* 는 이 서버 위치라서).
  * - N-CMS 가 열람·PDF 응답에 x-ncms-view 머리를 붙이면 관리자 텔레그램으로 알린다(예전 access-log.ts 와 같은 알림).
  */
-const NOTIFY: Record<string, string> = { view: '견적 열람', share_view: '임시 링크로 열람', pdf: 'PDF 다운로드' }
+const NOTIFY: Record<string, string> = {
+  view: '견적 열람',
+  share_view: '임시 링크로 열람',
+  pdf: 'PDF 다운로드',
+  login_fail: '비밀번호 틀림',
+  work_order_view: '업무 지시서 열람(현장 팀)',
+  work_order_pdf: '업무 지시서 PDF(현장 팀)',
+}
 const BOT = /bot|crawl|spider|slurp|yeti|daumoa|bingpreview|headless|lighthouse|facebookexternalhit|kakaotalk-scrap|slack-imgproxy|whatsapp|telegram|discord/i
 
 const NCMS = () => (process.env.NCMS_URL || 'https://sbworks.bond').replace(/\/$/, '')
 const SLUG = /^[a-z0-9][a-z0-9-]{1,40}$/
 
+const WORK_KEY = /^[a-z0-9]{20,64}$/
+
+/**
+ * 현장 팀 링크 nm-solution.co.kr/work/<키> 를 N-CMS(/s/work/<키>)에서 가져온다(kevin 2026-11-12).
+ * N-CMS 에 그 키가 없으면 null → 예전 엔엠 업무 지시서로.
+ */
+export async function ncmsWork(req: Request, key: string): Promise<Response | null> {
+  if (!WORK_KEY.test(key) || process.env.NCMS_PORTAL === 'off') return null
+  return forward(req, `/s/work/${key}`, key, null)
+}
+
 export async function ncmsPortal(req: Request, slug: string): Promise<Response | null> {
   if (!SLUG.test(slug) || process.env.NCMS_PORTAL === 'off') return null
+  return forward(req, `/s/project/${slug}`, slug, slug)
+}
+
+/** N-CMS 로 요청을 넘기고 응답을 돌려준다. slug 가 있으면 쿠키·이동 주소를 /<주소> 로 바꾼다 */
+async function forward(req: Request, from: string, label: string, slug: string | null): Promise<Response | null> {
   const url = new URL(req.url)
   const h = new Headers()
   for (const k of ['cookie', 'user-agent', 'accept', 'accept-language', 'referer', 'content-type']) {
@@ -37,7 +60,7 @@ export async function ncmsPortal(req: Request, slug: string): Promise<Response |
   if (g.city) h.set('x-client-city', encodeURIComponent(g.city))
   let res: Response
   try {
-    res = await fetch(`${NCMS()}/s/project/${slug}${url.search}`, {
+    res = await fetch(`${NCMS()}${from}${url.search}`, {
       method: req.method,
       headers: h,
       body: req.method === 'POST' ? await req.arrayBuffer() : undefined,
@@ -46,7 +69,7 @@ export async function ncmsPortal(req: Request, slug: string): Promise<Response |
       signal: AbortSignal.timeout(55_000),
     })
   } catch (e) {
-    console.error('[ncms-portal] 연결 실패', slug, e)
+    console.error('[ncms-portal] 연결 실패', label, e)
     return null
   }
   // 없는 주소(404)·N-CMS 오류(5xx)·방화벽 차단(403)이면 예전 엔엠 자료로
@@ -56,9 +79,9 @@ export async function ncmsPortal(req: Request, slug: string): Promise<Response |
   if (kind && NOTIFY[kind]) {
     const reqHeaders = req.headers
     const project = res.headers.get('x-ncms-project') || ''
-    let name = slug
+    let name = slug ?? '업체'
     try {
-      name = decodeURIComponent(res.headers.get('x-ncms-name') || '') || slug
+      name = decodeURIComponent(res.headers.get('x-ncms-name') || '') || name
     } catch {}
     after(() => notifyView(reqHeaders, { kind, name, project, ip, geo: g }))
   }
@@ -68,7 +91,7 @@ export async function ncmsPortal(req: Request, slug: string): Promise<Response |
     const v = res.headers.get(k)
     if (v) out.set(k, v)
   }
-  const from = `/s/project/${slug}`
+  if (!slug) return new Response(res.body, { status: res.status, headers: out })
   const loc = res.headers.get('location')
   if (loc) out.set('location', loc.startsWith(from) ? `/${slug}${loc.slice(from.length)}` : loc)
   let entered = false

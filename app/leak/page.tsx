@@ -147,7 +147,7 @@ export default async function LeakPhotoQuotePage() {
 
       {/* Hero — 광고 문구와 같은 약속을 첫 줄에 */}
       <section className="bg-navy text-navy-foreground">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 pb-12 pt-5 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-20">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 py-12 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-20">
           <div className="flex flex-col gap-6 lg:col-span-7 lg:justify-center">
             <p className="text-kicker flex items-center gap-3 text-navy-foreground/60">
               <span className="h-px w-8 bg-electric" aria-hidden />
@@ -200,13 +200,13 @@ export default async function LeakPhotoQuotePage() {
             </ul>
           </div>
 
-          <div className="relative order-first aspect-[16/9] overflow-hidden bg-charcoal sm:aspect-[4/3] lg:order-none lg:col-span-5 lg:aspect-auto">
+          <div className="relative hidden aspect-[4/3] overflow-hidden bg-charcoal lg:col-span-5 lg:block lg:aspect-auto">
             <Image
               src="/images/leak/house-damage.webp"
               alt="누수로 천장과 벽지가 얼룩지고 벗겨진 방"
               fill
               priority
-              sizes="(min-width: 1024px) 40vw, 100vw"
+              sizes="40vw"
               className="object-cover"
             />
             <span className="absolute bottom-0 left-0 flex items-center gap-2 bg-navy px-3 py-2 text-sm font-semibold">

@@ -1,11 +1,10 @@
 import Image from 'next/image'
 import { ArrowRight, ArrowDown } from 'lucide-react'
 import type { HomeContent } from '@/lib/content/defaults'
-import { PhotoStrip, HOME_PHOTOS } from '@/components/photo-strip'
 
 export function Hero({ content }: { content: HomeContent['hero'] }) {
   return (
-    <section id="top" className="relative isolate overflow-hidden lg:min-h-[100svh] bg-navy text-navy-foreground">
+    <section id="top" className="relative isolate min-h-[100svh] overflow-hidden bg-navy text-navy-foreground">
       <Image
         src="/images/hero-factory.png"
         alt="저녁 하늘 아래 정돈된 현대식 공장 외관"
@@ -17,7 +16,7 @@ export function Hero({ content }: { content: HomeContent['hero'] }) {
       <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/70 to-navy/20" aria-hidden />
       <div className="absolute inset-0 bg-gradient-to-r from-navy/80 via-navy/30 to-transparent" aria-hidden />
 
-      <div className="relative mx-auto flex max-w-7xl flex-col justify-end px-5 pb-28 pt-24 lg:min-h-[100svh] lg:px-8 lg:pb-24 lg:pt-40">
+      <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-28 pt-40 lg:px-8 lg:pb-24">
         <p className="text-kicker mb-6 flex items-center gap-3 text-navy-foreground/70">
           <span className="h-px w-8 bg-electric" aria-hidden />
           {content.kicker}
@@ -32,10 +31,7 @@ export function Hero({ content }: { content: HomeContent['hero'] }) {
           {content.description}
         </p>
 
-        {/* 실제 현장 사진 — 휴대폰 첫 화면에서도 보이게 설명 바로 아래 (kevin 2026-11-12) */}
-        <PhotoStrip photos={HOME_PHOTOS} priority className="mt-6 max-w-2xl" />
-
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:mt-10">
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <a
             href="#quote"
             className="group inline-flex h-14 items-center justify-center gap-3 bg-electric px-7 text-base font-semibold text-electric-foreground transition-colors hover:bg-background hover:text-navy"

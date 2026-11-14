@@ -34,7 +34,7 @@ import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
-import { OP_MARGIN, calcMargin, unitCost } from '@/lib/clients/margin'
+import { OP_MARGIN, calcMargin, matPrice, repriceMaterials, syncLabor, unitCost } from '@/lib/clients/margin'
 import {
   ITEM_KINDS,
   calcQuote,
@@ -710,7 +710,14 @@ function QuotePanel({
   }
 
   const update = (patch: Partial<Quote>) => {
-    setQ((cur) => ({ ...cur, ...patch }))
+    // 자재비가 바뀌면 자재비 비례 인건비 줄도 따라 바뀐다
+    setQ((cur) => syncLabor({ ...cur, ...patch }))
+    setDirty(true)
+    setMessage('')
+  }
+  // 인상률·여분율을 바꾸면 원가 단가를 넣은 재료비 줄의 견적 단가를 다시 계산한다
+  const setPricing = (patch: Pick<Quote, 'matUp'> | Pick<Quote, 'matSpare'>) => {
+    setQ((cur) => syncLabor(repriceMaterials({ ...cur, ...patch })))
     setDirty(true)
     setMessage('')
   }
@@ -905,10 +912,22 @@ function QuotePanel({
                         <td className="px-1 py-1"><TextIn value={i.spec} onChange={(v) => updateItem(s.id, i.id, { spec: v })} /></td>
                         <td className="px-1 py-1"><NumInput value={i.qty} onChange={(n) => updateItem(s.id, i.id, { qty: n })} /></td>
                         <td className="px-1 py-1"><TextIn value={i.unit} onChange={(v) => updateItem(s.id, i.id, { unit: v })} /></td>
-                        <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
+                        <td className="px-1 py-1">
+                          {i.auto === 'labor' ? (
+                            <span className="block px-2 text-right tabular-nums text-muted-foreground" title={`자재비 × ${s.laborRatio}% 로 자동 계산`}>
+                              {won(i.price)}
+                            </span>
+                          ) : (
+                            <NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} />
+                          )}
+                        </td>
                         <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
                         <td className="px-1 py-1">
-                          <CostInput value={i.cost} placeholder={unitCost(i).cost} onChange={(n) => updateItem(s.id, i.id, { cost: n })} />
+                          <CostInput value={i.cost} placeholder={unitCost(i).cost} onChange={(n) =>
+                              // 재료비는 원가 단가를 넣으면 견적 단가를 인상률·여분율로 바로 계산한다 (단가 칸에서 다시 고칠 수 있음)
+                              updateItem(s.id, i.id, i.kind === '재료비' && n !== undefined ? { cost: n, price: matPrice(n, q) } : { cost: n })
+                            }
+                          />
                         </td>
                         <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
                         <td className="px-1 py-1 text-center">
@@ -965,6 +984,22 @@ function QuotePanel({
                     </select>
                   </label>
                 )}
+                <label className="flex items-center gap-1.5" title="켜면 이 공종의 인건비 한 줄을 (재료비 합계 × 비율)로 자동 계산함. 자재가 비싸지면 인건비도 같이 오르고, 싸지면 같이 내려감">
+                  인건비 = 자재비 ×
+                  <NumInput
+                    className="h-7 w-16 text-xs"
+                    value={s.laborRatio ?? 0}
+                    onChange={(n) => {
+                      const ratio = Math.max(0, n) || undefined
+                      const manual = s.items.filter((i) => i.kind === '노무비' && i.auto !== 'labor')
+                      // 처음 켤 때 손으로 넣은 인건비 줄이 있으면 이중으로 잡히지 않게 지울지 묻는다
+                      if (ratio && !s.laborRatio && manual.length > 0 && confirm(`이 공종에 이미 있는 노무비 ${manual.length}줄을 지우고 자재비 비례 한 줄로 바꿀까요?\n(취소하면 기존 줄을 그대로 두고 비례 줄을 더함)`))
+                        updateSection(s.id, { laborRatio: ratio, items: s.items.filter((i) => i.kind !== '노무비') })
+                      else updateSection(s.id, { laborRatio: ratio })
+                    }}
+                  />
+                  %
+                </label>
                 <label className={`flex items-center gap-1.5${q.costCalc ? '' : ' ml-auto'}`}>
                   <input type="checkbox" checked={!!s.option} onChange={(e) => updateSection(s.id, { option: e.target.checked })} />
                   선택 항목 (견적금액 별도)
@@ -983,6 +1018,24 @@ function QuotePanel({
             <Plus /> 공종 추가
           </Button>
         </div>
+
+        <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+          <p className="text-sm font-medium">자재비 인상률 · 여분율 (내부 설정, 견적서에는 계산된 단가만 나옴)</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              자재비 인상률 %
+              <NumInput value={q.matUp ?? 0} onChange={(n) => setPricing({ matUp: Math.max(0, n) })} />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              자재 여분율 %
+              <NumInput value={q.matSpare ?? 0} onChange={(n) => setPricing({ matSpare: Math.max(0, n) })} />
+            </label>
+            <p className="col-span-2 self-end text-xs text-muted-foreground sm:col-span-3">
+              &lsquo;원가 단가&rsquo;를 넣은 재료비 줄의 견적 단가 = 원가 단가 × (1 + 인상률 + 여분율). 값을 바꾸면 그 줄들의 단가가 바로 다시 계산됨. 공종별 권장 값은{' '}
+              <a href="/admin/categories" target="_blank" className="underline">공종별 고려사항</a> 참고.
+            </p>
+          </div>
+        </section>
 
         <section className="flex flex-col gap-4 bg-background p-5 ring-1 ring-border">
           <label className="flex items-center gap-2 text-sm font-medium">

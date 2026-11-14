@@ -22,7 +22,10 @@ import {
   listVersions,
   quoteLabelOf,
 } from "@/lib/clients/table";
-import { calcQuote } from "@/lib/clients/quote";
+import { calcQuote, DEFAULT_MAT_UP } from "@/lib/clients/quote";
+import { calcMargin, OP_MARGIN } from "@/lib/clients/margin";
+import { listDeviations } from "@/lib/knowledge/table";
+import { ClientDeviations } from "@/components/admin/client-deviations";
 import { QuoteSet } from "@/components/admin/quote-set";
 import { getTakeoffTemplates } from "@/lib/clients/takeoff-templates";
 import { ClientIntel, ClientSchedule } from "@/components/admin/client-intel";
@@ -35,6 +38,19 @@ import {
 } from "@/lib/clients/schedule";
 
 export const dynamic = "force-dynamic";
+
+/** 지금 견적에서 회사 기준과 다른 것으로 보이는 점 (이유 메모를 권하는 용도) */
+function deviationHints(q: Parameters<typeof calcMargin>[0]): string[] {
+  const out: string[] = [];
+  const m = calcMargin(q);
+  if (m.supply > 0 && m.profit < 0)
+    out.push(`공급가가 원가 하한보다 ${Math.abs(m.profit).toLocaleString("ko-KR")}원 낮음 (손실 견적)`);
+  else if (m.supply > 0 && Math.abs(m.rate - OP_MARGIN) > 2)
+    out.push(`영업이익률 ${m.rate.toFixed(1)}% (기준 ${OP_MARGIN}%)`);
+  if ((q.matUp ?? DEFAULT_MAT_UP) !== DEFAULT_MAT_UP)
+    out.push(`자재비 인상률 ${q.matUp}% (기준 ${DEFAULT_MAT_UP}%)`);
+  return out;
+}
 
 export default async function AdminClientPage({
   params,
@@ -204,6 +220,15 @@ export default async function AdminClientPage({
           initial={schedule}
           log={scheduleLog}
           fromQuote={stepsFromQuote(client.quote)}
+        />
+      </div>
+      {/* 회사 기준과 다르게 작성한 점: 누가·무엇을·왜 (전 업체 공통, 지식 DB 로 모임) */}
+      <div className="mt-5">
+        <ClientDeviations
+          clientId={client.id}
+          source={client.quote.number}
+          entries={await listDeviations(client.id)}
+          hints={deviationHints(client.quote)}
         />
       </div>
       {/* 프로젝트 단계: 적산·자재 리스트 → 발주 (전 업체 공통) */}

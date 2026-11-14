@@ -8,7 +8,7 @@
  * 줄마다 실원가 단가(QuoteItem.cost)를 넣으면 그 값을 쓰고, 비우면 아래 기준표로 추정한다.
  */
 
-import { calcQuote, itemAmount, type Quote, type QuoteItem } from './quote'
+import { DEFAULT_MAT_UP, calcQuote, emptyItem, itemAmount, type Quote, type QuoteItem, type QuoteSection } from './quote'
 
 /** 영업이익률 %, 공급가 기준 */
 export const OP_MARGIN = 10
@@ -65,7 +65,8 @@ export function calcMargin(q: Quote): Margin {
       const u = unitCost(i)
       if (u.assumed) assumed++
       const amount = (Number(i.qty) || 0) * u.cost
-      if (i.kind === '재료비') mat += amount
+      // 여분율만큼 실제로 더 사므로 원가에도 넣는다 (원가 단가를 넣은 줄만. 추정 줄은 견적 단가에 이미 들어 있다고 본다)
+      if (i.kind === '재료비') mat += u.assumed ? amount : amount * (1 + (q.matSpare ?? 0) / 100)
       else if (i.kind === '노무비') lab += amount
       else exp += amount
     }
@@ -77,4 +78,61 @@ export function calcMargin(q: Quote): Margin {
   const supply = calcQuote(q).supply
   const profit = supply - floor
   return { direct, floor, target, supply, profit, rate: supply > 0 ? (profit / supply) * 100 : 0, assumed }
+}
+
+// ---------- 자재 인상률·여분율, 자재비 비례 인건비 ----------
+
+/** 원가 단가 → 견적 단가: 원가 × (1 + 인상률 + 여분율). 100원 단위(1,000원 미만은 10원 단위) 반올림 */
+export function matPrice(cost: number, q: Pick<Quote, 'matUp' | 'matSpare'>): number {
+  const raw = cost * (1 + ((q.matUp ?? DEFAULT_MAT_UP) + (q.matSpare ?? 0)) / 100)
+  const unit = raw < 1000 ? 10 : 100
+  return Math.round(raw / unit) * unit
+}
+
+/** 원가 단가를 넣은 재료비 줄의 견적 단가를 지금 인상률·여분율로 다시 계산한다 */
+export function repriceMaterials(q: Quote): Quote {
+  return {
+    ...q,
+    sections: q.sections.map((s) => ({
+      ...s,
+      items: s.items.map((i) => (i.kind === '재료비' && typeof i.cost === 'number' ? { ...i, price: matPrice(i.cost, q) } : i)),
+    })),
+  }
+}
+
+/** 공종의 자재비 비례 인건비 금액 (천원 미만 버림) */
+export function ratioLabor(s: QuoteSection): number {
+  const mat = s.items.reduce((a, i) => (i.kind === '재료비' ? a + itemAmount(i) : a), 0)
+  return Math.floor((mat * (s.laborRatio ?? 0)) / 100 / 1000) * 1000
+}
+
+/**
+ * laborRatio 를 켠 공종마다 자동 인건비 줄(auto: 'labor') 하나를 자재비 × 비율로 맞춘다.
+ * 줄이 없으면 만들고, 비율을 끄면 자동 표시만 떼어 보통 줄로 남긴다. 바뀐 것이 없으면 받은 객체를 그대로 돌려준다.
+ */
+export function syncLabor(q: Quote): Quote {
+  let changed = false
+  const sections = q.sections.map((s) => {
+    const on = (s.laborRatio ?? 0) > 0
+    const idx = s.items.findIndex((i) => i.auto === 'labor')
+    if (!on) {
+      if (idx < 0) return s
+      changed = true
+      return { ...s, items: s.items.map((i) => (i.auto === 'labor' ? { ...i, auto: undefined } : i)) }
+    }
+    const price = ratioLabor(s)
+    if (idx < 0) {
+      changed = true
+      const line: QuoteItem = { ...emptyItem('노무비'), name: '시공 인건비', spec: '자재 설치·시공', unit: '식', qty: 1, price, auto: 'labor' }
+      const last = s.items.map((i) => i.kind).lastIndexOf('재료비')
+      const items = [...s.items]
+      items.splice(last + 1, 0, line)
+      return { ...s, items }
+    }
+    const cur = s.items[idx]
+    if (cur.price === price && cur.qty === 1 && cur.kind === '노무비') return s
+    changed = true
+    return { ...s, items: s.items.map((i, n) => (n === idx ? { ...i, kind: '노무비' as const, qty: 1, price } : i)) }
+  })
+  return changed ? { ...q, sections } : q
 }

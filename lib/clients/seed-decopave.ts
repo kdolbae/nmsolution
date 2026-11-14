@@ -60,6 +60,8 @@ function indirect(direct: number): Line {
 
 /** 2026-11-14 kevin: 새 구성(STS 밸브 계통 + 백관 40A 나사이음, 구간 솔레노이드, CO₂ 센서 15, PLC 포함, 시운전 7일)으로 견적 교체 */
 export const DECOPAVE_REV4_KEY = 'decopave-co2-quote-threaded-2611-v4'
+/** 2026-11-14 블록 적재량 기준 순 공간(약 620㎥)·CO₂ 사용량 재계산 */
+export const DECOPAVE_REV5_KEY = 'decopave-co2-blockcalc-2611-v5'
 
 const E = 350000 // 전기공
 

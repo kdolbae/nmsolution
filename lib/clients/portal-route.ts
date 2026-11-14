@@ -13,6 +13,9 @@ import type { Quote } from './quote'
 import { historyBar, notReadyHtml } from './send-compare'
 import { after } from 'next/server'
 import { ncmsPortal } from './ncms-portal'
+import { clientFiles } from './files'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 
 /**
  * 업체용 링크 (예: app/sinil/route.ts → nm-solution.co.kr/sinil).
@@ -84,6 +87,24 @@ export async function portalGet(req: Request, slug: string): Promise<Response> {
   }
   const headers: Record<string, string> = { 'Content-Type': 'text/html; charset=utf-8', ...NO_STORE }
   if (shareToken) headers['Set-Cookie'] = `${portalCookieName(slug)}=${shareToken}; Path=/; Max-Age=${Math.min(shareLeft, PORTAL_MAX_AGE)}; HttpOnly; Secure; SameSite=Lax`
+
+  // ?file=<이름>: 업체 페이지 안 자료(도면 PDF·DXF·엑셀) 내려받기. 목록은 lib/clients/files.ts, 내려받을 때마다 'file' 로 기록
+  const fileName = params.get('file')
+  if (fileName) {
+    const set = clientFiles(client.name)
+    const f = set?.files.find((x) => x.file === fileName)
+    if (!set || !f) return notFound()
+    after(() => logAccess(req.headers, client, 'file', { slug, details: { docs: f.download, share: !!shareToken } }))
+    const body = await readFile(path.join(process.cwd(), 'private', 'client-files', set.dir, f.file))
+    return new Response(new Uint8Array(body), {
+      headers: {
+        ...NO_STORE,
+        'Content-Type': f.type,
+        'Content-Disposition': `attachment; filename="${f.file}"; filename*=UTF-8''${encodeURIComponent(f.download)}`,
+        ...(headers['Set-Cookie'] ? { 'Set-Cookie': headers['Set-Cookie'] } : {}),
+      },
+    })
+  }
 
   const view = await customerView(client, params, `/${slug}`)
   if (view.type === 'redirect') return new Response(null, { status: 303, headers: { Location: view.to, ...NO_STORE } })

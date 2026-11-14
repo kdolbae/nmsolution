@@ -25,6 +25,8 @@ import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIA
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
+import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_REV4_KEY, DECOPAVE_REV5_KEY, DECOPAVE_REV6_KEY, DECOPAVE_REV7_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
 
@@ -681,6 +683,32 @@ export function ensureClients(): Promise<void> {
       })
       await seedOnce(AIRRANE_REV2_KEY, () => refreshAirrane('3D 모델 직접 돌려 보기 추가'))
       await seedOnce(AIRRANE_REV3_KEY, () => refreshAirrane('배기 자재 온라인 단가 + 여분 15%, 품목별 수량 × 단가'))
+      // (주)데코페이브: 단양 양생굴 15·16번 CO₂ 개조 배관·덕트(2026-11-09). 링크 비밀번호는 담당자 휴대폰 뒷번호 4자리, 휴대폰은 어드민에서 입력(공개 저장소)
+      await seedOnce(DECOPAVE_SEED_KEY, async () => {
+        const c = DECOPAVE_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = decopaveQuote(today())
+        const proposal = DECOPAVE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login, portal_password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+          [c.name, c.bizNumber, c.contactPerson, c.phone, c.email, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin, await hashPortalPassword(c.portalPassword)],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'DCP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
+      })
+      await seedOnce(DECOPAVE_REV2_KEY, () => refreshDecopave('CO₂ 배관 설계(초안) 추가: 도면·설계 유량·자재 리스트·PLC 입출력, 견적 금액 그대로'))
+      await seedOnce(DECOPAVE_REV3_KEY, () => refreshDecopave('설계 초안 제어기 LS일렉트릭 XGB로 변경'))
+      await seedOnce(DECOPAVE_REV4_KEY, () => refreshDecopave('새 구성 견적: STS 밸브 계통 + 백관 40A 나사이음, 구간 솔레노이드, CO₂ 센서 15, PLC 포함, 시운전 7일. 설계 이유·탱크 용량 기준 질문 추가', true))
+      await seedOnce(DECOPAVE_REV5_KEY, () => refreshDecopave('블록 적재량 추정(800판·약 159톤)으로 순 공간 약 620㎥, CO₂ 사용량·흡수량 기준 다시 계산'))
+      await seedOnce(DECOPAVE_REV6_KEY, () => refreshDecopave('백관 규격 KS D 3507 SPP 명시(금액 변동 없음)', true))
+      await seedOnce(DECOPAVE_REV7_KEY, () => refreshDecopave('본관 백관 나사이음 → STS 40SU 압착 이음(상설 겸용), 배관 인원 4명 × 3일', true))
     })().catch((e) => {
       ready = null
       throw e
@@ -1154,6 +1182,21 @@ async function refreshAirrane(summary: string) {
   const quote = airraneQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = AIRRANE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 데코페이브 업체의 제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만). 견적은 newQuote 일 때만 코드 견적으로 바꾸고(견적번호 유지), 아니면 저장된 그대로 둔다. */
+async function refreshDecopave(summary: string, newQuote = false) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: Quote | null; proposal_html: string | null }>(
+    `SELECT id, finalized_at, quote, proposal_html FROM clients WHERE portal_slug = $1`,
+    [DECOPAVE_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = newQuote || !row.quote ? decopaveQuote(today()) : row.quote
+  if (newQuote && row.quote?.number) quote.number = row.quote.number
+  const proposal = DECOPAVE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  if (!newQuote && row.proposal_html === proposal) return // 방금 처음 등록돼 이미 같은 내용
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

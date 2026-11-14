@@ -47,6 +47,19 @@ export function PlantFeature({ item }: { item: ServiceItem }) {
               <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </Link>
           </div>
+          {/* 정부과제 · R&D 실증 설비 안내(2026-11-14). 내용은 lib/work-landings.ts 의 rnd */}
+          <Link
+            href="/services/rnd"
+            className="group flex items-center justify-between gap-4 border-l-2 border-electric bg-background px-5 py-4 transition-colors hover:bg-electric/10"
+          >
+            <span className="flex flex-col gap-1">
+              <span className="text-sm font-bold">정부과제 · R&amp;D 실증 설비도 함께 설계합니다</span>
+              <span className="text-xs leading-relaxed text-muted-foreground">
+                시험설비 · 파일럿 플랜트, 사업비 산정용 견적 · 사양서부터 제작 · 설치까지
+              </span>
+            </span>
+            <ArrowRight className="size-4 shrink-0 text-electric transition-transform group-hover:translate-x-1" />
+          </Link>
         </div>
 
         {item.areasImage && (

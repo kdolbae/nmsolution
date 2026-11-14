@@ -48,6 +48,10 @@ export type QuoteSection = {
   noInsurance?: boolean
   /** 자재비 비례 인건비 %. 0 보다 크면 이 공종의 인건비 줄 하나를 (재료비 합계 × 이 비율)로 자동 계산한다 */
   laborRatio?: number
+  /** 공종 카테고리 소분류 코드 (F2-01 등, lib/knowledge/shared.ts). 편집 화면에서 그 공종의 단계형 질문·고려사항·쌓인 지식을 띄운다 */
+  category?: string
+  /** 단계형 질문의 답·확인 (질문 문구 → 답, 확인 항목은 'ok'). 어드민 전용 */
+  checks?: Record<string, string>
 }
 
 /** 공종의 원가계산 방식. 화면의 선택 칸과 flat·overheadOnly 를 잇는다 */
@@ -196,6 +200,11 @@ export function normalizeQuote(raw: unknown): Quote {
           noInsurance: Boolean(s.noInsurance),
           option: Boolean(s.option),
           laborRatio: validCost(s.laborRatio) || undefined,
+          category: typeof s.category === 'string' && s.category ? s.category : undefined,
+          checks:
+            s.checks && typeof s.checks === 'object'
+              ? Object.fromEntries(Object.entries(s.checks).filter(([, v]) => typeof v === 'string' && v.trim()))
+              : undefined,
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
                 ...emptyItem(),
@@ -227,6 +236,8 @@ export function publicQuote(q: Quote): Quote {
     sections: q.sections.map((s) => ({
       ...s,
       laborRatio: undefined,
+      category: undefined,
+      checks: undefined,
       items: s.items.map((i) => {
         const { cost: _cost, auto: _auto, ...rest } = i
         return rest

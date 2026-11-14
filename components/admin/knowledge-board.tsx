@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { OutcomeBoard } from '@/components/admin/client-outcome'
+import type { Outcome } from '@/lib/outcomes/shared'
 import { createKnowledge, removeKnowledge, saveKnowledgeAnswer } from '@/app/actions/knowledge'
 import {
   CATEGORY_OPTIONS,
@@ -23,10 +25,10 @@ import {
 
 const day = (iso: string) => iso.slice(0, 10)
 
-type View = 'open' | 'category' | 'deviation'
+type View = 'open' | 'category' | 'deviation' | 'outcome'
 
 /** 지식 DB 화면 (어드민 전용): 답 대기 질문 · 공종별 매뉴얼과 쌓인 지식 · 매뉴얼 예외 기록 */
-export function KnowledgeBoard({ entries }: { entries: KnowledgeEntry[] }) {
+export function KnowledgeBoard({ entries, outcomes = [] }: { entries: KnowledgeEntry[]; outcomes?: Outcome[] }) {
   const open = entries.filter((e) => e.kind === 'qa' && !e.body)
   const deviations = entries.filter((e) => e.kind === 'deviation')
   const [view, setView] = useState<View>(open.length ? 'open' : 'category')
@@ -40,6 +42,7 @@ export function KnowledgeBoard({ entries }: { entries: KnowledgeEntry[] }) {
     { key: 'open', label: `답 대기 ${open.length}` },
     { key: 'category', label: `공종별 ${entries.length - open.length}` },
     { key: 'deviation', label: `매뉴얼 예외 ${deviations.length}` },
+    { key: 'outcome', label: `수주·실주 ${outcomes.length}` },
   ]
 
   return (
@@ -151,11 +154,13 @@ export function KnowledgeBoard({ entries }: { entries: KnowledgeEntry[] }) {
           ))}
         </section>
       )}
+
+      {view === 'outcome' && <OutcomeBoard outcomes={outcomes} />}
     </div>
   )
 }
 
-function ManualBlock({ item }: { item: ManualItem }) {
+export function ManualBlock({ item }: { item: ManualItem }) {
   const rows: [string, string[]][] = [
     ['고려할 점', item.consider],
     ['고객에게 확인', item.ask],
@@ -268,14 +273,23 @@ export function EntryCard({ entry, showCategory }: { entry: KnowledgeEntry; show
 }
 
 /** 새 기록. fixed 를 주면 업체 화면의 매뉴얼 예외 메모로 쓴다(종류·업체 고정) */
-export function AddForm({ onDone, fixed }: { onDone?: () => void; fixed?: { kind: KnowledgeKind; clientId: number; source: string } }) {
+export function AddForm({
+  onDone,
+  fixed,
+  defaults,
+}: {
+  onDone?: () => void
+  fixed?: { kind: KnowledgeKind; clientId: number; source: string }
+  /** 처음 골라 둘 공종·근거 (견적 편집 화면에서 그 공종의 경험을 바로 남길 때) */
+  defaults?: { category?: string; source?: string }
+}) {
   const router = useRouter()
   const [kind, setKind] = useState<KnowledgeKind>(fixed?.kind ?? 'rule')
-  const [category, setCategory] = useState(COMMON)
+  const [category, setCategory] = useState(defaults?.category ?? COMMON)
   const [topic, setTopic] = useState<Topic>('가격·여분율')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [source, setSource] = useState(fixed?.source ?? '')
+  const [source, setSource] = useState(fixed?.source ?? defaults?.source ?? '')
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
   const deviation = kind === 'deviation'

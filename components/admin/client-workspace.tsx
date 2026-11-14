@@ -34,6 +34,10 @@ import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
+import { AddForm, EntryCard, ManualBlock } from '@/components/admin/knowledge-board'
+import { OutcomeRow } from '@/components/admin/client-outcome'
+import type { Outcome } from '@/lib/outcomes/shared'
+import { COMMON, MANUAL_GROUPS, findManualItem, guideMissing, guideSteps, type KnowledgeEntry } from '@/lib/knowledge/shared'
 import { OP_MARGIN, calcMargin, matPrice, repriceMaterials, syncLabor, unitCost } from '@/lib/clients/margin'
 import {
   ITEM_KINDS,
@@ -82,6 +86,8 @@ export function ClientWorkspace({
   files = [],
   videos = [],
   takeoffTemplates = [],
+  knowledge = [],
+  outcomes = [],
   versions,
   finalized,
   view,
@@ -96,6 +102,10 @@ export function ClientWorkspace({
   videos?: { url: string; label: string }[]
   /** 적산 템플릿 (기본 + 저장한 것) */
   takeoffTemplates?: TakeoffTemplate[]
+  /** 지식 DB 기록 (lib/knowledge). 견적 편집에서 공종별 고려사항 옆에 보여 준다 */
+  knowledge?: KnowledgeEntry[]
+  /** 다른 견적의 수주·실주 기록 (lib/outcomes). 같은 공종을 쓸 때 보여 준다 */
+  outcomes?: Outcome[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 계약 확정(잠금). 확정되면 해제 전까지 제안서·견적서를 고칠 수 없다 */
@@ -226,6 +236,8 @@ export function ClientWorkspace({
               onContent={(html) => (live.current.quote = html)}
               onPresent={() => setPresent('quote')}
               takeoffTemplates={takeoffTemplates}
+              knowledge={knowledge}
+              outcomes={outcomes}
             />
           </div>
         </>
@@ -681,6 +693,8 @@ function QuotePanel({
   onContent,
   onPresent,
   takeoffTemplates,
+  knowledge,
+  outcomes,
 }: {
   client: ClientInfo
   initialQuote: Quote
@@ -690,6 +704,8 @@ function QuotePanel({
   onContent: (html: string) => void
   onPresent: () => void
   takeoffTemplates: TakeoffTemplate[]
+  knowledge: KnowledgeEntry[]
+  outcomes: Outcome[]
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -738,7 +754,10 @@ function QuotePanel({
     updateSection(sid, { items })
   }
 
-  const save = () =>
+  const save = () => {
+    // 단계형 질문에 비어 있는 것이 있으면 저장 전에 한 번 알린다 (막지는 않음)
+    const missing = q.sections.reduce((a, s) => a + guideMissing(s.category, s.checks), 0)
+    if (missing > 0 && !confirm(`'줄을 넣기 전에 확인'에 답·확인하지 않은 항목이 ${missing}개 있습니다. 그래도 저장할까요?`)) return
     startTransition(async () => {
       try {
         const res = await saveQuote(client.id, q)
@@ -750,6 +769,7 @@ function QuotePanel({
         setMessage(e instanceof Error ? e.message : '저장하지 못했습니다.')
       }
     })
+  }
 
   // 미리보기 높이를 내용에 맞춘다
   const fitPreview = () => {
@@ -867,6 +887,23 @@ function QuotePanel({
                 <span className="font-mono text-xs text-muted-foreground">공종 {si + 1}</span>
                 <TextIn value={s.name} onChange={(v) => updateSection(s.id, { name: v })} placeholder="공종명 (예: 배관·설비)" className="max-w-56 font-semibold" />
                 <TextIn value={s.desc} onChange={(v) => updateSection(s.id, { desc: v })} placeholder="한 줄 설명 (선택)" className="min-w-40 flex-1" />
+                <select
+                  value={s.category ?? ''}
+                  onChange={(e) => updateSection(s.id, { category: e.target.value || undefined })}
+                  title="공종 카테고리를 고르면 줄을 넣기 전에 정할 것·고려할 점·지난 경험이 단계로 나옴 (견적서에는 나오지 않음)"
+                  className={cn('h-8 border border-input bg-background px-1 text-xs', !s.category && 'text-muted-foreground')}
+                >
+                  <option value="">공종 카테고리 선택</option>
+                  {MANUAL_GROUPS.map((g) => (
+                    <optgroup key={g.code} label={`${g.code} ${g.name}`}>
+                      {g.items.map((it) => (
+                        <option key={it.code} value={it.code}>
+                          {it.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
                 <span className="ml-auto text-sm font-semibold tabular-nums">{won(c.total)}원</span>
                 <Button
                   variant="ghost"
@@ -877,6 +914,16 @@ function QuotePanel({
                   <Trash2 />
                 </Button>
               </div>
+              {s.category && (
+                <SectionGuide
+                  category={s.category}
+                  checks={s.checks ?? {}}
+                  onChecks={(checks) => updateSection(s.id, { checks })}
+                  knowledge={knowledge}
+                  outcomes={outcomes}
+                  source={`${client.name} ${q.number}`}
+                />
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1080px] text-sm">
                   <thead className="bg-secondary text-xs text-muted-foreground">
@@ -1087,6 +1134,124 @@ function QuotePanel({
         <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
       </div>
     </div>
+  )
+}
+
+/**
+ * 견적 작성 단계에 지식 DB 를 붙인다 (kevin 2026-11-15). 공종 카테고리를 고르면 줄을 넣기 전에 단계대로 묻는다.
+ *   ① 먼저 정할 것: 질문마다 답을 적음 (공통 질문 + 공종별 고객 확인 사항)
+ *   ② 고려할 점: 지난 시행착오·자동 규칙을 하나씩 확인
+ *   ③ 지난 경험: 지식 DB 에 쌓인 답·기준, 답을 기다리는 질문. 새로 알게 된 것도 여기서 남김
+ *   ④ 이 공종의 지난 수주·실주와 이유 (lib/outcomes, 기록이 있을 때만)
+ *   ⑤ 참고: 공정·인원·장비·자재
+ * 답과 확인은 견적(section.checks)에 저장되고 어드민에서만 보인다.
+ */
+function SectionGuide({
+  category,
+  checks,
+  onChecks,
+  knowledge,
+  outcomes,
+  source,
+}: {
+  category: string
+  checks: Record<string, string>
+  onChecks: (c: Record<string, string>) => void
+  knowledge: KnowledgeEntry[]
+  outcomes: Outcome[]
+  source: string
+}) {
+  const [adding, setAdding] = useState(false)
+  const hit = findManualItem(category)
+  const steps = guideSteps(category)
+  if (!hit || !steps) return null
+  const groupCode = hit.group.code
+  const mine = knowledge.filter((e) => e.category === groupCode)
+  const answered = [...mine.filter((e) => e.body), ...knowledge.filter((e) => e.category === COMMON && e.body && e.kind !== 'deviation')]
+  const waiting = mine.filter((e) => !e.body)
+  const past = outcomes.filter((o) => o.categories.includes(groupCode))
+  const pastWon = past.filter((o) => o.result === 'won').length
+  const pastLost = past.filter((o) => o.result === 'lost').length
+  const set = (k: string, v: string) => {
+    const next = { ...checks }
+    if (v) next[k] = v
+    else delete next[k]
+    onChecks(next)
+  }
+  const done = (list: string[]) => list.filter((k) => checks[k]?.trim()).length
+  const qDone = done(steps.questions)
+  const cDone = done(steps.confirms)
+  const missing = steps.questions.length + steps.confirms.length - qDone - cDone
+  const head = 'text-xs font-semibold'
+  return (
+    <details className="border-b border-border bg-secondary/40" open={missing > 0 || undefined}>
+      <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 px-4 py-2 text-xs font-semibold">
+        줄을 넣기 전에 확인
+        <span className={cn('font-normal', missing > 0 ? 'text-orange-700' : 'text-muted-foreground')}>
+          질문 {qDone}/{steps.questions.length} · 확인 {cDone}/{steps.confirms.length}
+          {missing === 0 && ' · 모두 확인함'}
+        </span>
+        <span className="font-normal text-muted-foreground">
+          지난 경험 {answered.length}
+          {waiting.length > 0 && ` · 답 대기 ${waiting.length}`}
+          {past.length > 0 && ` · 이 공종 수주 ${pastWon} · 실주 ${pastLost}`}
+        </span>
+      </summary>
+      <div className="flex flex-col gap-4 px-4 pb-4">
+        <div className="flex flex-col gap-1.5">
+          <p className={head}>① 먼저 정할 것 (답을 적음)</p>
+          {steps.questions.map((k) => (
+            <label key={k} className="grid items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+              <span className={cn(!checks[k]?.trim() && 'text-orange-700')}>{k}</span>
+              <TextIn value={checks[k] ?? ''} onChange={(v) => set(k, v)} placeholder="정한 내용 (해당 없으면 '없음')" />
+            </label>
+          ))}
+        </div>
+        {steps.confirms.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <p className={head}>② 고려할 점 (확인했으면 체크)</p>
+            {steps.confirms.map((k) => (
+              <label key={k} className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-1" checked={!!checks[k]} onChange={(e) => set(k, e.target.checked ? 'ok' : '')} />
+                <span className={cn(!checks[k] && 'text-orange-700')}>{k}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-col gap-2">
+          <p className={head}>③ 지난 경험 ({answered.length})</p>
+          {answered.length === 0 && waiting.length === 0 && <p className="text-xs text-muted-foreground">이 공종에 쌓인 기록이 아직 없음.</p>}
+          {[...answered, ...waiting].map((e) => (
+            <EntryCard key={e.id} entry={e} />
+          ))}
+          {adding ? (
+            <AddForm defaults={{ category: groupCode, source }} onDone={() => setAdding(false)} />
+          ) : (
+            <button type="button" className="self-start text-xs underline" onClick={() => setAdding(true)}>
+              + 이번 견적에서 알게 된 것 남기기
+            </button>
+          )}
+        </div>
+        {past.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className={head}>
+              ④ 이 공종의 지난 수주·실주 (수주 {pastWon} · 실주 {pastLost})
+            </p>
+            {past.map((o) => (
+              <OutcomeRow key={o.clientId} outcome={o} />
+            ))}
+          </div>
+        )}
+        <details>
+          <summary className={cn(head, 'cursor-pointer')}>{past.length > 0 ? '⑤' : '④'} 참고: 공정·인원·장비·자재</summary>
+          <div className="mt-2 flex flex-col gap-3">
+            {(hit.item ? [hit.item] : hit.group.items).map((it) => (
+              <ManualBlock key={it.code} item={{ ...it, consider: [], ask: [] }} />
+            ))}
+          </div>
+        </details>
+      </div>
+    </details>
   )
 }
 

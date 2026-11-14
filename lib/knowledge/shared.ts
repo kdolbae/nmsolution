@@ -81,3 +81,49 @@ export const LABOR_RATIO_REF: { group: string; ratio: string; from: string }[] =
   { group: 'F6 기계설비·배관', ratio: '116 ~ 195%', from: '데코페이브 116%, 아토텍 195%' },
   { group: '소규모 보수', ratio: '148 ~ 158%', from: '가나티엠 148%, 제이에스테크 158%' },
 ]
+
+// ---------- 견적 작성 단계형 질문 ----------
+
+/**
+ * 어느 공사든 견적 줄을 넣기 전에 먼저 정해야 하는 것 (지난 견적에서 금액이 크게 흔들린 원인들).
+ * 공종별 질문(매뉴얼의 '고객에게 확인')은 이 뒤에 붙는다.
+ */
+export const FIRST_QUESTIONS: string[] = [
+  '현장 위치와 이동 거리 (교통비·숙박이 드는지)',
+  '작업 높이와 고소장비 (실내·실외 진입이 되는지, 고객 장비를 쓸 수 있는지)',
+  '자재·장비 반입 경로 (차량 진입, 지게차, 엘리베이터, 양중)',
+  '작업 가능 시간 (공장 가동 중인지, 야간·주말만 되는지)',
+  '철거물·폐기물은 누가 치우는지',
+  '화기작업(용접·절단)이 있는지',
+]
+
+export function findManualItem(code: string | undefined): { group: ManualGroup; item: ManualItem | null } | null {
+  if (!code) return null
+  const group = MANUAL_GROUPS.find((g) => g.code === code.split('-')[0])
+  if (!group) return null
+  return { group, item: group.items.find((i) => i.code === code) ?? null }
+}
+
+export type GuideSteps = { questions: string[]; confirms: string[] }
+
+/** 공종 하나의 단계: 답을 받아야 하는 질문(먼저 정할 것)과 확인만 받는 항목(고려할 점·자동 규칙) */
+export function guideSteps(code: string | undefined): GuideSteps | null {
+  const hit = findManualItem(code)
+  if (!hit) return null
+  const items = hit.item ? [hit.item] : hit.group.items
+  const rules = [...new Set(items.flatMap((i) => i.rules))]
+    .map((id) => MANUAL_RULES.find((r) => r.id === id))
+    .filter((r): r is NonNullable<typeof r> => !!r)
+    .map((r) => `${r.when} → ${r.add}`)
+  return {
+    questions: [...FIRST_QUESTIONS, ...new Set(items.flatMap((i) => i.ask))],
+    confirms: [...new Set(items.flatMap((i) => i.consider)), ...rules],
+  }
+}
+
+/** 아직 답·확인이 없는 항목 수 */
+export function guideMissing(code: string | undefined, checks: Record<string, string> | undefined): number {
+  const st = guideSteps(code)
+  if (!st) return 0
+  return [...st.questions, ...st.confirms].filter((k) => !checks?.[k]?.trim()).length
+}

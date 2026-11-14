@@ -24,8 +24,10 @@ import {
 } from "@/lib/clients/table";
 import { calcQuote, DEFAULT_MAT_UP } from "@/lib/clients/quote";
 import { calcMargin, OP_MARGIN } from "@/lib/clients/margin";
-import { listDeviations } from "@/lib/knowledge/table";
+import { listDeviations, listKnowledge } from "@/lib/knowledge/table";
 import { ClientDeviations } from "@/components/admin/client-deviations";
+import { ClientOutcome } from "@/components/admin/client-outcome";
+import { listOutcomes } from "@/lib/outcomes/table";
 import { QuoteSet } from "@/components/admin/quote-set";
 import { getTakeoffTemplates } from "@/lib/clients/takeoff-templates";
 import { ClientIntel, ClientSchedule } from "@/components/admin/client-intel";
@@ -77,6 +79,7 @@ export default async function AdminClientPage({
     portalVersion,
     workOrders,
     materials,
+    outcomes,
     h,
   ] = await Promise.all([
     listVersions(client.id),
@@ -95,6 +98,7 @@ export default async function AdminClientPage({
     getPortalVersion(client.id),
     listWorkOrders(client.id),
     getMaterials(client.id),
+    listOutcomes(),
     headers(),
   ]);
   const editingWo = wo ? await getWorkOrder(client.id, Number(wo)) : null;
@@ -197,6 +201,8 @@ export default async function AdminClientPage({
         }))}
         videos={clientVideos(client.name)}
         takeoffTemplates={takeoffTemplates}
+        knowledge={await listKnowledge()}
+        outcomes={outcomes.filter((o) => o.clientId !== client.id)}
         versions={versions.map((x) => ({ ...x, at: x.at.toISOString() }))}
         finalized={
           client.finalized && {
@@ -220,6 +226,15 @@ export default async function AdminClientPage({
           initial={schedule}
           log={scheduleLog}
           fromQuote={stepsFromQuote(client.quote)}
+        />
+      </div>
+      {/* 수주·실주 결과와 이유 (전 업체 공통, 지식 DB 로 모임) */}
+      <div className="mt-5">
+        <ClientOutcome
+          key={outcomes.find((o) => o.clientId === client.id)?.at ?? "none"}
+          clientId={client.id}
+          outcome={outcomes.find((o) => o.clientId === client.id) ?? null}
+          finalized={!!client.finalized}
         />
       </div>
       {/* 회사 기준과 다르게 작성한 점: 누가·무엇을·왜 (전 업체 공통, 지식 DB 로 모임) */}

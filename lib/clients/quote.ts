@@ -24,6 +24,11 @@ export type QuoteItem = {
   note: string
   /** 감액 대상: 견적금액에 포함하되, 필요 없어지면 뺄 수 있는 줄. 견적서 끝에 감액 표로 따로 보여 준다 */
   deduct?: boolean
+  /**
+   * 내부 실원가 단가 (자재 실매입가·실지급 일당). 어드민에서만 쓰고 고객 화면·인쇄·PDF 에는 나오지 않는다.
+   * 고객에게 견적 데이터를 넘길 때는 publicQuote 로 지운다. 비우면 lib/clients/margin.ts 기준표로 추정한다
+   */
+  cost?: number
 }
 
 export type QuoteSection = {
@@ -183,10 +188,31 @@ export function normalizeQuote(raw: unknown): Quote {
                 qty: Number(i.qty) || 0,
                 price: Number(i.price) || 0,
                 deduct: Boolean(i.deduct),
+                cost: validCost(i.cost),
               }))
             : [],
         }))
       : base.sections,
+  }
+}
+
+function validCost(v: unknown): number | undefined {
+  if (v === null || v === undefined || v === '') return undefined
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+}
+
+/** 고객 쪽(브라우저)으로 넘기는 견적: 내부 실원가 단가를 지운다 */
+export function publicQuote(q: Quote): Quote {
+  return {
+    ...q,
+    sections: q.sections.map((s) => ({
+      ...s,
+      items: s.items.map((i) => {
+        const { cost: _cost, ...rest } = i
+        return rest
+      }),
+    })),
   }
 }
 

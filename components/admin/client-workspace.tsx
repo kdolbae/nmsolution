@@ -34,6 +34,7 @@ import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
+import { OP_MARGIN, calcMargin, unitCost } from '@/lib/clients/margin'
 import {
   ITEM_KINDS,
   calcQuote,
@@ -696,6 +697,7 @@ function QuotePanel({
   const [message, setMessage] = useState('')
   const [pending, startTransition] = useTransition()
   const calc = useMemo(() => calcQuote(q), [q])
+  const margin = useMemo(() => calcMargin(q), [q])
   const preview = useMemo(() => quoteDocument(q, client), [q, client])
   useEffect(() => {
     onContent(preview)
@@ -772,6 +774,44 @@ function QuotePanel({
           {calc.deduct > 0 && <> · 감액 시 공급가액 {won(calc.lessSupply)} (-{won(calc.deduct)})</>}
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
+        {/* 내부 원가·영업이익: 어드민에서만 보이고 견적서·고객 화면에는 나오지 않는다 */}
+        <div
+          className={cn(
+            'flex w-full flex-wrap items-center gap-x-3 gap-y-1 border px-3 py-1.5 text-xs tabular-nums',
+            margin.profit < 0
+              ? 'border-destructive bg-destructive/10 text-destructive'
+              : margin.rate < OP_MARGIN - 0.5
+                ? 'border-orange-400 bg-orange-50 text-orange-700'
+                : 'border-border bg-background text-muted-foreground',
+          )}
+        >
+          <b>내부</b>
+          <span>원가 하한 {won(margin.floor)}</span>
+          <span>
+            영업이익 <b>{won(margin.profit)}</b> ({margin.rate.toFixed(1)}%)
+          </span>
+          <span>
+            영업이익 {OP_MARGIN}% 기준 공급가 <b>{won(margin.target)}</b>
+          </span>
+          {margin.profit < 0 && <span>손실 견적임</span>}
+          {margin.assumed > 0 && <span title="원가 단가 칸을 비운 줄은 기준표(노무비)나 견적 단가(자재·경비)로 추정함">추정 {margin.assumed}줄</span>}
+          {!locked && margin.supply !== margin.target && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto h-7 rounded-none text-xs"
+              title={`공정 합계에서 '${q.discountLabel}' 금액을 조정해 공급가액을 ${won(margin.target)}원으로 맞춤`}
+              onClick={() => {
+                if (calc.works < margin.target) {
+                  update({ discount: 0 })
+                  setMessage(`공정 합계가 기준 공급가보다 ${won(margin.target - calc.works)}원 낮음. 단가를 올려야 함.`)
+                } else update({ discount: calc.works - margin.target })
+              }}
+            >
+              영업이익 {OP_MARGIN}%로 맞추기
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 확정되면 입력칸·버튼을 모두 막는다 */}
@@ -831,7 +871,7 @@ function QuotePanel({
                 </Button>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[960px] text-sm">
+                <table className="w-full min-w-[1080px] text-sm">
                   <thead className="bg-secondary text-xs text-muted-foreground">
                     <tr>
                       <th className="w-24 px-2 py-2 text-left font-medium">구분</th>
@@ -841,6 +881,7 @@ function QuotePanel({
                       <th className="w-16 px-2 py-2 text-left font-medium">단위</th>
                       <th className="w-28 px-2 py-2 text-right font-medium">단가</th>
                       <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
+                      <th className="w-28 px-2 py-2 text-right font-medium" title="내부 실원가 단가 (자재 실매입가·실지급 일당). 견적서·고객 화면에는 나오지 않음. 비우면 회색 추정값으로 계산">원가 단가</th>
                       <th className="px-2 py-2 text-left font-medium">비고</th>
                       <th className="w-12 px-1 py-2 text-center font-medium" title="견적금액에 넣되, 필요 없으면 빼는 줄 (견적서 끝 감액 표)">감액</th>
                       <th className="w-20" />
@@ -866,6 +907,9 @@ function QuotePanel({
                         <td className="px-1 py-1"><TextIn value={i.unit} onChange={(v) => updateItem(s.id, i.id, { unit: v })} /></td>
                         <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
                         <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
+                        <td className="px-1 py-1">
+                          <CostInput value={i.cost} placeholder={unitCost(i).cost} onChange={(n) => updateItem(s.id, i.id, { cost: n })} />
+                        </td>
                         <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
                         <td className="px-1 py-1 text-center">
                           <input type="checkbox" checked={!!i.deduct} onChange={(e) => updateItem(s.id, i.id, { deduct: e.target.checked })} />
@@ -990,6 +1034,25 @@ function QuotePanel({
         <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
       </div>
     </div>
+  )
+}
+
+/** 내부 실원가 단가. 비우면 undefined (추정값 사용), 0 도 넣을 수 있다 */
+function CostInput({ value, placeholder, onChange }: { value: number | undefined; placeholder: number; onChange: (n: number | undefined) => void }) {
+  const [text, setText] = useState<string | null>(null)
+  return (
+    <input
+      inputMode="decimal"
+      value={text ?? (value === undefined ? '' : value.toLocaleString('ko-KR'))}
+      placeholder={placeholder.toLocaleString('ko-KR')}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        setText(e.target.value)
+        const raw = e.target.value.replace(/[^\d.]/g, '')
+        onChange(raw === '' ? undefined : Number(raw) || 0)
+      }}
+      className="h-8 w-full border border-dashed border-input bg-secondary/40 px-2 text-right text-sm tabular-nums placeholder:text-muted-foreground/60"
+    />
   )
 }
 

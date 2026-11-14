@@ -25,7 +25,7 @@ import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIA
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
-import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_REV4_KEY, DECOPAVE_REV5_KEY, DECOPAVE_REV6_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_REV4_KEY, DECOPAVE_REV5_KEY, DECOPAVE_REV6_KEY, DECOPAVE_REV7_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
 import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -708,6 +708,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(DECOPAVE_REV4_KEY, () => refreshDecopave('새 구성 견적: STS 밸브 계통 + 백관 40A 나사이음, 구간 솔레노이드, CO₂ 센서 15, PLC 포함, 시운전 7일. 설계 이유·탱크 용량 기준 질문 추가', true))
       await seedOnce(DECOPAVE_REV5_KEY, () => refreshDecopave('블록 적재량 추정(800판·약 159톤)으로 순 공간 약 620㎥, CO₂ 사용량·흡수량 기준 다시 계산'))
       await seedOnce(DECOPAVE_REV6_KEY, () => refreshDecopave('백관 규격 KS D 3507 SPP 명시(금액 변동 없음)', true))
+      await seedOnce(DECOPAVE_REV7_KEY, () => refreshDecopave('본관 백관 나사이음 → STS 40SU 압착 이음(상설 겸용), 배관 인원 4명 × 3일', true))
     })().catch((e) => {
       ready = null
       throw e

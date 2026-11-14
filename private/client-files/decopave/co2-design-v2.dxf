@@ -489,7 +489,7 @@ $SKPOLY
   9
 $TDCREATE
  40
-2461359.279733796
+2461359.757974537
   9
 $TDUCREATE
  40
@@ -497,7 +497,7 @@ $TDUCREATE
   9
 $TDUPDATE
  40
-2461359.279733796
+2461359.757986111
   9
 $TDUUPDATE
  40
@@ -929,11 +929,11 @@ $PSTYLEMODE
   9
 $FINGERPRINTGUID
   2
-{E6617C00-EF97-4555-8632-2498CB521272}
+{A5EED695-AD1F-4309-AD49-6EE72A295C72}
   9
 $VERSIONGUID
   2
-{A36EDB11-7669-4E87-AEE6-FF5EBCC19E05}
+{766DABAD-E125-441A-AB63-ED751A05F2CF}
   9
 $EXTNAMES
 290
@@ -1323,9 +1323,9 @@ ISM
   0
 CLASS
   1
-ACDBPLACEHOLDER
+LAYOUT
   2
-AcDbPlaceHolder
+AcDbLayout
   3
 ObjectDBX Classes
  90
@@ -1339,9 +1339,9 @@ ObjectDBX Classes
   0
 CLASS
   1
-LAYOUT
+ACDBPLACEHOLDER
   2
-AcDbLayout
+AcDbPlaceHolder
   3
 ObjectDBX Classes
  90
@@ -12239,7 +12239,7 @@ AcDbText
  40
 200.0
   1
-CO₂ 본관 백관 40A 나사이음 · 옥외 벽 주행 15,525 · 150 kg/h
+CO₂ 본관 STS 40SU 압착 · 옥외 벽 주행 15,525 · 150 kg/h
   7
 KOR
  72
@@ -12603,7 +12603,7 @@ AcDbText
  40
 150.0
   1
-BV-02 수동 → 백관 40A
+BV-02 수동 → STS 40SU
   7
 KOR
  72
@@ -12689,7 +12689,7 @@ AcDbText
  40
 180.0
   1
-지붕 위 헤더 백관 40A · EL+9,060
+지붕 위 헤더 STS 40SU · EL+9,060
   7
 KOR
  72
@@ -19401,7 +19401,7 @@ AcDbText
  40
 200.0
   1
-메인 밸브 계통 STS 32A → 정압기 → 백관 40A · 150 kg/h (76 N㎥/h) · 0.4 MPa · 약 3.4 m/s
+메인 밸브 계통 STS 32A → 정압기 → STS 40SU · 150 kg/h (76 N㎥/h) · 0.4 MPa · 약 3.4 m/s
   7
 KOR
  11
@@ -19459,7 +19459,7 @@ AcDbText
  40
 180.0
   1
-헤더 백관 40A EL+9,060
+헤더 STS 40SU EL+9,060
   7
 KOR
  11
@@ -21979,7 +21979,7 @@ AcDbText
  40
 180.0
   1
-초기 충전 2시간 기준 (747㎥ → 20%), 백관 나사이음
+초기 충전 2시간 기준 (순 공간 약 620㎥ → 20%), STS 압착 이음
   7
 KOR
  11
@@ -23259,7 +23259,7 @@ AcDbText
  40
 190.0
   1
-    4. 범례: 빨강 CO₂ 본관 백관 40A(밸브 계통 STS 32A) / 주황 20A 백관 / 자홍 15A STS / 파랑 순환 덕트 / 초록 CO₂ 센서 / 회색 점선 = 가스 공급사 범위.
+    4. 범례: 빨강 CO₂ 본관 STS 40SU(밸브 계통 STS 32A) / 주황 20SU STS / 자홍 15A STS / 파랑 순환 덕트 / 초록 CO₂ 센서 / 회색 점선 = 가스 공급사 범위.
   7
 KOR
  11
@@ -24501,7 +24501,7 @@ DictionaryVariables
 280
 0
   1
-1.4.5 @ 2026-11-14T06:42:49.700582+00:00
+1.4.5 @ 2026-11-14T18:11:29.983588+00:00
   0
 VISUALSTYLE
   5
@@ -25213,7 +25213,7 @@ DictionaryVariables
 280
 0
   1
-1.4.5 @ 2026-11-14T06:42:49.728355+00:00
+1.4.5 @ 2026-11-14T18:11:30.018492+00:00
   0
 ENDSEC
   0

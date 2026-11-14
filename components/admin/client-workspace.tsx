@@ -34,6 +34,11 @@ import type { TakeoffTemplate } from '@/lib/clients/takeoff'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } from '@/app/actions/clients'
+import { AddForm, EntryCard, ManualBlock } from '@/components/admin/knowledge-board'
+import { OutcomeRow } from '@/components/admin/client-outcome'
+import type { Outcome } from '@/lib/outcomes/shared'
+import { COMMON, MANUAL_GROUPS, findManualItem, guideMissing, guideSteps, type KnowledgeEntry } from '@/lib/knowledge/shared'
+import { OP_MARGIN, calcMargin, matPrice, repriceMaterials, syncLabor, unitCost } from '@/lib/clients/margin'
 import {
   ITEM_KINDS,
   calcQuote,
@@ -81,6 +86,8 @@ export function ClientWorkspace({
   files = [],
   videos = [],
   takeoffTemplates = [],
+  knowledge = [],
+  outcomes = [],
   versions,
   finalized,
   view,
@@ -95,6 +102,10 @@ export function ClientWorkspace({
   videos?: { url: string; label: string }[]
   /** 적산 템플릿 (기본 + 저장한 것) */
   takeoffTemplates?: TakeoffTemplate[]
+  /** 지식 DB 기록 (lib/knowledge). 견적 편집에서 공종별 고려사항 옆에 보여 준다 */
+  knowledge?: KnowledgeEntry[]
+  /** 다른 견적의 수주·실주 기록 (lib/outcomes). 같은 공종을 쓸 때 보여 준다 */
+  outcomes?: Outcome[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 계약 확정(잠금). 확정되면 해제 전까지 제안서·견적서를 고칠 수 없다 */
@@ -225,6 +236,8 @@ export function ClientWorkspace({
               onContent={(html) => (live.current.quote = html)}
               onPresent={() => setPresent('quote')}
               takeoffTemplates={takeoffTemplates}
+              knowledge={knowledge}
+              outcomes={outcomes}
             />
           </div>
         </>
@@ -680,6 +693,8 @@ function QuotePanel({
   onContent,
   onPresent,
   takeoffTemplates,
+  knowledge,
+  outcomes,
 }: {
   client: ClientInfo
   initialQuote: Quote
@@ -689,6 +704,8 @@ function QuotePanel({
   onContent: (html: string) => void
   onPresent: () => void
   takeoffTemplates: TakeoffTemplate[]
+  knowledge: KnowledgeEntry[]
+  outcomes: Outcome[]
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -696,6 +713,7 @@ function QuotePanel({
   const [message, setMessage] = useState('')
   const [pending, startTransition] = useTransition()
   const calc = useMemo(() => calcQuote(q), [q])
+  const margin = useMemo(() => calcMargin(q), [q])
   const preview = useMemo(() => quoteDocument(q, client), [q, client])
   useEffect(() => {
     onContent(preview)
@@ -708,7 +726,14 @@ function QuotePanel({
   }
 
   const update = (patch: Partial<Quote>) => {
-    setQ((cur) => ({ ...cur, ...patch }))
+    // 자재비가 바뀌면 자재비 비례 인건비 줄도 따라 바뀐다
+    setQ((cur) => syncLabor({ ...cur, ...patch }))
+    setDirty(true)
+    setMessage('')
+  }
+  // 인상률·여분율을 바꾸면 원가 단가를 넣은 재료비 줄의 견적 단가를 다시 계산한다
+  const setPricing = (patch: Pick<Quote, 'matUp'> | Pick<Quote, 'matSpare'>) => {
+    setQ((cur) => syncLabor(repriceMaterials({ ...cur, ...patch })))
     setDirty(true)
     setMessage('')
   }
@@ -729,7 +754,10 @@ function QuotePanel({
     updateSection(sid, { items })
   }
 
-  const save = () =>
+  const save = () => {
+    // 단계형 질문에 비어 있는 것이 있으면 저장 전에 한 번 알린다 (막지는 않음)
+    const missing = q.sections.reduce((a, s) => a + guideMissing(s.category, s.checks), 0)
+    if (missing > 0 && !confirm(`'줄을 넣기 전에 확인'에 답·확인하지 않은 항목이 ${missing}개 있습니다. 그래도 저장할까요?`)) return
     startTransition(async () => {
       try {
         const res = await saveQuote(client.id, q)
@@ -741,6 +769,7 @@ function QuotePanel({
         setMessage(e instanceof Error ? e.message : '저장하지 못했습니다.')
       }
     })
+  }
 
   // 미리보기 높이를 내용에 맞춘다
   const fitPreview = () => {
@@ -772,6 +801,44 @@ function QuotePanel({
           {calc.deduct > 0 && <> · 감액 시 공급가액 {won(calc.lessSupply)} (-{won(calc.deduct)})</>}
         </div>
         {message && <span className="text-sm text-electric">{message}</span>}
+        {/* 내부 원가·영업이익: 어드민에서만 보이고 견적서·고객 화면에는 나오지 않는다 */}
+        <div
+          className={cn(
+            'flex w-full flex-wrap items-center gap-x-3 gap-y-1 border px-3 py-1.5 text-xs tabular-nums',
+            margin.profit < 0
+              ? 'border-destructive bg-destructive/10 text-destructive'
+              : margin.rate < OP_MARGIN - 0.5
+                ? 'border-orange-400 bg-orange-50 text-orange-700'
+                : 'border-border bg-background text-muted-foreground',
+          )}
+        >
+          <b>내부</b>
+          <span>원가 하한 {won(margin.floor)}</span>
+          <span>
+            영업이익 <b>{won(margin.profit)}</b> ({margin.rate.toFixed(1)}%)
+          </span>
+          <span>
+            영업이익 {OP_MARGIN}% 기준 공급가 <b>{won(margin.target)}</b>
+          </span>
+          {margin.profit < 0 && <span>손실 견적임</span>}
+          {margin.assumed > 0 && <span title="원가 단가 칸을 비운 줄은 기준표(노무비)나 견적 단가(자재·경비)로 추정함">추정 {margin.assumed}줄</span>}
+          {!locked && margin.supply !== margin.target && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto h-7 rounded-none text-xs"
+              title={`공정 합계에서 '${q.discountLabel}' 금액을 조정해 공급가액을 ${won(margin.target)}원으로 맞춤`}
+              onClick={() => {
+                if (calc.works < margin.target) {
+                  update({ discount: 0 })
+                  setMessage(`공정 합계가 기준 공급가보다 ${won(margin.target - calc.works)}원 낮음. 단가를 올려야 함.`)
+                } else update({ discount: calc.works - margin.target })
+              }}
+            >
+              영업이익 {OP_MARGIN}%로 맞추기
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 확정되면 입력칸·버튼을 모두 막는다 */}
@@ -820,6 +887,23 @@ function QuotePanel({
                 <span className="font-mono text-xs text-muted-foreground">공종 {si + 1}</span>
                 <TextIn value={s.name} onChange={(v) => updateSection(s.id, { name: v })} placeholder="공종명 (예: 배관·설비)" className="max-w-56 font-semibold" />
                 <TextIn value={s.desc} onChange={(v) => updateSection(s.id, { desc: v })} placeholder="한 줄 설명 (선택)" className="min-w-40 flex-1" />
+                <select
+                  value={s.category ?? ''}
+                  onChange={(e) => updateSection(s.id, { category: e.target.value || undefined })}
+                  title="공종 카테고리를 고르면 줄을 넣기 전에 정할 것·고려할 점·지난 경험이 단계로 나옴 (견적서에는 나오지 않음)"
+                  className={cn('h-8 border border-input bg-background px-1 text-xs', !s.category && 'text-muted-foreground')}
+                >
+                  <option value="">공종 카테고리 선택</option>
+                  {MANUAL_GROUPS.map((g) => (
+                    <optgroup key={g.code} label={`${g.code} ${g.name}`}>
+                      {g.items.map((it) => (
+                        <option key={it.code} value={it.code}>
+                          {it.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
                 <span className="ml-auto text-sm font-semibold tabular-nums">{won(c.total)}원</span>
                 <Button
                   variant="ghost"
@@ -830,8 +914,18 @@ function QuotePanel({
                   <Trash2 />
                 </Button>
               </div>
+              {s.category && (
+                <SectionGuide
+                  category={s.category}
+                  checks={s.checks ?? {}}
+                  onChecks={(checks) => updateSection(s.id, { checks })}
+                  knowledge={knowledge}
+                  outcomes={outcomes}
+                  source={`${client.name} ${q.number}`}
+                />
+              )}
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[960px] text-sm">
+                <table className="w-full min-w-[1080px] text-sm">
                   <thead className="bg-secondary text-xs text-muted-foreground">
                     <tr>
                       <th className="w-24 px-2 py-2 text-left font-medium">구분</th>
@@ -841,6 +935,7 @@ function QuotePanel({
                       <th className="w-16 px-2 py-2 text-left font-medium">단위</th>
                       <th className="w-28 px-2 py-2 text-right font-medium">단가</th>
                       <th className="w-28 px-2 py-2 text-right font-medium">금액</th>
+                      <th className="w-28 px-2 py-2 text-right font-medium" title="내부 실원가 단가 (자재 실매입가·실지급 일당). 견적서·고객 화면에는 나오지 않음. 비우면 회색 추정값으로 계산">원가 단가</th>
                       <th className="px-2 py-2 text-left font-medium">비고</th>
                       <th className="w-12 px-1 py-2 text-center font-medium" title="견적금액에 넣되, 필요 없으면 빼는 줄 (견적서 끝 감액 표)">감액</th>
                       <th className="w-20" />
@@ -864,8 +959,23 @@ function QuotePanel({
                         <td className="px-1 py-1"><TextIn value={i.spec} onChange={(v) => updateItem(s.id, i.id, { spec: v })} /></td>
                         <td className="px-1 py-1"><NumInput value={i.qty} onChange={(n) => updateItem(s.id, i.id, { qty: n })} /></td>
                         <td className="px-1 py-1"><TextIn value={i.unit} onChange={(v) => updateItem(s.id, i.id, { unit: v })} /></td>
-                        <td className="px-1 py-1"><NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} /></td>
+                        <td className="px-1 py-1">
+                          {i.auto === 'labor' ? (
+                            <span className="block px-2 text-right tabular-nums text-muted-foreground" title={`자재비 × ${s.laborRatio}% 로 자동 계산`}>
+                              {won(i.price)}
+                            </span>
+                          ) : (
+                            <NumInput value={i.price} onChange={(n) => updateItem(s.id, i.id, { price: n })} />
+                          )}
+                        </td>
                         <td className="px-2 py-1 text-right tabular-nums">{won(itemAmount(i))}</td>
+                        <td className="px-1 py-1">
+                          <CostInput value={i.cost} placeholder={unitCost(i).cost} onChange={(n) =>
+                              // 재료비는 원가 단가를 넣으면 견적 단가를 인상률·여분율로 바로 계산한다 (단가 칸에서 다시 고칠 수 있음)
+                              updateItem(s.id, i.id, i.kind === '재료비' && n !== undefined ? { cost: n, price: matPrice(n, q) } : { cost: n })
+                            }
+                          />
+                        </td>
                         <td className="px-1 py-1"><TextIn value={i.note} onChange={(v) => updateItem(s.id, i.id, { note: v })} /></td>
                         <td className="px-1 py-1 text-center">
                           <input type="checkbox" checked={!!i.deduct} onChange={(e) => updateItem(s.id, i.id, { deduct: e.target.checked })} />
@@ -921,6 +1031,22 @@ function QuotePanel({
                     </select>
                   </label>
                 )}
+                <label className="flex items-center gap-1.5" title="켜면 이 공종의 인건비 한 줄을 (재료비 합계 × 비율)로 자동 계산함. 자재가 비싸지면 인건비도 같이 오르고, 싸지면 같이 내려감">
+                  인건비 = 자재비 ×
+                  <NumInput
+                    className="h-7 w-16 text-xs"
+                    value={s.laborRatio ?? 0}
+                    onChange={(n) => {
+                      const ratio = Math.max(0, n) || undefined
+                      const manual = s.items.filter((i) => i.kind === '노무비' && i.auto !== 'labor')
+                      // 처음 켤 때 손으로 넣은 인건비 줄이 있으면 이중으로 잡히지 않게 지울지 묻는다
+                      if (ratio && !s.laborRatio && manual.length > 0 && confirm(`이 공종에 이미 있는 노무비 ${manual.length}줄을 지우고 자재비 비례 한 줄로 바꿀까요?\n(취소하면 기존 줄을 그대로 두고 비례 줄을 더함)`))
+                        updateSection(s.id, { laborRatio: ratio, items: s.items.filter((i) => i.kind !== '노무비') })
+                      else updateSection(s.id, { laborRatio: ratio })
+                    }}
+                  />
+                  %
+                </label>
                 <label className={`flex items-center gap-1.5${q.costCalc ? '' : ' ml-auto'}`}>
                   <input type="checkbox" checked={!!s.option} onChange={(e) => updateSection(s.id, { option: e.target.checked })} />
                   선택 항목 (견적금액 별도)
@@ -939,6 +1065,24 @@ function QuotePanel({
             <Plus /> 공종 추가
           </Button>
         </div>
+
+        <section className="flex flex-col gap-3 bg-background p-5 ring-1 ring-border">
+          <p className="text-sm font-medium">자재비 인상률 · 여분율 (내부 설정, 견적서에는 계산된 단가만 나옴)</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              자재비 인상률 %
+              <NumInput value={q.matUp ?? 0} onChange={(n) => setPricing({ matUp: Math.max(0, n) })} />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              자재 여분율 %
+              <NumInput value={q.matSpare ?? 0} onChange={(n) => setPricing({ matSpare: Math.max(0, n) })} />
+            </label>
+            <p className="col-span-2 self-end text-xs text-muted-foreground sm:col-span-3">
+              &lsquo;원가 단가&rsquo;를 넣은 재료비 줄의 견적 단가 = 원가 단가 × (1 + 인상률 + 여분율). 값을 바꾸면 그 줄들의 단가가 바로 다시 계산됨. 공종별 권장 값은{' '}
+              <a href="/admin/categories" target="_blank" className="underline">공종별 고려사항</a> 참고.
+            </p>
+          </div>
+        </section>
 
         <section className="flex flex-col gap-4 bg-background p-5 ring-1 ring-border">
           <label className="flex items-center gap-2 text-sm font-medium">
@@ -990,6 +1134,143 @@ function QuotePanel({
         <iframe ref={previewFrame} srcDoc={preview} onLoad={fitPreview} title="견적서 미리보기" className="h-[1200px] w-full border border-border" />
       </div>
     </div>
+  )
+}
+
+/**
+ * 견적 작성 단계에 지식 DB 를 붙인다 (kevin 2026-11-15). 공종 카테고리를 고르면 줄을 넣기 전에 단계대로 묻는다.
+ *   ① 먼저 정할 것: 질문마다 답을 적음 (공통 질문 + 공종별 고객 확인 사항)
+ *   ② 고려할 점: 지난 시행착오·자동 규칙을 하나씩 확인
+ *   ③ 지난 경험: 지식 DB 에 쌓인 답·기준, 답을 기다리는 질문. 새로 알게 된 것도 여기서 남김
+ *   ④ 이 공종의 지난 수주·실주와 이유 (lib/outcomes, 기록이 있을 때만)
+ *   ⑤ 참고: 공정·인원·장비·자재
+ * 답과 확인은 견적(section.checks)에 저장되고 어드민에서만 보인다.
+ */
+function SectionGuide({
+  category,
+  checks,
+  onChecks,
+  knowledge,
+  outcomes,
+  source,
+}: {
+  category: string
+  checks: Record<string, string>
+  onChecks: (c: Record<string, string>) => void
+  knowledge: KnowledgeEntry[]
+  outcomes: Outcome[]
+  source: string
+}) {
+  const [adding, setAdding] = useState(false)
+  const hit = findManualItem(category)
+  const steps = guideSteps(category)
+  if (!hit || !steps) return null
+  const groupCode = hit.group.code
+  const mine = knowledge.filter((e) => e.category === groupCode)
+  const answered = [...mine.filter((e) => e.body), ...knowledge.filter((e) => e.category === COMMON && e.body && e.kind !== 'deviation')]
+  const waiting = mine.filter((e) => !e.body)
+  const past = outcomes.filter((o) => o.categories.includes(groupCode))
+  const pastWon = past.filter((o) => o.result === 'won').length
+  const pastLost = past.filter((o) => o.result === 'lost').length
+  const set = (k: string, v: string) => {
+    const next = { ...checks }
+    if (v) next[k] = v
+    else delete next[k]
+    onChecks(next)
+  }
+  const done = (list: string[]) => list.filter((k) => checks[k]?.trim()).length
+  const qDone = done(steps.questions)
+  const cDone = done(steps.confirms)
+  const missing = steps.questions.length + steps.confirms.length - qDone - cDone
+  const head = 'text-xs font-semibold'
+  return (
+    <details className="border-b border-border bg-secondary/40" open={missing > 0 || undefined}>
+      <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 px-4 py-2 text-xs font-semibold">
+        줄을 넣기 전에 확인
+        <span className={cn('font-normal', missing > 0 ? 'text-orange-700' : 'text-muted-foreground')}>
+          질문 {qDone}/{steps.questions.length} · 확인 {cDone}/{steps.confirms.length}
+          {missing === 0 && ' · 모두 확인함'}
+        </span>
+        <span className="font-normal text-muted-foreground">
+          지난 경험 {answered.length}
+          {waiting.length > 0 && ` · 답 대기 ${waiting.length}`}
+          {past.length > 0 && ` · 이 공종 수주 ${pastWon} · 실주 ${pastLost}`}
+        </span>
+      </summary>
+      <div className="flex flex-col gap-4 px-4 pb-4">
+        <div className="flex flex-col gap-1.5">
+          <p className={head}>① 먼저 정할 것 (답을 적음)</p>
+          {steps.questions.map((k) => (
+            <label key={k} className="grid items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+              <span className={cn(!checks[k]?.trim() && 'text-orange-700')}>{k}</span>
+              <TextIn value={checks[k] ?? ''} onChange={(v) => set(k, v)} placeholder="정한 내용 (해당 없으면 '없음')" />
+            </label>
+          ))}
+        </div>
+        {steps.confirms.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <p className={head}>② 고려할 점 (확인했으면 체크)</p>
+            {steps.confirms.map((k) => (
+              <label key={k} className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-1" checked={!!checks[k]} onChange={(e) => set(k, e.target.checked ? 'ok' : '')} />
+                <span className={cn(!checks[k] && 'text-orange-700')}>{k}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-col gap-2">
+          <p className={head}>③ 지난 경험 ({answered.length})</p>
+          {answered.length === 0 && waiting.length === 0 && <p className="text-xs text-muted-foreground">이 공종에 쌓인 기록이 아직 없음.</p>}
+          {[...answered, ...waiting].map((e) => (
+            <EntryCard key={e.id} entry={e} />
+          ))}
+          {adding ? (
+            <AddForm defaults={{ category: groupCode, source }} onDone={() => setAdding(false)} />
+          ) : (
+            <button type="button" className="self-start text-xs underline" onClick={() => setAdding(true)}>
+              + 이번 견적에서 알게 된 것 남기기
+            </button>
+          )}
+        </div>
+        {past.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className={head}>
+              ④ 이 공종의 지난 수주·실주 (수주 {pastWon} · 실주 {pastLost})
+            </p>
+            {past.map((o) => (
+              <OutcomeRow key={o.clientId} outcome={o} />
+            ))}
+          </div>
+        )}
+        <details>
+          <summary className={cn(head, 'cursor-pointer')}>{past.length > 0 ? '⑤' : '④'} 참고: 공정·인원·장비·자재</summary>
+          <div className="mt-2 flex flex-col gap-3">
+            {(hit.item ? [hit.item] : hit.group.items).map((it) => (
+              <ManualBlock key={it.code} item={{ ...it, consider: [], ask: [] }} />
+            ))}
+          </div>
+        </details>
+      </div>
+    </details>
+  )
+}
+
+/** 내부 실원가 단가. 비우면 undefined (추정값 사용), 0 도 넣을 수 있다 */
+function CostInput({ value, placeholder, onChange }: { value: number | undefined; placeholder: number; onChange: (n: number | undefined) => void }) {
+  const [text, setText] = useState<string | null>(null)
+  return (
+    <input
+      inputMode="decimal"
+      value={text ?? (value === undefined ? '' : value.toLocaleString('ko-KR'))}
+      placeholder={placeholder.toLocaleString('ko-KR')}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        setText(e.target.value)
+        const raw = e.target.value.replace(/[^\d.]/g, '')
+        onChange(raw === '' ? undefined : Number(raw) || 0)
+      }}
+      className="h-8 w-full border border-dashed border-input bg-secondary/40 px-2 text-right text-sm tabular-nums placeholder:text-muted-foreground/60"
+    />
   )
 }
 

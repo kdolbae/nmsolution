@@ -6,6 +6,7 @@ import { logAccess } from '@/lib/clients/access-log'
 import { PortalHeader } from '@/components/portal/portal-header'
 import { PortalDocs } from '@/components/portal/portal-docs'
 import { clientFiles } from '@/lib/clients/files'
+import { publicQuote } from '@/lib/clients/quote'
 import { getPortalUser, portalDocs } from '@/lib/portal/access'
 
 export const dynamic = 'force-dynamic'
@@ -51,7 +52,7 @@ export default async function PortalHomePage() {
           label={client.label}
           updatedAt={client.updatedAt.toISOString().slice(0, 10)}
           proposalHtml={client.proposalHtml}
-          quote={client.quote}
+          quote={publicQuote(client.quote)}
           recipient={{ name: client.name, contactPerson: client.contactPerson, phone: client.phone, siteAddress: client.siteAddress }}
           files={(clientFiles(client.name)?.files ?? []).map((f) => ({ file: f.file, label: f.label }))}
         />

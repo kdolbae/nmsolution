@@ -24,6 +24,13 @@ export type QuoteItem = {
   note: string
   /** 감액 대상: 견적금액에 포함하되, 필요 없어지면 뺄 수 있는 줄. 견적서 끝에 감액 표로 따로 보여 준다 */
   deduct?: boolean
+  /**
+   * 내부 실원가 단가 (자재 실매입가·실지급 일당). 어드민에서만 쓰고 고객 화면·인쇄·PDF 에는 나오지 않는다.
+   * 고객에게 견적 데이터를 넘길 때는 publicQuote 로 지운다. 비우면 lib/clients/margin.ts 기준표로 추정한다
+   */
+  cost?: number
+  /** 자동으로 맞추는 줄. labor = 공종의 자재비 × laborRatio 로 금액을 맞추는 인건비 줄 (lib/clients/margin.ts syncLabor) */
+  auto?: 'labor'
 }
 
 export type QuoteSection = {
@@ -39,6 +46,12 @@ export type QuoteSection = {
   overheadOnly?: boolean
   /** 일반관리비·이윤만: 보험료·안전관리비 없이 일반관리비와 이윤을 붙인다 (flat·overheadOnly 가 우선) */
   noInsurance?: boolean
+  /** 자재비 비례 인건비 %. 0 보다 크면 이 공종의 인건비 줄 하나를 (재료비 합계 × 이 비율)로 자동 계산한다 */
+  laborRatio?: number
+  /** 공종 카테고리 소분류 코드 (F2-01 등, lib/knowledge/shared.ts). 편집 화면에서 그 공종의 단계형 질문·고려사항·쌓인 지식을 띄운다 */
+  category?: string
+  /** 단계형 질문의 답·확인 (질문 문구 → 답, 확인 항목은 'ok'). 어드민 전용 */
+  checks?: Record<string, string>
 }
 
 /** 공종의 원가계산 방식. 화면의 선택 칸과 flat·overheadOnly 를 잇는다 */
@@ -97,6 +110,10 @@ export type Quote = {
   deductLabel?: string
   /** 적산 입력값 (lib/clients/takeoff.ts). 인쇄에는 쓰지 않고 견적 줄을 만들 때만 쓴다 */
   takeoff?: Takeoff
+  /** 자재비 인상률 %. 원가 단가를 넣은 재료비 줄의 견적 단가 = 원가 단가 × (1 + 인상률 + 여분율). 기본 5 */
+  matUp?: number
+  /** 자재 여분율 %. 자르고 남는 분·파손 대비로 더 사는 자재 몫. 내부 원가에도 그만큼 더한다. 기본 0 */
+  matSpare?: number
 }
 
 export type QuoteRecipient = {
@@ -106,6 +123,9 @@ export type QuoteRecipient = {
   siteAddress?: string | null
   bizNumber?: string | null
 }
+
+/** 자재비 기본 인상률 % (2026-11-14 kevin: 자재비는 무조건 5% 정도 올림) */
+export const DEFAULT_MAT_UP = 5
 
 export const DEFAULT_DISCOUNT_LABEL = '가격 조정 (NEGO)'
 
@@ -150,6 +170,8 @@ export function emptyQuote(): Quote {
     notes: '공사 기간: 협의\n결제 조건: 협의',
     validDays: 30,
     recipientFields: 'biz',
+    matUp: DEFAULT_MAT_UP,
+    matSpare: 0,
   }
 }
 
@@ -166,6 +188,8 @@ export function normalizeQuote(raw: unknown): Quote {
     discountLabel: q.discountLabel?.trim() || DEFAULT_DISCOUNT_LABEL,
     // 이 칸이 없던 견적서(금강변압기 등)는 예전 양식 그대로 인쇄한다
     recipientFields: q.recipientFields === 'biz' ? 'biz' : 'contact',
+    matUp: validCost(q.matUp) ?? DEFAULT_MAT_UP,
+    matSpare: validCost(q.matSpare) ?? 0,
     sections: Array.isArray(q.sections)
       ? q.sections.map((s) => ({
           id: s.id || newId('s'),
@@ -175,6 +199,12 @@ export function normalizeQuote(raw: unknown): Quote {
           overheadOnly: Boolean(s.overheadOnly),
           noInsurance: Boolean(s.noInsurance),
           option: Boolean(s.option),
+          laborRatio: validCost(s.laborRatio) || undefined,
+          category: typeof s.category === 'string' && s.category ? s.category : undefined,
+          checks:
+            s.checks && typeof s.checks === 'object'
+              ? Object.fromEntries(Object.entries(s.checks).filter(([, v]) => typeof v === 'string' && v.trim()))
+              : undefined,
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
                 ...emptyItem(),
@@ -183,10 +213,36 @@ export function normalizeQuote(raw: unknown): Quote {
                 qty: Number(i.qty) || 0,
                 price: Number(i.price) || 0,
                 deduct: Boolean(i.deduct),
+                cost: validCost(i.cost),
               }))
             : [],
         }))
       : base.sections,
+  }
+}
+
+function validCost(v: unknown): number | undefined {
+  if (v === null || v === undefined || v === '') return undefined
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+}
+
+/** 고객 쪽(브라우저)으로 넘기는 견적: 내부 실원가 단가를 지운다 */
+export function publicQuote(q: Quote): Quote {
+  return {
+    ...q,
+    matUp: undefined,
+    matSpare: undefined,
+    sections: q.sections.map((s) => ({
+      ...s,
+      laborRatio: undefined,
+      category: undefined,
+      checks: undefined,
+      items: s.items.map((i) => {
+        const { cost: _cost, auto: _auto, ...rest } = i
+        return rest
+      }),
+    })),
   }
 }
 

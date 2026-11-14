@@ -25,7 +25,7 @@ import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIA
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
-import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
 import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -704,6 +704,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`UPDATE clients SET quote_code = 'DCP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
       })
       await seedOnce(DECOPAVE_REV2_KEY, () => refreshDecopave('CO₂ 배관 설계(초안) 추가: 도면·설계 유량·자재 리스트·PLC 입출력, 견적 금액 그대로'))
+      await seedOnce(DECOPAVE_REV3_KEY, () => refreshDecopave('설계 초안 제어기 LS일렉트릭 XGB로 변경'))
     })().catch((e) => {
       ready = null
       throw e

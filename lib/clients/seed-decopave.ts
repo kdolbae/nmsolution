@@ -9,6 +9,8 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
 export const DECOPAVE_SEED_KEY = 'decopave-co2-curing-2611-v1'
 /** 제안서에 'CO₂ 배관 설계(초안)' 구역 추가(2026-11-14). 견적 금액은 그대로 */
 export const DECOPAVE_REV2_KEY = 'decopave-co2-design-2611-v2'
+/** 설계 초안 제어기 CIMON → LS일렉트릭 XGB(2026-11-14) */
+export const DECOPAVE_REV3_KEY = 'decopave-co2-design-ls-2611-v3'
 
 export const DECOPAVE_CLIENT = {
   name: '(주)데코페이브',

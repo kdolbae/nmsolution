@@ -7,6 +7,7 @@ import { attributionValues, type Attribution } from '@/lib/attribution'
 import { ensureQuoteRequests } from '@/lib/quote-table'
 import { MAX_PHOTOS, MAX_PHOTO_BYTES, MAX_TOTAL_BYTES, ensureQuotePhotos, sniffImage } from '@/lib/quote-photos'
 import { WORK_CATEGORIES } from '@/lib/work-landings'
+import { ncmsUtm, sendInquiryToNcms } from '@/lib/ncms'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
 
   try {
     await ensureQuoteRequests()
+    const attr = attributionValues(attribution)
     const [row] = await db
       .insert(quoteRequests)
       .values({
@@ -98,7 +100,7 @@ export async function POST(req: Request) {
         location,
         categories: category,
         message: body,
-        ...attributionValues(attribution),
+        ...attr,
       })
       .returning({ id: quoteRequests.id, created_at: quoteRequests.createdAt })
 
@@ -119,6 +121,10 @@ export async function POST(req: Request) {
       page = new URL(req.headers.get('referer') || '').pathname.slice(0, 300)
     } catch {}
     after(() => sendToBoard([], [{ id: row.id, created_at: row.created_at, kind: 'photo', phone, source_page: page }]).then(() => undefined))
+    // N-CMS 문의·상담으로 사진째 보낸다(엔엠 어드민 대신). 못 보내도 엔엠 DB 에 있어 N-CMS 「엔엠 자료 가져오기」로 들어간다
+    after(() =>
+      sendInquiryToNcms({ quoteId: row.id, name: name || '사진 견적', phone, location, categories: category, message: body, sourcePage: page, utm: ncmsUtm(attr), photos }).then(() => undefined),
+    )
     return Response.json({ ok: true })
   } catch (e) {
     console.error('[quote-photo] 접수 실패', e)

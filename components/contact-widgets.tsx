@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileText, MessageCircle, Phone, Plus, Smartphone, X } from 'lucide-react'
+import Script from 'next/script'
+import { FileText, MessageCircle, MessagesSquare, Phone, Plus, Smartphone, X } from 'lucide-react'
 import { track } from '@/lib/track'
 import { reportConversion } from '@/lib/tracking'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,41 @@ type Channel = {
   highlight?: boolean
   /** 전환 집계용 이름 */
   event: string
+  /** 페이지 안 대화형 문의창을 연다 */
+  liveChat?: boolean
+}
+
+/**
+ * 페이지 안 대화형 문의창(kevin 2026-11-12 "카톡 문의에 더해 페이지 안에 대화형 문의창").
+ * 창은 N-CMS 공용 위젯(https://sbworks.bond/site-chat.js). 쓴 글은 N-CMS 실시간 채팅에 바로 뜨고
+ * 첫 글은 플랜트사업부 견적 문의(엔엠 홈페이지)로 들어간다. 사업체 nanomaster = 엔엠 홈페이지 문의가 들어가는 N-CMS 사업체.
+ * 연결이 안 되면(위젯을 못 불렀으면) 카카오톡 상담으로.
+ */
+function openLiveChat(fallback: string) {
+  const w = window as unknown as { ncmsChat?: { open: () => void } }
+  if (w.ncmsChat) w.ncmsChat.open()
+  else if (fallback) openKakaoChat(fallback)
+}
+
+export function LiveChatScript({ phoneMain, kakaoUrl }: { phoneMain: string; kakaoUrl: string }) {
+  return (
+    <Script
+      id="ncms-site-chat"
+      src="https://sbworks.bond/site-chat.js"
+      strategy="afterInteractive"
+      data-b="nanomaster"
+      data-name="엔엠솔루션"
+      data-color="#0b1f3a"
+      data-accent="#1f6feb"
+      data-accent-text="#ffffff"
+      data-kakao={kakaoChatUrl(kakaoUrl) || ''}
+      data-tel={phoneMain}
+      data-privacy=""
+      data-launcher="none"
+      data-avoid="nav[aria-label='빠른 상담']"
+      data-greet={'안녕하세요, 엔엠솔루션입니다.\n공장·건물 보수 공사, 어떤 내용이든 편하게 남겨 주세요.'}
+    />
+  )
 }
 
 /**
@@ -37,6 +73,8 @@ function channels(phoneMain: string, phoneMobile: string, kakaoUrl: string): Cha
   return [
     { icon: Smartphone, label: '바로 전화', sub: phoneMobile, href: `tel:${phoneMobile}`, highlight: true, event: 'call_mobile' },
     { icon: Phone, label: '대표전화', sub: `${phoneMain} · 평일 09:00 – 18:00`, href: `tel:${phoneMain}`, event: 'call_main' },
+    // 페이지 안 대화형 문의창(N-CMS 실시간 채팅). 창을 못 부르면 카카오톡으로
+    { icon: MessagesSquare, label: '채팅 문의', sub: '이 창에서 바로 담당자와 대화', liveChat: true, popup: chat || undefined, event: 'live_chat' },
     // 카카오톡 채널(비즈채널) 하나로 1:1 상담까지 받는다
     ...(chat
       ? [{ icon: MessageCircle, label: '카카오톡 상담', sub: '채널로 1:1 문의', popup: chat, event: 'kakao_chat' } as Channel]
@@ -117,13 +155,14 @@ export function FloatingContact({
               'group flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-secondary'
             return (
               <li key={c.label}>
-                {c.popup ? (
+                {c.liveChat || c.popup ? (
                   <button
                     type="button"
                     onClick={() => {
                       contactClick(c.event, 'floating')
                       setOpen(false)
-                      openKakaoChat(c.popup!)
+                      if (c.liveChat) openLiveChat(c.popup ?? '')
+                      else openKakaoChat(c.popup!)
                     }}
                     className={className}
                   >
@@ -184,12 +223,15 @@ export function MobileContactBar({
   const CELL = 'flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-foreground/80'
 
   return (
-    <nav
+    <>
+      {/* 대화형 문의창 스크립트: 이 막대는 화면 크기와 상관없이 늘 붙어 있어(md:hidden 은 CSS) 여기서 한 번 부른다 */}
+      <LiveChatScript phoneMain={phoneMain} kakaoUrl={kakaoUrl} />
+      <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden"
       aria-label="빠른 상담"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         <a
           href={`tel:${phoneMobile}`}
           onClick={() => contactClick('call_mobile', 'mobile_bar')}
@@ -217,6 +259,17 @@ export function MobileContactBar({
           <MessageCircle className="size-5" strokeWidth={1.75} />
           카톡상담
         </a>
+        <button
+          type="button"
+          onClick={() => {
+            contactClick('live_chat', 'mobile_bar')
+            openLiveChat(chat)
+          }}
+          className={CELL}
+        >
+          <MessagesSquare className="size-5" strokeWidth={1.75} />
+          채팅문의
+        </button>
         <a
           href="/#quote"
           onClick={() => contactClick('quote_open', 'mobile_bar')}
@@ -226,7 +279,8 @@ export function MobileContactBar({
           견적
         </a>
       </div>
-    </nav>
+      </nav>
+    </>
   )
 }
 

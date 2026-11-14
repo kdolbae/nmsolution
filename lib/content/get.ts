@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { projects, siteContent } from '@/lib/db/schema'
+import { projects, siteContent, type Project } from '@/lib/db/schema'
+import { ncmsHomepageOrNull } from '@/lib/ncms'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { CONTENT_DEFAULTS, type ContentKey, type ContentMap } from './defaults'
 
@@ -18,18 +19,64 @@ function merge<T extends Record<string, unknown>>(base: T, saved: unknown): T {
   return out as T
 }
 
+/**
+ * 관리자에서 사업소개를 저장해 둔 경우, 그 뒤에 기본값에 추가한 사업(대형플랜트 설비)은 저장본에 없어 안 보인다.
+ * 저장본에 없으면 기본값 항목을 공장 개보수 바로 뒤에 끼워 넣는다. 관리자에서 저장하면 그대로 저장본에 들어간다.
+ */
+const ADDED_SERVICE_SLUGS = ['plant']
+function withNewServices(c: ContentMap['services']): ContentMap['services'] {
+  const items = [...c.items]
+  for (const slug of ADDED_SERVICE_SLUGS) {
+    if (items.some((s) => s.slug === slug)) continue
+    const def = CONTENT_DEFAULTS.services.items.find((s) => s.slug === slug)
+    if (!def) continue
+    const at = items.findIndex((s) => s.slug === 'factory')
+    items.splice(at === -1 ? 0 : at + 1, 0, def)
+  }
+  return { ...c, items }
+}
+
+/**
+ * 페이지 내용. 순서: N-CMS(플랜트사업부 › 홈페이지, 5분 캐시) → 엔엠 DB site_content(어드민을 지우기 전 마지막 내용) → 코드 기본값.
+ * 엔엠 어드민은 지우고 내용은 N-CMS 에서 고친다(kevin 2026-11-10, lib/ncms.ts).
+ */
 export async function getContent<K extends ContentKey>(key: K): Promise<ContentMap[K]> {
   const base = CONTENT_DEFAULTS[key] as ContentMap[K]
+  const ncms = await ncmsHomepageOrNull()
+  const remote = ncms?.savedKeys?.includes(key) ? ncms.pages?.[key] : null
+  const fix = (out: ContentMap[K]) => (key === 'services' ? withNewServices(out as ContentMap['services']) : out) as ContentMap[K]
+  if (remote && typeof remote === 'object' && !Array.isArray(remote)) return fix(merge(base as Record<string, unknown>, remote) as ContentMap[K])
   try {
     const [row] = await db.select().from(siteContent).where(eq(siteContent.key, key)).limit(1)
-    return merge(base as Record<string, unknown>, row?.data) as ContentMap[K]
+    return fix(merge(base as Record<string, unknown>, row?.data) as ContentMap[K])
   } catch (e) {
     console.error('[content] failed to load', key, e)
     return base
   }
 }
 
-export async function getPublishedProjects() {
+/**
+ * 공개 시공사례. N-CMS 에 공개 사례가 있으면 그것, 없으면(못 읽음·아직 안 가져옴) 엔엠 DB.
+ * 그래서 N-CMS 에서 사례를 모두 내리면 엔엠 DB 의 옛 사례가 보인다 — 사례 칸을 숨기려면 사이트 설정의 「시공사례 보이기」를 끈다.
+ */
+export async function getPublishedProjects(): Promise<Project[]> {
+  const remote = await ncmsHomepageOrNull()
+  if (remote && remote.cases.length) {
+    return remote.cases.map((c, i) => ({
+      id: i + 1,
+      title: c.title,
+      category: c.category,
+      location: c.location ?? '',
+      year: c.year ?? '',
+      duration: c.duration ?? '',
+      description: c.description ?? '',
+      imageUrl: c.imageUrl ?? '',
+      published: true,
+      sortOrder: c.sortOrder ?? 0,
+      createdAt: new Date(c.createdAt),
+      updatedAt: new Date(c.createdAt),
+    }))
+  }
   try {
     return await db
       .select()

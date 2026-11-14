@@ -16,6 +16,8 @@ const nextConfig = {
     '/atotech': ['./node_modules/@sparticuz/chromium/bin/**/*'],
     '/jstech': ['./node_modules/@sparticuz/chromium/bin/**/*'],
     '/ganatm': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    // 업체 페이지 안 자료 내려받기(?file=, lib/clients/files.ts)
+    '/decopave': ['./private/client-files/decopave/**/*'],
   },
   // 검색광고 상황판은 나노마스터 관리 화면의 같은 상황판으로 옮겼다 (lib/board-sync.ts)
   async redirects() {

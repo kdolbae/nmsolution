@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>에어레인 세정액실 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* layout: 3D 캔버스 전체 화면 + 좌측 상단 도면 표제란형 정보 패널(접기 가능) */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --ink:#0F2A44; --sub:#56657A; --line:#D5DCE4;
+  --accent:#E8742A; --air:#1F9D6B; --exh:#D0532A; --scene:#E7EBEF;
+  --f-body:'IBM Plex Sans KR','Pretendard','Malgun Gothic',sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1620;--panel:#15202C;--ink:#E4ECF4;--sub:#9AAABB;--line:#2A3A4B;--accent:#F08A45;--air:#35C18A;--exh:#F07850;--scene:#101A25;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1620;--panel:#15202C;--ink:#E4ECF4;--sub:#9AAABB;--line:#2A3A4B;--accent:#F08A45;--air:#35C18A;--exh:#F07850;--scene:#101A25;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);overflow:hidden}
+#stage{position:fixed;inset:0}
+#panel{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));width:min(360px,calc(100% - 32px));max-height:calc(100% - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 24px rgba(15,42,68,.12);font-size:13px;line-height:1.55}
+#panel header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 14px 8px;border-bottom:2px solid var(--ink)}
+.brand{font-size:11px;letter-spacing:.12em;color:var(--accent);font-weight:700}
+h1{font-size:16px;margin:2px 0 0;text-wrap:balance}
+#toggle{font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--sub);border-radius:4px;padding:2px 8px;cursor:pointer}
+.body{padding:10px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.body[hidden]{display:none!important}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td{padding:3px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:last-child{text-align:right;font-family:var(--f-mono);white-space:nowrap;padding-left:8px}
+.lbl{font-size:11px;letter-spacing:.08em;color:var(--sub);font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button.opt{font:inherit;font-size:12px;padding:6px 8px;border-radius:4px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;text-align:left}
+button.opt[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--panel)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{font-size:12px;color:var(--sub)}
+.rec{border-left:3px solid var(--accent);padding:4px 0 4px 10px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+<section id="panel" aria-label="세정액실 정보">
+  <header>
+    <div><div class="brand">NM SOLUTION</div><h1>세정액실 판넬 구획 · 배기 계획</h1></div>
+    <button id="toggle" aria-expanded="true">접기</button>
+  </header>
+  <div class="body" id="pbody">
+    <div class="rec"><b>배기 방식.</b> 실 천장 위 저소음 캐비닛형 시로코 송풍기 1대가 드럼 4곳 20A 호스와 실 환기구에서 함께 빨아 Ø200 배기관으로 지붕 위 배기 갓까지 밀어 냄. 속도조절기로 소음·풍량을 현장에서 맞춤. 우측 하부 루버로 바깥 공기가 들어옴.</div>
+    <div>
+      <div class="lbl">환기량 계산 (약 6분에 1회 전체 교환)</div>
+      <table>
+        <tr><td>실 체적 6.7 × 2.3 × 2.65</td><td>40.8 ㎥</td></tr>
+        <tr><td>설계 배기량 (시간당 약 10회)</td><td>400 ㎥/h</td></tr>
+        <tr><td>메인 덕트 Ø200 풍속</td><td>약 3.5 m/s (저소음)</td></tr><tr><td>송풍기 (250Pa급)</td><td>400~600 ㎥/h</td></tr>
+        <tr><td>드럼 연결 20A × 4</td><td>신축 호스</td></tr>
+        <tr><td>실 환기구 (천장 밑)</td><td>1개소</td></tr>
+        <tr><td>루버 450 × 450 (개구율 50% 가정)</td><td>유입 약 1.1 m/s</td></tr>
+      </table>
+      <p class="note" style="margin:6px 0 0">수치는 견적용 계획값임. 세정액 성분·현장 실측 후 확정함.</p>
+    </div>
+    <div>
+      <div class="lbl">보기</div>
+      <div class="btns" style="margin-top:4px">
+        <button class="opt" data-v="3d">3D</button>
+        <button class="opt" data-v="room">실 확대</button>
+        <button class="opt" data-v="front">정면</button>
+        <button class="opt" data-v="side">측면(지붕 단면)</button>
+        <button class="opt" id="lbls" aria-pressed="true">설비명</button>
+        <button class="opt" id="bldg" aria-pressed="true">건물</button>
+        <button class="opt" id="dimb" aria-pressed="true">치수</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:#9FB3C8"></i>판넬 50T 준불연 우레탄</span>
+      <span><i style="background:#E8A23A"></i>제전 커튼</span>
+      <span><i style="background:#4A5D72"></i>각파이프 □100×50</span>
+      <span><i style="background:#E8742A"></i>치수(mm)</span>
+      <span><i style="background:var(--air)"></i>급기</span>
+      <span><i style="background:var(--exh)"></i>배기</span>
+    </div>
+    <p class="note" style="margin:0">건물은 조립식 공장(ㅅ자 판넬 지붕, 최고 6m) 개략 표현이고 폭·길이·처마 높이는 가정값임. 실 위치도 현장 확인 전 가정임.</p>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const stage=document.getElementById('stage');
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,0.1,300);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);stage.appendChild(renderer.domElement);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x8899aa,0.9));
+const dl=new THREE.DirectionalLight(0xffffff,0.6);dl.position.set(8,14,-10);scene.add(dl);
+function applyTheme(){scene.background=new THREE.Color(css('--scene'));}
+applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.6,metalness:.1},o));
+const W=6.7,D=2.3,H=2.65,hw=W/2,hd=D/2,T=0.05;
+
+// ---------- 건물(가정): 폭 16m(z), 길이 24m(x), 처마 4.5m, 용마루 6m ----------
+const bldg=new THREE.Group();
+const BW=16,BL=24,EAVE=4.5,RIDGE=6.0;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(BL,BW),M(0xb9c2cb,{roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-0.001;bldg.add(floor);
+const edgeMat=new THREE.LineBasicMaterial({color:0x5b6f86,transparent:true,opacity:.7});
+const pts=[];const add=(a,b)=>pts.push(new THREE.Vector3(...a),new THREE.Vector3(...b));
+const xs=[-BL/2,BL/2];
+xs.forEach(x=>{add([x,0,-BW/2],[x,EAVE,-BW/2]);add([x,0,BW/2],[x,EAVE,BW/2]);add([x,EAVE,-BW/2],[x,RIDGE,0]);add([x,EAVE,BW/2],[x,RIDGE,0]);add([x,0,-BW/2],[x,0,BW/2]);});
+add([-BL/2,EAVE,-BW/2],[BL/2,EAVE,-BW/2]);add([-BL/2,EAVE,BW/2],[BL/2,EAVE,BW/2]);add([-BL/2,RIDGE,0],[BL/2,RIDGE,0]);
+add([-BL/2,0,-BW/2],[BL/2,0,-BW/2]);add([-BL/2,0,BW/2],[BL/2,0,BW/2]);
+for(let x=-BL/2+6;x<BL/2;x+=6){add([x,0,-BW/2],[x,EAVE,-BW/2]);add([x,0,BW/2],[x,EAVE,BW/2]);add([x,EAVE,-BW/2],[x,RIDGE,0]);add([x,EAVE,BW/2],[x,RIDGE,0]);}
+bldg.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),edgeMat));
+const slope=Math.hypot(BW/2,RIDGE-EAVE),ang=Math.atan2(RIDGE-EAVE,BW/2);
+const roofMat=M(0x8fa3b8,{transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false});
+[-1,1].forEach(s=>{const r=new THREE.Mesh(new THREE.PlaneGeometry(BL,slope),roofMat);r.rotation.x=-Math.PI/2+s*ang;r.position.set(0,(EAVE+RIDGE)/2,s*BW/4);r.rotation.order='XYZ';r.rotation.set(s>0?(-Math.PI/2+ang):(-Math.PI/2-ang),0,0);bldg.add(r);});
+scene.add(bldg);
+const roofY=z=>RIDGE-(RIDGE-EAVE)*Math.abs(z)/(BW/2);
+
+// ---------- 판넬 구획 (벽 3면 + 천장) ----------
+const room=new THREE.Group();
+const pMat=M(0x9fb3c8,{transparent:true,opacity:.42,side:THREE.DoubleSide,depthWrite:false});
+const box=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o;};
+room.add(box(T,H,D,pMat,-hw,H/2,0));          // 좌
+room.add(box(T,H,D,pMat,hw,H/2,0));           // 우
+room.add(box(W,H,T,pMat,0,H/2,hd));           // 뒤
+room.add(box(W,T,D,pMat,0,H,0));              // 천장
+room.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W,H,D)),new THREE.LineBasicMaterial({color:0x0f2a44}))).children;
+room.children[room.children.length-1].position.set(0,H/2,0);
+// 각파이프 □100×50 골조: 기둥 4, 길이방향 보 2(커튼 자리·천장 가운데), 폭방향 보 3
+const stMat=M(0x4a5d72,{metalness:.5,roughness:.4});
+[[-hw,-hd],[hw,-hd],[-hw,hd],[hw,hd]].forEach(([x,z])=>room.add(box(0.1,2.6,0.05,stMat,x,1.3,z)));
+[-hd,0].forEach(z=>room.add(box(W,0.1,0.05,stMat,0,H-0.05,z)));
+[-hw,0,hw].forEach(x=>room.add(box(0.05,0.1,D,stMat,x,H-0.05,0)));
+// 커튼(양개, 반쯤 열림)
+const cMat=M(0xe8a23a,{transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false});
+const gap=1.6,sideW=(W-gap)/2,n=12,pw=sideW/n;
+[-hw,gap/2].forEach(sx=>{for(let i=0;i<n;i++){const x1=sx+i*pw,x2=x1+pw,z1=-hd-(i%2?0.06:0),z2=-hd-(i%2?0:0.06);
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array([x1,0.02,z1,x2,0.02,z2,x1,H-0.1,z1,x2,0.02,z2,x2,H-0.1,z2,x1,H-0.1,z1]),3));g.computeVertexNormals();room.add(new THREE.Mesh(g,cMat));}});
+// 드럼
+const dGeo=new THREE.CylinderGeometry(0.29,0.29,0.88,24);
+const drumX=[-2.6,-1.8,-1.0,-0.2];
+const exhMat=M(0xd0532a,{metalness:.4,roughness:.4});
+const ductMat=M(0xb7c0c9,{metalness:.7,roughness:.3});
+drumX.forEach(x=>{
+ const w=new THREE.Mesh(dGeo,M(0x2f6fb0));w.position.set(x,0.44,0.5);room.add(w);
+ const s=new THREE.Mesh(dGeo,M(0x7d8a99));s.position.set(x,0.44,-0.3);room.add(s);
+ // 20A 연결 + 신축 호스(드럼 상부 → 메인)
+ const hose=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,2.45-0.9,10),exhMat);hose.position.set(x+0.15,0.9+(2.45-0.9)/2,0.5);room.add(hose);
+ const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.04,12),M(0x222222));cap.position.set(x+0.15,0.9,0.5);room.add(cap);
+});
+// 압력용기
+[[1.6,-0.4],[1.6,0.4],[2.4,-0.4],[2.4,0.4]].forEach(([x,z])=>{const v=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.9,24),M(0x2e9e7a,{metalness:.5}));v.position.set(x,0.45,z);room.add(v);});
+// 메인 덕트 Ø200 (천장 밑)
+const main=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,3.4,20),ductMat);main.rotation.z=Math.PI/2;main.position.set(-1.25,2.45,0.5);room.add(main);
+// 실 환기구(메인 끝 그릴)
+const grille=box(0.2,0.06,0.2,M(0xd8dee5),-3.0,2.42,0.5);room.add(grille);
+// 루버 450x450 우측 하부
+const louv=new THREE.Group();louv.add(box(0.04,0.45,0.45,M(0x1f9d6b),hw+0.03,0.5,0));
+for(let i=0;i<6;i++){const s=box(0.06,0.02,0.43,M(0x35c18a),hw+0.06,0.32+i*0.075,0);s.rotation.z=-0.4;louv.add(s);}room.add(louv);
+scene.add(room);
+
+// ---------- 실 천장 위: 저소음 시로코 송풍기 + Ø200 수직관 + 지붕 관통 + 배기 갓 ----------
+const rx=-1.05,rz=0.5,ry=roofY(rz);
+const up=new THREE.Group();
+// 덕트 상승(메인 → 천장 관통 → 송풍기)
+const rise1=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,H+0.1-2.45,20),ductMat);rise1.position.set(rx,2.45+(H+0.1-2.45)/2,rz);up.add(rise1);
+const fan=new THREE.Group();
+fan.add(box(0.7,0.4,0.55,M(0x0f2a44,{metalness:.3}),0,0,0));
+fan.add(box(0.72,0.03,0.57,M(0x4a5d72),0,0.21,0));
+fan.position.set(rx+0.3,H+0.08+0.2,rz);up.add(fan);
+// 받침 각관
+[-0.3,0.3].forEach(d=>up.add(box(1.4,0.05,0.05,M(0x6b7a8c,{metalness:.5}),rx+0.3,H+0.05,rz+d)));
+// 송풍기 → 지붕 수직관
+const fy=H+0.48;
+const riser=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,ry+0.6-fy,20),ductMat);riser.position.set(rx+0.45,fy+(ry+0.6-fy)/2,rz);up.add(riser);
+// 지붕 관통 부츠
+const boot=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.3,0.15,24),M(0x222831));boot.position.set(rx+0.45,ry+0.05,rz);up.add(boot);
+// 배기 갓(레인캡)
+const capG=new THREE.Group();
+capG.add(new THREE.Mesh(new THREE.ConeGeometry(0.24,0.16,24),M(0xc9d2db,{metalness:.8,roughness:.25})));
+[0,1,2].forEach(k=>{const a=k/3*Math.PI*2;const l=box(0.015,0.14,0.015,M(0x9aa6b2),Math.cos(a)*0.09,-0.12,Math.sin(a)*0.09);capG.add(l);});
+capG.position.set(rx+0.45,ry+0.6+0.2,rz);up.add(capG);
+scene.add(up);
+
+// 공기 흐름 화살표
+const arrows=new THREE.Group();
+const airC=()=>new THREE.Color(css('--air')),exhC=()=>new THREE.Color(css('--exh'));
+const a1=new THREE.ArrowHelper(new THREE.Vector3(-1,0,0),new THREE.Vector3(hw+0.7,0.45,0),0.6,0x1f9d6b,0.18,0.1);
+const a2=new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(rx+0.9,ry+0.3,rz),0.9,0xd0532a,0.2,0.12);
+const a3=new THREE.ArrowHelper(new THREE.Vector3(-1,0,0),new THREE.Vector3(1.0,2.2,0.5),0.8,0xd0532a,0.16,0.09);
+arrows.add(a1,a2,a3);scene.add(arrows);
+
+// 라벨
+const labels=new THREE.Group();
+function tag(txt,x,y,z,col){const c=document.createElement('canvas'),g=c.getContext('2d');const f='600 26px "IBM Plex Sans KR", sans-serif';g.font=f;const w=g.measureText(txt).width+28;c.width=w;c.height=46;g.fillStyle='rgba(15,42,68,.88)';g.fillRect(0,0,w,46);g.fillStyle=col||'#ffffff';g.font=f;g.textBaseline='middle';g.fillText(txt,14,24);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(w*0.006,46*0.006,1);s.position.set(x,y,z);s.renderOrder=10;labels.add(s);return s;}
+tag('판넬 구획 6,700×2,300×2,650 (천장 포함)',1.8,H+0.25,-hd-0.2);
+tag('폐액드럼 4 · 20A 신축 호스',-1.4,1.25,1.25);
+tag('메인 덕트 Ø200 + 실 환기구',-2.4,2.05,0.5);
+tag('저소음 시로코 송풍기 (실 천장 위, 400㎥/h)',rx-1.6,H+1.0,rz);
+tag('지붕 관통 · 방수 부츠',rx+1.9,ry+0.15,rz);
+tag('배기 갓 Ø200',rx+1.4,ry+1.05,rz);
+tag('루버 450×450 (자연급기)',hw+1.4,0.9,0);
+tag('양개 자바라 제전 커튼 (출입문)',0,0.4,-hd-0.6);
+tag('ㅅ자 판넬 지붕 · 최고 6m',BL/2-4,RIDGE+0.4,0);
+scene.add(labels);
+
+// 치수
+const dims=new THREE.Group();
+const dimMat=new THREE.LineBasicMaterial({color:0xE8742A,depthTest:false});
+function dimLabel(txt,x,y,z){const c=document.createElement('canvas'),g=c.getContext('2d');const f='700 28px "IBM Plex Mono", monospace';g.font=f;const w=g.measureText(txt).width+20;c.width=w;c.height=42;g.fillStyle='#E8742A';g.fillRect(0,0,w,42);g.fillStyle='#fff';g.font=f;g.textBaseline='middle';g.fillText(txt,10,22);
+ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,sizeAttenuation:false}));sp.scale.set(w*0.00055,42*0.00055,1);sp.position.set(x,y,z);sp.renderOrder=12;dims.add(sp);}
+function dim(a,b,tick,txt){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),T=new THREE.Vector3(...tick).multiplyScalar(0.12);
+ const pts=[A,B,A.clone().add(T),A.clone().sub(T),B.clone().add(T),B.clone().sub(T)];
+ const l=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),dimMat);l.renderOrder=11;dims.add(l);
+ const m=A.clone().add(B).multiplyScalar(0.5);dimLabel(txt,m.x,m.y+0.12,m.z);}
+dim([-hw,H+0.35,-hd-0.3],[hw,H+0.35,-hd-0.3],[0,1,0],'6,700');
+dim([hw+0.35,H+0.35,-hd],[hw+0.35,H+0.35,hd],[0,1,0],'2,300');
+dim([hw+0.45,0,-hd-0.3],[hw+0.45,H,-hd-0.3],[1,0,0],'H 2,650');
+dim([-hw-0.4,0,-hd-0.3],[-hw-0.4,2.6,-hd-0.3],[1,0,0],'기둥 2,600');
+dim([rx-0.5,H,rz],[rx-0.5,ry,rz],[1,0,0],'약 '+(Math.round((ry-H)*20)*50).toLocaleString()+' (가정)');
+dim([BL/2+0.6,0,0],[BL/2+0.6,RIDGE,0],[0,0,1],'최고 6,000');
+dim([BL/2+0.6,0,-BW/2],[BL/2+0.6,EAVE,-BW/2],[0,0,1],'처마 4,500 (가정)');
+scene.add(dims);
+
+
+// 보기
+const VIEWS={'3d':[[13,10,-14],[0,2.6,0]],room:[[6.5,4.2,-6.5],[0,1.6,0]],front:[[0,2.2,-11],[0,2.4,0]],side:[[16,3.5,0.01],[0,3,0]]};
+function view(v){const [p,t]=VIEWS[v];camera.position.set(...p);controls.target.set(...t);controls.update();}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>view(b.dataset.v));
+view(innerWidth<700?'room':'3d');
+const lb=document.getElementById('lbls');lb.onclick=()=>{labels.visible=!labels.visible;lb.setAttribute('aria-pressed',labels.visible);};
+const db=document.getElementById('dimb');db.onclick=()=>{dims.visible=!dims.visible;db.setAttribute('aria-pressed',dims.visible);};
+const bb=document.getElementById('bldg');bb.onclick=()=>{bldg.visible=!bldg.visible;bb.setAttribute('aria-pressed',bldg.visible);};
+const tg=document.getElementById('toggle'),pb=document.getElementById('pbody');
+tg.onclick=()=>{pb.hidden=!pb.hidden;tg.textContent=pb.hidden?'펼치기':'접기';tg.setAttribute('aria-expanded',!pb.hidden);};
+if(innerWidth<700||innerHeight<700||window.self!==window.top){pb.hidden=true;tg.textContent='펼치기';tg.setAttribute('aria-expanded','false');}
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+(function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera);})();
+})();
+</script>
+
+</body>
+</html>

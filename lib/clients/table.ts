@@ -21,7 +21,11 @@ import { GANATM_CLIENT, GANATM_SEED_KEY, ganatmQuote } from './seed-ganatm'
 import { GANATM_PAGE_HTML } from './ganatm-page'
 import { JJY_CLIENT, JJY_REV2_KEY, JJY_REV3_KEY, JJY_REV4_KEY, JJY_REV5_KEY, JJY_REV6_KEY, JJY_REV7_KEY, JJY_REV8_KEY, JJY_REV9_KEY, JJY_REV10_KEY, JJY_SEED_KEY, jjyQuote } from './seed-jjy'
 import { JJY_PAGE_HTML } from './jjy-page'
-import { DECOPAVE_CLIENT, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIAN_SEED_KEY, desianQuote } from './seed-desianplex'
+import { DESIAN_PAGE_HTML } from './desianplex-page'
+import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
+import { AIRRANE_PAGE_HTML } from './airrane-page'
+import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
 import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -634,6 +638,51 @@ export function ensureClients(): Promise<void> {
       await seedOnce(JJY_REV8_KEY, () => refreshJjy('자재 단가 조정(판넬·도어·라운드몰드·U바 등), 운반비 500,000'))
       await seedOnce(JJY_REV9_KEY, () => refreshJjy('공사 기간 6일, 6일차 2명 (총 22 인·일)'))
       await seedOnce(JJY_REV10_KEY, () => refreshJjy('준불연 판넬 ㎡ 단위 (122.2㎡ × 23,100)'))
+      // 생각공장 데시앙플렉스 관리사무소: 오배수 패키지 펌프·집수정 펌프·부스터 펌프 정비(2026-11-11). 담당자·연락처·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(DESIAN_SEED_KEY, async () => {
+        const c = DESIAN_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = desianQuote(today())
+        const proposal = DESIAN_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'DSP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
+      })
+      await seedOnce(DESIAN_REV2_KEY, () => refreshDesian('1안 제안 이유: 이물로 인한 과부하(오버로드)'))
+      await seedOnce(DESIAN_REV3_KEY, () => refreshDesian('펌프 2안 커터형 1,300,000, 3안 패키지 7,700,000(설치 포함)·관리 인력 축소, 기존 설비 반출 별도'))
+      await seedOnce(DESIAN_REV4_KEY, () => refreshDesian('펌프 3안 패키지 8,100,000(설치 포함)'))
+      // (주)에어레인: 청주 세정액실 판넬 구획·제전커튼·국소배기(2026-11-11). 담당자·연락처·링크 비밀번호는 어드민에서 입력(공개 저장소)
+      await seedOnce(AIRRANE_SEED_KEY, async () => {
+        const c = AIRRANE_CLIENT
+        const found = await pool.query(`SELECT 1 FROM clients WHERE name = $1 OR portal_slug = $2`, [c.name, c.portalSlug])
+        if (found.rows.length) return
+        const quote = airraneQuote(today())
+        const proposal = AIRRANE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+        const { rows } = await pool.query<{ id: string }>(
+          `INSERT INTO clients (name, biz_number, contact_person, phone, email, site_address, memo, proposal_html, quote, portal_slug, portal_login)
+           VALUES ($1, '', '', '', '', $2, $3, $4, $5, $6, $7) RETURNING id`,
+          [c.name, c.siteAddress, c.memo, proposal, JSON.stringify(quote), c.portalSlug, c.portalLogin],
+        )
+        await pool.query(
+          `INSERT INTO client_versions (client_id, version_no, change, summary, proposal_html, quote, created_by)
+           VALUES ($1, 1, 'init', '업체 등록', $2, $3, 'system') ON CONFLICT DO NOTHING`,
+          [rows[0].id, proposal, JSON.stringify(quote)],
+        )
+        await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
+        await pool.query(`UPDATE clients SET quote_code = 'ARN', work_code = 'PANEL' WHERE id = $1`, [rows[0].id])
+      })
+      await seedOnce(AIRRANE_REV2_KEY, () => refreshAirrane('3D 모델 직접 돌려 보기 추가'))
+      await seedOnce(AIRRANE_REV3_KEY, () => refreshAirrane('배기 자재 온라인 단가 + 여분 15%, 품목별 수량 × 단가'))
       // (주)데코페이브: 단양 양생굴 15·16번 CO₂ 개조 배관·덕트(2026-11-09). 링크 비밀번호는 담당자 휴대폰 뒷번호 4자리, 휴대폰은 어드민에서 입력(공개 저장소)
       await seedOnce(DECOPAVE_SEED_KEY, async () => {
         const c = DECOPAVE_CLIENT
@@ -654,6 +703,7 @@ export function ensureClients(): Promise<void> {
         await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS quote_code text, ADD COLUMN IF NOT EXISTS work_code text`)
         await pool.query(`UPDATE clients SET quote_code = 'DCP', work_code = 'MECH' WHERE id = $1`, [rows[0].id])
       })
+      await seedOnce(DECOPAVE_REV2_KEY, () => refreshDecopave('CO₂ 배관 설계(초안) 추가: 도면·설계 유량·자재 리스트·PLC 입출력, 견적 금액 그대로'))
     })().catch((e) => {
       ready = null
       throw e
@@ -1113,5 +1163,47 @@ async function refreshJjy(summary: string) {
   const quote = jjyQuote(today())
   if (row.quote?.number) quote.number = row.quote.number
   const proposal = JJY_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 에어레인 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만, 견적번호 유지). */
+async function refreshAirrane(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [AIRRANE_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = airraneQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = AIRRANE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 데코페이브 업체의 제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만). 견적은 지금 저장된 그대로 둔다(어드민에서 고친 금액 유지). */
+async function refreshDecopave(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: Quote | null; proposal_html: string | null }>(
+    `SELECT id, finalized_at, quote, proposal_html FROM clients WHERE portal_slug = $1`,
+    [DECOPAVE_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = row.quote ?? decopaveQuote(today())
+  const proposal = DECOPAVE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
+  if (row.proposal_html === proposal) return // 방금 처음 등록돼 이미 같은 내용
+  await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
+}
+
+/** 데시앙플렉스 업체의 견적·제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만, 견적번호 유지). */
+async function refreshDesian(summary: string) {
+  const found = await pool.query<{ id: string; finalized_at: Date | null; quote: { number?: string } | null }>(
+    `SELECT id, finalized_at, quote FROM clients WHERE portal_slug = $1`,
+    [DESIAN_CLIENT.portalSlug],
+  )
+  const row = found.rows[0]
+  if (!row || row.finalized_at) return
+  const quote = desianQuote(today())
+  if (row.quote?.number) quote.number = row.quote.number
+  const proposal = DESIAN_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }

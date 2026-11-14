@@ -7,6 +7,8 @@ import { DEFAULT_DISCOUNT_LABEL, DEFAULT_RATES, emptyItem, newId, type ItemKind,
  * 회사 조사 내용(재무·영업 참고)은 코드에 넣지 않고 어드민 '업체 프로필'(DB)과 프로젝트 파일에만 둔다.
  */
 export const DECOPAVE_SEED_KEY = 'decopave-co2-curing-2611-v1'
+/** 제안서에 'CO₂ 배관 설계(초안)' 구역 추가(2026-11-14). 견적 금액은 그대로 */
+export const DECOPAVE_REV2_KEY = 'decopave-co2-design-2611-v2'
 
 export const DECOPAVE_CLIENT = {
   name: '(주)데코페이브',

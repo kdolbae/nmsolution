@@ -18,9 +18,10 @@ export const json = (body: unknown, status = 200) =>
 
 /** 키가 맞으면 null, 아니면 돌려줄 오류 응답 */
 export function checkKey(req: Request): Response | null {
-  const key = process.env.SBWORKS_API_KEY
+  // 대시보드에 붙여넣을 때 앞뒤 빈칸·줄바꿈이 섞여도 맞도록 양쪽 다 다듬는다
+  const key = process.env.SBWORKS_API_KEY?.trim()
   if (!key) return json({ error: 'SBWORKS_API_KEY 가 설정되지 않았음.' }, 503)
-  const got = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+  const got = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
   const a = Buffer.from(got)
   const b = Buffer.from(key)
   if (a.length !== b.length || !timingSafeEqual(a, b)) return json({ error: '인증 실패' }, 401)

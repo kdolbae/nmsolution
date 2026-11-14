@@ -3,9 +3,18 @@ import { ArrowRight } from 'lucide-react'
 import { SectionHeading } from './section-heading'
 import { MultilineText } from './multiline-text'
 import { SemiconductorFeature } from './semiconductor-feature'
+import { PlantFeature } from './plant-feature'
 import type { HomeContent, ServiceItem } from '@/lib/content/defaults'
 
-export function FactoryScope({ content, factory }: { content: HomeContent['scope']; factory?: ServiceItem }) {
+export function FactoryScope({
+  content,
+  factory,
+  plant,
+}: {
+  content: HomeContent['scope']
+  factory?: ServiceItem
+  plant?: ServiceItem
+}) {
   return (
     <section id="scope" className="bg-background py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -48,6 +57,9 @@ export function FactoryScope({ content, factory }: { content: HomeContent['scope
             </li>
           ))}
         </ul>
+
+        {/* 대형플랜트 설비: 공장 개보수와 반도체 설비 사이 */}
+        {plant && <PlantFeature item={plant} />}
 
         {/* 반도체 공장 설비: 공장 개보수의 세부 분야로 같은 섹션 안에 보여준다 */}
         {factory && <SemiconductorFeature item={factory} />}

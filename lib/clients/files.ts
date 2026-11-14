@@ -31,9 +31,9 @@ const FILES: Record<string, { dir: string; files: ClientFile[] }> = {
   '(주)데코페이브': {
     dir: 'decopave',
     files: [
-      { file: 'co2-design-v1.pdf', label: 'CO₂ 배관 설계도 (PDF)', download: '데코페이브_CO2배관_설계도_초안v1.pdf', type: PDF },
-      { file: 'co2-design-v1.dxf', label: 'CO₂ 배관 설계도 (DXF, 캐드)', download: '데코페이브_CO2배관_설계도_초안v1.dxf', type: DXF },
-      { file: 'co2-design-v1.xlsx', label: '설계 유량·자재 리스트·PLC 입출력 (엑셀)', download: '데코페이브_CO2_설계유량_자재리스트_초안v1.xlsx', type: XLSX },
+      { file: 'co2-design-v2.pdf', label: 'CO₂ 배관 설계도 (PDF)', download: '데코페이브_CO2배관_설계도_v2.pdf', type: PDF },
+      { file: 'co2-design-v2.dxf', label: 'CO₂ 배관 설계도 (DXF, 캐드)', download: '데코페이브_CO2배관_설계도_v2.dxf', type: DXF },
+      { file: 'co2-design-v2.xlsx', label: '설계 유량·자재 리스트·PLC 입출력 (엑셀)', download: '데코페이브_CO2_설계유량_자재리스트_v2.xlsx', type: XLSX },
     ],
   },
 }

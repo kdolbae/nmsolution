@@ -25,7 +25,7 @@ import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIA
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
-import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_REV4_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
 import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -705,6 +705,7 @@ export function ensureClients(): Promise<void> {
       })
       await seedOnce(DECOPAVE_REV2_KEY, () => refreshDecopave('CO₂ 배관 설계(초안) 추가: 도면·설계 유량·자재 리스트·PLC 입출력, 견적 금액 그대로'))
       await seedOnce(DECOPAVE_REV3_KEY, () => refreshDecopave('설계 초안 제어기 LS일렉트릭 XGB로 변경'))
+      await seedOnce(DECOPAVE_REV4_KEY, () => refreshDecopave('새 구성 견적: STS 밸브 계통 + 백관 40A 나사이음, 구간 솔레노이드, CO₂ 센서 15, PLC 포함, 시운전 7일. 설계 이유·탱크 용량 기준 질문 추가', true))
     })().catch((e) => {
       ready = null
       throw e
@@ -1181,17 +1182,18 @@ async function refreshAirrane(summary: string) {
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 
-/** 데코페이브 업체의 제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만). 견적은 지금 저장된 그대로 둔다(어드민에서 고친 금액 유지). */
-async function refreshDecopave(summary: string) {
+/** 데코페이브 업체의 제안서를 지금 코드의 내용으로 바꾼다(계약 확정 전일 때만). 견적은 newQuote 일 때만 코드 견적으로 바꾸고(견적번호 유지), 아니면 저장된 그대로 둔다. */
+async function refreshDecopave(summary: string, newQuote = false) {
   const found = await pool.query<{ id: string; finalized_at: Date | null; quote: Quote | null; proposal_html: string | null }>(
     `SELECT id, finalized_at, quote, proposal_html FROM clients WHERE portal_slug = $1`,
     [DECOPAVE_CLIENT.portalSlug],
   )
   const row = found.rows[0]
   if (!row || row.finalized_at) return
-  const quote = row.quote ?? decopaveQuote(today())
+  const quote = newQuote || !row.quote ? decopaveQuote(today()) : row.quote
+  if (newQuote && row.quote?.number) quote.number = row.quote.number
   const proposal = DECOPAVE_PAGE_HTML.split('{{QUOTE_NO}}').join(quote.number)
-  if (row.proposal_html === proposal) return // 방금 처음 등록돼 이미 같은 내용
+  if (!newQuote && row.proposal_html === proposal) return // 방금 처음 등록돼 이미 같은 내용
   await applyChange(Number(row.id), 'system', 'system', () => ({ proposalHtml: proposal, quote, summary }))
 }
 

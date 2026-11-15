@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { OutcomeBoard } from '@/components/admin/client-outcome'
 import type { Outcome } from '@/lib/outcomes/shared'
+import { TechBoard } from '@/components/admin/tech-board'
+import type { TechCard } from '@/lib/tech/shared'
 import { createKnowledge, removeKnowledge, saveKnowledgeAnswer } from '@/app/actions/knowledge'
 import {
   CATEGORY_OPTIONS,
@@ -25,10 +27,10 @@ import {
 
 const day = (iso: string) => iso.slice(0, 10)
 
-type View = 'open' | 'category' | 'deviation' | 'outcome'
+type View = 'open' | 'category' | 'deviation' | 'outcome' | 'tech'
 
 /** 지식 DB 화면 (어드민 전용): 답 대기 질문 · 공종별 매뉴얼과 쌓인 지식 · 매뉴얼 예외 기록 */
-export function KnowledgeBoard({ entries, outcomes = [] }: { entries: KnowledgeEntry[]; outcomes?: Outcome[] }) {
+export function KnowledgeBoard({ entries, outcomes = [], tech = [] }: { entries: KnowledgeEntry[]; outcomes?: Outcome[]; tech?: TechCard[] }) {
   const open = entries.filter((e) => e.kind === 'qa' && !e.body)
   const deviations = entries.filter((e) => e.kind === 'deviation')
   const [view, setView] = useState<View>(open.length ? 'open' : 'category')
@@ -42,6 +44,7 @@ export function KnowledgeBoard({ entries, outcomes = [] }: { entries: KnowledgeE
     { key: 'open', label: `답 대기 ${open.length}` },
     { key: 'category', label: `공종별 ${entries.length - open.length}` },
     { key: 'deviation', label: `매뉴얼 예외 ${deviations.length}` },
+    { key: 'tech', label: `기술 자료 ${tech.length}` },
     { key: 'outcome', label: `수주·실주 ${outcomes.length}` },
   ]
 
@@ -154,6 +157,8 @@ export function KnowledgeBoard({ entries, outcomes = [] }: { entries: KnowledgeE
           ))}
         </section>
       )}
+
+      {view === 'tech' && <TechBoard cards={tech} />}
 
       {view === 'outcome' && <OutcomeBoard outcomes={outcomes} />}
     </div>

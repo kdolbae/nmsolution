@@ -28,6 +28,7 @@ import { listDeviations, listKnowledge } from "@/lib/knowledge/table";
 import { ClientDeviations } from "@/components/admin/client-deviations";
 import { ClientOutcome } from "@/components/admin/client-outcome";
 import { listOutcomes } from "@/lib/outcomes/table";
+import { listTech } from "@/lib/tech/table";
 import { QuoteSet } from "@/components/admin/quote-set";
 import { getTakeoffTemplates } from "@/lib/clients/takeoff-templates";
 import { ClientIntel, ClientSchedule } from "@/components/admin/client-intel";
@@ -80,6 +81,7 @@ export default async function AdminClientPage({
     workOrders,
     materials,
     outcomes,
+    tech,
     h,
   ] = await Promise.all([
     listVersions(client.id),
@@ -99,6 +101,7 @@ export default async function AdminClientPage({
     listWorkOrders(client.id),
     getMaterials(client.id),
     listOutcomes(),
+    listTech(),
     headers(),
   ]);
   const editingWo = wo ? await getWorkOrder(client.id, Number(wo)) : null;
@@ -203,6 +206,7 @@ export default async function AdminClientPage({
         takeoffTemplates={takeoffTemplates}
         knowledge={await listKnowledge()}
         outcomes={outcomes.filter((o) => o.clientId !== client.id)}
+        tech={tech}
         versions={versions.map((x) => ({ ...x, at: x.at.toISOString() }))}
         finalized={
           client.finalized && {

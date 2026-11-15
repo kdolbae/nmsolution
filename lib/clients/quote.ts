@@ -52,6 +52,8 @@ export type QuoteSection = {
   category?: string
   /** 단계형 질문의 답·확인 (질문 문구 → 답, 확인 항목은 'ok'). 어드민 전용 */
   checks?: Record<string, string>
+  /** 방식 고르기 (어드민 전용): 비교 세트 이름 → 고른 방식과 이유 (lib/tech) */
+  methods?: Record<string, { pick: string; why: string }>
 }
 
 /** 공종의 원가계산 방식. 화면의 선택 칸과 flat·overheadOnly 를 잇는다 */
@@ -205,6 +207,14 @@ export function normalizeQuote(raw: unknown): Quote {
             s.checks && typeof s.checks === 'object'
               ? Object.fromEntries(Object.entries(s.checks).filter(([, v]) => typeof v === 'string' && v.trim()))
               : undefined,
+          methods:
+            s.methods && typeof s.methods === 'object'
+              ? Object.fromEntries(
+                  Object.entries(s.methods as Record<string, { pick?: unknown; why?: unknown }>)
+                    .filter(([, v]) => v && typeof v.pick === 'string' && v.pick)
+                    .map(([k, v]) => [k, { pick: String(v.pick), why: typeof v.why === 'string' ? v.why : '' }]),
+                )
+              : undefined,
           items: Array.isArray(s.items)
             ? s.items.map((i) => ({
                 ...emptyItem(),
@@ -238,6 +248,7 @@ export function publicQuote(q: Quote): Quote {
       laborRatio: undefined,
       category: undefined,
       checks: undefined,
+      methods: undefined,
       items: s.items.map((i) => {
         const { cost: _cost, auto: _auto, ...rest } = i
         return rest

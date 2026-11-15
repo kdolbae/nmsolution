@@ -37,6 +37,8 @@ import { deleteClient, resetProposal, saveClientInfo, saveProposal, saveQuote } 
 import { AddForm, EntryCard, ManualBlock } from '@/components/admin/knowledge-board'
 import { OutcomeRow } from '@/components/admin/client-outcome'
 import type { Outcome } from '@/lib/outcomes/shared'
+import { MethodPicker } from '@/components/admin/tech-board'
+import { groupBySet, type MethodPick, type TechCard } from '@/lib/tech/shared'
 import { COMMON, MANUAL_GROUPS, findManualItem, guideMissing, guideSteps, type KnowledgeEntry } from '@/lib/knowledge/shared'
 import { OP_MARGIN, calcMargin, matPrice, repriceMaterials, syncLabor, unitCost } from '@/lib/clients/margin'
 import {
@@ -88,6 +90,7 @@ export function ClientWorkspace({
   takeoffTemplates = [],
   knowledge = [],
   outcomes = [],
+  tech = [],
   versions,
   finalized,
   view,
@@ -106,6 +109,8 @@ export function ClientWorkspace({
   knowledge?: KnowledgeEntry[]
   /** 다른 견적의 수주·실주 기록 (lib/outcomes). 같은 공종을 쓸 때 보여 준다 */
   outcomes?: Outcome[]
+  /** 기술 자료 카드 (lib/tech). 견적 편집의 '방식 고르기'에 비교표로 보여 준다 */
+  tech?: TechCard[]
   /** 버전 기록 (최신이 먼저) */
   versions: VersionRow[]
   /** 계약 확정(잠금). 확정되면 해제 전까지 제안서·견적서를 고칠 수 없다 */
@@ -238,6 +243,7 @@ export function ClientWorkspace({
               takeoffTemplates={takeoffTemplates}
               knowledge={knowledge}
               outcomes={outcomes}
+              tech={tech}
             />
           </div>
         </>
@@ -695,6 +701,7 @@ function QuotePanel({
   takeoffTemplates,
   knowledge,
   outcomes,
+  tech,
 }: {
   client: ClientInfo
   initialQuote: Quote
@@ -706,6 +713,7 @@ function QuotePanel({
   takeoffTemplates: TakeoffTemplate[]
   knowledge: KnowledgeEntry[]
   outcomes: Outcome[]
+  tech: TechCard[]
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuote)
@@ -921,6 +929,10 @@ function QuotePanel({
                   onChecks={(checks) => updateSection(s.id, { checks })}
                   knowledge={knowledge}
                   outcomes={outcomes}
+                  tech={tech}
+                  methods={s.methods ?? {}}
+                  onMethods={(methods) => updateSection(s.id, { methods })}
+                  section={s}
                   source={`${client.name} ${q.number}`}
                 />
               )}
@@ -1152,6 +1164,10 @@ function SectionGuide({
   onChecks,
   knowledge,
   outcomes,
+  tech,
+  methods,
+  onMethods,
+  section,
   source,
 }: {
   category: string
@@ -1159,6 +1175,10 @@ function SectionGuide({
   onChecks: (c: Record<string, string>) => void
   knowledge: KnowledgeEntry[]
   outcomes: Outcome[]
+  tech: TechCard[]
+  methods: Record<string, MethodPick>
+  onMethods: (m: Record<string, MethodPick>) => void
+  section: QuoteSection
   source: string
 }) {
   const [adding, setAdding] = useState(false)
@@ -1169,6 +1189,8 @@ function SectionGuide({
   const mine = knowledge.filter((e) => e.category === groupCode)
   const answered = [...mine.filter((e) => e.body), ...knowledge.filter((e) => e.category === COMMON && e.body && e.kind !== 'deviation')]
   const waiting = mine.filter((e) => !e.body)
+  const sets = groupBySet(tech.filter((c) => c.category === groupCode))
+  const unpicked = sets.filter((x) => !methods[x.set]?.pick).length
   const past = outcomes.filter((o) => o.categories.includes(groupCode))
   const pastWon = past.filter((o) => o.result === 'won').length
   const pastLost = past.filter((o) => o.result === 'lost').length
@@ -1184,13 +1206,18 @@ function SectionGuide({
   const missing = steps.questions.length + steps.confirms.length - qDone - cDone
   const head = 'text-xs font-semibold'
   return (
-    <details className="border-b border-border bg-secondary/40" open={missing > 0 || undefined}>
+    <details className="border-b border-border bg-secondary/40" open={missing > 0 || unpicked > 0 || undefined}>
       <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 px-4 py-2 text-xs font-semibold">
         줄을 넣기 전에 확인
         <span className={cn('font-normal', missing > 0 ? 'text-orange-700' : 'text-muted-foreground')}>
           질문 {qDone}/{steps.questions.length} · 확인 {cDone}/{steps.confirms.length}
           {missing === 0 && ' · 모두 확인함'}
         </span>
+        {sets.length > 0 && (
+          <span className={cn('font-normal', unpicked > 0 ? 'text-orange-700' : 'text-muted-foreground')}>
+            방식 {sets.length - unpicked}/{sets.length}
+          </span>
+        )}
         <span className="font-normal text-muted-foreground">
           지난 경험 {answered.length}
           {waiting.length > 0 && ` · 답 대기 ${waiting.length}`}
@@ -1198,6 +1225,31 @@ function SectionGuide({
         </span>
       </summary>
       <div className="flex flex-col gap-4 px-4 pb-4">
+        {sets.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <p className={head}>방식 고르기 (대안을 비교하고 고른 이유를 적음)</p>
+            {sets.map((x) => (
+              <MethodPicker
+                key={x.set}
+                set={x.set}
+                category={groupCode}
+                cards={x.cards}
+                value={methods[x.set]}
+                onChange={(v) => {
+                  const next = { ...methods }
+                  if (v) next[x.set] = v
+                  else delete next[x.set]
+                  onMethods(next)
+                }}
+                context={{
+                  sectionName: section.name,
+                  items: section.items.map((i) => ({ kind: i.kind, name: i.name, spec: i.spec, qty: i.qty, unit: i.unit })),
+                  checks,
+                }}
+              />
+            ))}
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <p className={head}>① 먼저 정할 것 (답을 적음)</p>
           {steps.questions.map((k) => (

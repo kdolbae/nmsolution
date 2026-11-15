@@ -25,7 +25,7 @@ import { DESIAN_CLIENT, DESIAN_REV2_KEY, DESIAN_REV3_KEY, DESIAN_REV4_KEY, DESIA
 import { DESIAN_PAGE_HTML } from './desianplex-page'
 import { AIRRANE_CLIENT, AIRRANE_REV2_KEY, AIRRANE_REV3_KEY, AIRRANE_SEED_KEY, airraneQuote } from './seed-airrane'
 import { AIRRANE_PAGE_HTML } from './airrane-page'
-import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_REV4_KEY, DECOPAVE_REV5_KEY, DECOPAVE_REV6_KEY, DECOPAVE_REV7_KEY, DECOPAVE_REV8_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
+import { DECOPAVE_CLIENT, DECOPAVE_REV2_KEY, DECOPAVE_REV3_KEY, DECOPAVE_REV4_KEY, DECOPAVE_REV5_KEY, DECOPAVE_REV6_KEY, DECOPAVE_REV7_KEY, DECOPAVE_REV8_KEY, DECOPAVE_REV9_KEY, DECOPAVE_SEED_KEY, decopaveQuote } from './seed-decopave'
 import { DECOPAVE_PAGE_HTML } from './decopave-page'
 import { hashPortalPassword } from './portal-password'
 import { phoneDigits } from '@/lib/quote'
@@ -710,6 +710,7 @@ export function ensureClients(): Promise<void> {
       await seedOnce(DECOPAVE_REV6_KEY, () => refreshDecopave('백관 규격 KS D 3507 SPP 명시(금액 변동 없음)', true))
       await seedOnce(DECOPAVE_REV7_KEY, () => refreshDecopave('본관 백관 나사이음 → STS 40SU 압착 이음(상설 겸용), 배관 인원 4명 × 3일', true))
       await seedOnce(DECOPAVE_REV8_KEY, () => refreshDecopave('제어반 완성품 납품(프로그램 탑재), CO₂ 센서 사양·제어 폭 19~21% 설명 추가(금액 변동 없음)', true))
+      await seedOnce(DECOPAVE_REV9_KEY, () => refreshDecopave('배관(메인 차단밸브~노즐)·전자제어로 공종 정리, CO₂ 센서·탱크 제외(센서 별도 견적), PLC 프로그램·배선 인원 조정', true))
     })().catch((e) => {
       ready = null
       throw e

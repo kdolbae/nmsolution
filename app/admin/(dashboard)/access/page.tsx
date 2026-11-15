@@ -20,6 +20,7 @@ const KIND: Record<string, string> = {
   compare: '견적 비교',
   work_order_view: '업무 지시서 열람',
   work_order_pdf: '업무 지시서 PDF',
+  file: '자료 내려받기',
 }
 
 const kst = (iso: string) =>

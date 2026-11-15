@@ -16,6 +16,7 @@ import { notifyAdmin } from '@/lib/notify/telegram'
  *
  * 고객에게 나가는 자료(업체 페이지·제안서·견적서·프레젠테이션 등)를 새로 만들면 반드시 붙인다:
  *   - HTML 응답: return new Response(trackedHtml(html, req.headers, 'slug'), …)  ← 열람 기록 + 행동 스크립트
+ *   - 업체 페이지 안 자료 내려받기(?file=, 도면 PDF·DXF 등)는 portal-route.ts 가 'file' 로 남김
  *   - 그 밖의 동작(로그인·PDF·견적 열기 등): after(() => logAccess(req.headers, null, 'pdf', { slug }))
  * client 를 모르면 null 로 두면 된다. slug(업체용 링크 주소)로 업체를 찾아 묶는다.
  */
@@ -56,7 +57,7 @@ export function ensureAccessLog(): Promise<void> {
   return ready
 }
 
-export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file' | 'work_order_view' | 'work_order_pdf'
+export type AccessKind = 'login_page' | 'login_ok' | 'login_fail' | 'view' | 'share_view' | 'pdf' | 'portal_view' | 'portal_print' | 'quote_open' | 'send_view' | 'compare' | 'portal_file' | 'work_order_view' | 'work_order_pdf' | 'file'
 
 /** 업체용 링크 주소가 없는 업체(금강변압기 /kkt 는 따로 만든 페이지)는 이름으로 묶는다 */
 const NAME_OF_SLUG: Record<string, string> = { kkt: KKT_CLIENT.name }
@@ -75,6 +76,7 @@ const NOTIFY: Partial<Record<AccessKind, string>> = {
   work_order_view: '업무 지시서 열람(현장 팀)',
   work_order_pdf: '업무 지시서 PDF(현장 팀)',
   login_fail: '비밀번호 틀림',
+  file: '자료 내려받기(도면 등)',
 }
 
 /** 검색 로봇·링크 미리보기·헤드리스 브라우저. 버리지 않고 details.bot 으로 표시만 하고(어드민에서 기본 숨김), 알림은 보내지 않는다 */

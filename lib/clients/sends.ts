@@ -284,6 +284,7 @@ const DEFAULT_CODES: [slug: string, code: string, work: string][] = [
   ['jjy', 'JJY', 'PANEL'],
   ['desianplex', 'DSP', 'MECH'],
   ['airrane', 'ARN', 'PANEL'],
+  ['decopave', 'DCP', 'MECH'],
   ['kkt', 'KKT', 'HEAVY'],
 ]
 

@@ -31,7 +31,7 @@ for (const name of readdirSync(path.join(root, 'app'), { withFileTypes: true }))
 
 const pr = read('lib/clients/portal-route.ts')
 if (!/trackedHtml\(/.test(pr)) problems.push('lib/clients/portal-route.ts: 열람 HTML 에 trackedHtml 이 없음')
-for (const kind of ['login_page', 'pdf', 'login_ok', 'login_fail'])
+for (const kind of ['login_page', 'pdf', 'login_ok', 'login_fail', 'file'])
   if (!pr.includes(`'${kind}'`)) problems.push(`lib/clients/portal-route.ts: '${kind}' 기록이 없음`)
 if (!existsSync(path.join(root, 'public/js/pv.js'))) problems.push('public/js/pv.js 없음')
 if (!existsSync(path.join(root, 'app/api/pv/route.ts'))) problems.push('app/api/pv/route.ts 없음')

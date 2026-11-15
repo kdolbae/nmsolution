@@ -16,8 +16,25 @@ function decodedPath(pathname: string): string {
   }
 }
 
+/**
+ * N-CMS(sbworks.bond)가 제안서 사진을 받아 갈 때: Authorization: Bearer <SBWORKS_API_KEY>.
+ * N-CMS 쪽 /client-assets 통로가 N-CMS 로그인·업체 쿠키를 확인한 뒤 이 키를 붙여 가져간다(kevin 2026-11-15).
+ */
+function isNcms(request: NextRequest): boolean {
+  const key = process.env.SBWORKS_API_KEY?.trim()
+  const auth = request.headers.get('authorization') ?? ''
+  if (!key || !auth.startsWith('Bearer ')) return false
+  const got = auth.slice(7).trim()
+  if (got.length !== key.length) return false
+  let diff = 0
+  for (let i = 0; i < key.length; i++) diff |= key.charCodeAt(i) ^ got.charCodeAt(i)
+  return diff === 0
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if ((pathname.startsWith('/kkt-assets/') || pathname.startsWith('/client-assets/')) && isNcms(request)) return NextResponse.next()
 
   // 금강변압기 제출 자료의 이미지·영상은 비밀번호를 통과한 사람에게만 내준다 (lib/kkt-access.ts).
   // 관리자는 업체 관리(제안서 탭·인쇄)에서, 금강변압기 관계자는 협력업체 포털에서 같은 이미지·영상을 쓴다.

@@ -90,7 +90,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
       <dt>1층 높이</dt><dd>4,000 (연속보 하단)</dd>
       <dt>연속보</dt><dd>H-400×200</dd>
       <dt>벽보·가로보</dt><dd>H-300×150</dd>
-      <dt>새 기둥 C1</dt><dd>H-200×200 · 11본</dd>
+      <dt>새 기둥 C1</dt><dd>H-250×250 · 11본</dd>
       <dt>장선·바닥</dt><dd>□100×50 @300 · 4.0t</dd>
       <dt>허용 적재</dt><dd>약 900kg/㎡ (설계)</dd>
     </dl>
@@ -263,10 +263,10 @@ function bracket(x,z,dirx,dirz){
 PART='brk';
 for(const x of COL_X){ bracket(x,YIN_A,0,1); bracket(x,YIN_D,0,-1); }
 for(const z of SD_Y){ bracket(XIN0,z,1,0); bracket(XIN1,z,-1,0); }
-// 새 기둥 C1 H-200×200
+// 새 기둥 C1 H-250×250
 PART='col';
-for(const x of MIDC) hcol(x,YC,4.0,0.2,0.2,0.012,0.008,'z',mat.c1);
-for(const [x,z] of WBCOLS){ const t=(x===TBD[0]&&z===TBD[1]); hcol(x,z,4.1,0.2,0.2,0.012,0.008,'z',t?mat.tbd:mat.c1); }
+for(const x of MIDC) hcol(x,YC,4.0,0.25,0.25,0.014,0.009,'z',mat.c1);
+for(const [x,z] of WBCOLS){ const t=(x===TBD[0]&&z===TBD[1]); hcol(x,z,4.1,0.25,0.25,0.014,0.009,'z',t?mat.tbd:mat.c1); }
 // 장선 □100×50 @300 (높이 4.4~4.5)
 const joists=new THREE.Group(); world.add(joists); PART='joist';
 for(let z=WA; z<=WD+1e-6; z+=0.3){
@@ -467,7 +467,7 @@ const INFO={
   cont:{n:'연속보',s:'H-400×200×8×13',buy:'10m × 2본 = 20m',use:'2층 바닥 가운데 길이 방향 1줄. 가운데 새 기둥 2개와 양 끝 기둥이 받침',c:'#e8742a'},
   wall:{n:'벽보',s:'H-300×150×6.5×9',buy:'10m × 6본 = 60m',use:'4면 벽을 따라 두르는 보 (개구부 테두리보 포함). 기존 기둥 브래킷과 새 기둥이 받침',c:'#0f2a44'},
   cross:{n:'가로보',s:'H-300×150×6.5×9',buy:'10m × 8본 = 80m',use:'연속보와 벽보 사이 15개 (약 4.4m씩, 1본에서 2개)',c:'#2e6ba8'},
-  col:{n:'새 기둥',s:'H-200×200×8×12 · 베이스플레이트 PL-20',buy:'12m × 4본 = 48m (4m씩 11개)',use:'벽보 받침 9개 + 연속보 받침 2개. 바닥에 케미컬 앵커로 고정',c:'#3d4a5c'},
+  col:{n:'새 기둥',s:'H-250×250×9×14 · 베이스플레이트 PL-20',buy:'12m × 4본 = 48m (4m씩 11개)',use:'벽보 받침 9개 + 연속보 받침 2개. 바닥에 케미컬 앵커로 고정',c:'#3d4a5c'},
   brk:{n:'브래킷',s:'받침 + 경사재 H-150×150',buy:'10m × 1본 = 10m',use:'기존 기둥 14곳에 볼트로 달아 벽보를 받침',c:'#e8742a'},
   joist:{n:'장선',s:'각파이프 □100×50×2.9',buy:'6m × 94본 = 564m',use:'가로보 위 300mm 간격. 바닥 철판을 받침',c:'#9aa3ab'},
   plate:{n:'바닥 철판',s:'HR 4.0t × 4×8',buy:'55장 (약 155㎡)',use:'장선 위에 깔고 단속용접한 2층 바닥',c:'#7d878f'},

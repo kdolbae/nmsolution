@@ -676,7 +676,7 @@ ${mk.removedDiscount ? `<tr class="q-del"><td></td><td colspan="5">${esc(mk.disc
 }
 <h2 class="q-sub">특기사항</h2>
 <ol class="q-notes">${notes.map((n, k) => `<li${cls('', k < notes.length - 1 && mk?.note(n))}>${esc(n)}</li>`).join('')}${(mk?.removedNotes ?? []).map((n) => `<li class="q-del">${esc(n)}</li>`).join('')}</ol>
-<div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">엔엠솔루션 대표 김성배 (인)</p></div>
+<div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">${esc(SUPPLIER.name)} 대표 ${esc(SUPPLIER.ceo)} (인)</p></div>
 <div class="q-foot">${SUPPLIER.name} · 사업자등록번호 ${SUPPLIER.bizNumber} · ${SUPPLIER.address} · 대표전화 ${SUPPLIER.phoneMain} · 직통 ${SUPPLIER.phoneMobile} · ${SUPPLIER.web}</div>
 </div></div>`
 }

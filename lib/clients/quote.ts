@@ -112,11 +112,12 @@ export const DEFAULT_DISCOUNT_LABEL = '가격 조정 (NEGO)'
 export const DEFAULT_RATES: QuoteRates = { injury: 3.56, employment: 1.15, safety: 3.11, overhead: 5, profit: 15 }
 
 export const SUPPLIER = {
-  name: '엔엠솔루션 (NM SOLUTION)',
+  /** 2026-11-16 사업자등록증 법인명. 견적서 공급자·제안서 표지에 이 이름을 쓴다 */
+  name: '주식회사 엔엠솔루션',
   ceo: '김성배',
-  /** 2026-11-04 kevin: 사업자번호가 바뀔 수 있어 견적서·표지에는 찍지 않음 */
-  bizNumber: '736-88-01988',
-  address: '경기도 평택시 고덕면 도시지원로 121 지식공장아이티센터 322호',
+  /** 2026-11-16 kevin: 새 법인 사업자등록증 → 견적서 공급자 칸·제안서 표지에도 찍는다 */
+  bizNumber: '106-87-16058',
+  address: '경기도 평택시 고덕면 도시지원로 121, 1동 3층 22호(지식공장 아이타워)',
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   web: 'nm-solution.co.kr',
@@ -596,6 +597,7 @@ ${mark ? `<p class="q-mark">변경 표시본 (내부용): 빨간색은 ${esc(mar
   </tbody></table></div>
   <div class="q-party"><h3>공급자</h3><table class="kv"><tbody>
     <tr><th>상호</th><td>${SUPPLIER.name}</td></tr>
+    <tr><th>사업자번호</th><td>${SUPPLIER.bizNumber}</td></tr>
     <tr><th>대표</th><td>${SUPPLIER.ceo}</td></tr>
     <tr><th>주소</th><td>${SUPPLIER.address}</td></tr>
     <tr><th>연락처</th><td>${SUPPLIER.phoneMain} · ${SUPPLIER.phoneMobile}</td></tr>
@@ -674,8 +676,8 @@ ${mk.removedDiscount ? `<tr class="q-del"><td></td><td colspan="5">${esc(mk.disc
 }
 <h2 class="q-sub">특기사항</h2>
 <ol class="q-notes">${notes.map((n, k) => `<li${cls('', k < notes.length - 1 && mk?.note(n))}>${esc(n)}</li>`).join('')}${(mk?.removedNotes ?? []).map((n) => `<li class="q-del">${esc(n)}</li>`).join('')}</ol>
-<div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">엔엠솔루션 대표 김성배 (인)</p></div>
-<div class="q-foot">엔엠솔루션 · ${SUPPLIER.address} · 대표전화 ${SUPPLIER.phoneMain} · 직통 ${SUPPLIER.phoneMobile} · ${SUPPLIER.web}</div>
+<div class="q-sign"><p>위와 같이 견적합니다.</p><p>${esc(fmtDate(q.date))}</p><p class="who">${esc(SUPPLIER.name)} 대표 ${esc(SUPPLIER.ceo)} (인)</p></div>
+<div class="q-foot">${SUPPLIER.name} · 사업자등록번호 ${SUPPLIER.bizNumber} · ${SUPPLIER.address} · 대표전화 ${SUPPLIER.phoneMain} · 직통 ${SUPPLIER.phoneMobile} · ${SUPPLIER.web}</div>
 </div></div>`
 }
 

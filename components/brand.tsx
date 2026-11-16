@@ -5,8 +5,10 @@ import { LOGO_COLORS, logoSvg, type LogoVariant } from '@/lib/brand-logo'
 export const COMPANY = {
   name: '엔엠솔루션 (NM SOLUTION)',
   ceo: '김성배',
-  bizNumber: '736-88-01988',
-  address: '경기도 평택시 고덕면 도시지원로 121 지식공장아이티센터 322호',
+  /** 2026-11-16 사업자등록증(법인명 주식회사 엔엠솔루션, 개업 2026-11-04) */
+  legalName: '주식회사 엔엠솔루션',
+  bizNumber: '106-87-16058',
+  address: '경기도 평택시 고덕면 도시지원로 121, 1동 3층 22호(지식공장 아이타워)',
   phoneMain: '1800-5901',
   phoneMobile: '010-2369-3691',
   telMain: 'tel:1800-5901',

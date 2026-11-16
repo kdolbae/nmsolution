@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <title>양생갱 15·16 CO₂ 배관·배기 3D | 엔엠솔루션</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 :root{--bg:#eef1f5;--panel:#ffffff;--fg:#14202e;--muted:#5b6876;--line:#d3dae2;--navy:#0f2a44;--chip:#eef2f6;
   --sans:'Pretendard','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
@@ -79,7 +78,7 @@ button:focus-visible{outline:2px solid #2c5ce6;outline-offset:2px}
     </div>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -87,9 +86,12 @@ var D={"pipes":[{"s":"32A","p":[[-10.35,3.0,0.6],[10.9,3.0,0.6],[10.9,9.46,0.6],
 var canvas=document.getElementById('c'), hint=document.getElementById('hint'), labelBox=document.getElementById('labels');
 if(!window.THREE){ hint.textContent='3D 화면을 불러오지 못함. 새로 고침해 주십시오.'; hint.style.display='block'; return; }
 var renderer;
-try{ renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,preserveDrawingBuffer:true}); }
+try{ renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,powerPreference:'low-power'}); }
 catch(e){ hint.textContent='이 브라우저에서 3D를 열 수 없음 (WebGL 꺼짐)'; hint.style.display='block'; return; }
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+var lost=false;
+canvas.addEventListener('webglcontextlost',function(e){ e.preventDefault(); lost=true; hint.textContent='3D 화면을 다시 불러오는 중…'; hint.style.opacity='1'; },false);
+canvas.addEventListener('webglcontextrestored',function(){ lost=false; hint.textContent='끌어서 돌리기 · 휠로 확대 · 오른쪽 버튼(두 손가락)으로 이동'; resize(); },false);
 var scene=new THREE.Scene(); scene.background=new THREE.Color(0xeef1f5);
 var camera=new THREE.PerspectiveCamera(45,1,0.1,400);
 scene.add(new THREE.HemisphereLight(0xffffff,0x8a8f96,0.8));
@@ -200,6 +202,7 @@ function go(name,instant){
 }
 var showLabels=true, pv=new THREE.Vector3();
 function draw(){
+  if(lost) return;
   place(); renderer.render(scene,camera);
   var w=canvas.clientWidth, h=canvas.clientHeight;
   for(var i=0;i<labels.length;i++){

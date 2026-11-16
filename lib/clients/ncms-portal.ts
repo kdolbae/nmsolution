@@ -22,6 +22,7 @@ const NOTIFY: Record<string, string> = {
   login_fail: '비밀번호 틀림',
   work_order_view: '업무 지시서 열람(현장 팀)',
   work_order_pdf: '업무 지시서 PDF(현장 팀)',
+  quote_confirm: '견적 선택·계약 확정 ✅',
 }
 const BOT = /bot|crawl|spider|slurp|yeti|daumoa|bingpreview|headless|lighthouse|facebookexternalhit|kakaotalk-scrap|slack-imgproxy|whatsapp|telegram|discord/i
 

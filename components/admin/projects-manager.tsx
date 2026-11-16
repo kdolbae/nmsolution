@@ -174,7 +174,7 @@ export function ProjectsManager({ projects, showProjects }: { projects: Project[
                   value={editing.data.title}
                   onChange={(e) => setEditing({ ...editing, data: { ...editing.data, title: e.target.value } })}
                   className="rounded-none"
-                  placeholder="식품공장 지붕 판넬 전면 교체"
+                  placeholder="식품공장 냉각수 배관 교체"
                 />
               </F>
               <F id="p-category" label="분류">

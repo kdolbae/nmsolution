@@ -21,7 +21,11 @@ const nextConfig = {
   },
   // 검색광고 상황판은 나노마스터 관리 화면의 같은 상황판으로 옮겼다 (lib/board-sync.ts)
   async redirects() {
-    return [{ source: '/admin/ads', destination: 'https://nanomaster.co.kr/admin/ads?brand=nmsolution', permanent: false }]
+    return [
+      { source: '/admin/ads', destination: 'https://nanomaster.co.kr/admin/ads?brand=nmsolution', permanent: false },
+      // 2026-11-16 kevin: 지붕 · 판넬 일은 더 내세우지 않는다. 옛 판넬 광고 랜딩은 공장 개보수로 보낸다
+      { source: '/services/panel', destination: '/services/factory', permanent: false },
+    ]
   },
   async headers() {
     return [

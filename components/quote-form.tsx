@@ -164,7 +164,7 @@ export function QuoteForm({
           name="message"
           rows={4}
           className={cn(FIELD, 'h-auto min-h-28 py-3 leading-relaxed')}
-          placeholder="어디가 어떻게 문제인지 간단히 적어주세요. 예) 지붕 판넬 이음부에서 비 올 때 누수, 30평 정도"
+          placeholder="어디가 어떻게 문제인지 간단히 적어주세요. 예) 냉각수 배관 교체, 펌프 2대, 공장 가동 중 시공 희망"
         />
         <p className="text-xs text-muted-foreground">
           정확한 위치와 증상, 대략적인 규모를 적어주시면 현장 방문 전에 범위를 좁힐 수 있습니다.

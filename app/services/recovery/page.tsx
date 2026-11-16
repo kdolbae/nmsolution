@@ -55,8 +55,7 @@ export const metadata: Metadata = {
     '아랫집 누수',
     '윗집 누수',
     '공장 누수',
-    '공장 지붕 누수',
-    '판넬 지붕 누수',
+    '공장 누수',
     '누수 보험',
     '일상생활배상책임보험 누수',
     '평택 누수',
@@ -99,9 +98,9 @@ const SYMPTOMS: { icon: typeof House; label: string; items: string[] }[] = [
     icon: Factory,
     label: '공장 · 창고',
     items: [
-      '비 오는 날 지붕 판넬 이음부에서 물이 떨어진다',
+      '비 오는 날 외벽 · 창호 주변에서 물이 떨어진다',
       '볼트·겹침부 주변에 녹물 자국이 있다',
-      '외벽 판넬 아래쪽 바닥이 늘 젖어 있다',
+      '외벽 아래쪽 바닥이 늘 젖어 있다',
       '설비·자재 위로 물이 떨어질까 봐 비닐을 덮어 둔다',
       '배관 주변 바닥이 꺼지거나 물이 고인다',
     ],
@@ -123,11 +122,11 @@ const CASES = [
     icon: Factory,
     en: 'Factory & Warehouse',
     title: '공장 누수',
-    hero: { src: '/images/leak/factory-roof.webp', alt: '판넬 지붕으로 덮인 대형 공장 건물을 위에서 본 모습' },
+    hero: { src: '/images/leak/factory-roof.webp', alt: '대형 공장 건물을 위에서 본 모습' },
     image: '/images/leak/work-panel-hall.webp',
-    alt: '판넬 벽체와 지붕으로 마감한 공장 통로',
-    causes: ['지붕 판넬 볼트 · 겹침부', '홈통 · 선홈통 막힘', '채광창 · 벤트 주변', '외벽 판넬 실링 · 매설 배관'],
-    restore: ['지붕 판넬 부분 교체 · 실링', '홈통 교체 · 배수 정비', '내부 단열재 · 천장재 교체', '바닥 도장 · 설비 주변 정리'],
+    alt: '공장 통로',
+    causes: ['홈통 · 선홈통 막힘', '채광창 · 벤트 주변', '외벽 실링 · 매설 배관', '설비 배관 · 냉각수 라인'],
+    restore: ['누수 배관 교체 · 실링', '홈통 교체 · 배수 정비', '내부 단열재 · 천장재 교체', '바닥 도장 · 설비 주변 정리'],
   },
 ]
 
@@ -142,13 +141,13 @@ const STEPS = [
     n: 'STEP 2',
     time: '현장 방문',
     title: '원인 위치 확인',
-    description: '얼룩이 생긴 자리와 물이 들어오는 자리는 다른 경우가 많습니다. 배관, 방수층, 지붕·외벽 순서로 원인을 좁혀 갑니다.',
+    description: '얼룩이 생긴 자리와 물이 들어오는 자리는 다른 경우가 많습니다. 배관, 방수층, 외벽 순서로 원인을 좁혀 갑니다.',
   },
   {
     n: 'STEP 3',
     time: '원인 차단',
     title: '물길부터 막기',
-    description: '배관 교체·보수, 방수, 판넬·실링 보수로 원인을 먼저 막습니다. 원인을 막기 전에 마감부터 하지 않습니다.',
+    description: '배관 교체·보수, 방수, 실링 보수로 원인을 먼저 막습니다. 원인을 막기 전에 마감부터 하지 않습니다.',
   },
   {
     n: 'STEP 4',
@@ -173,7 +172,7 @@ const INSURANCE = [
 const WORK_PHOTOS = [
   { src: '/images/leak/work-buried-pipe.webp', label: '매설 배관 굴착 · 교체' },
   { src: '/images/leak/work-pipe-line.webp', label: '공장 배관 라인 정비' },
-  { src: '/images/leak/work-roof-frame.webp', label: '지붕 골조 · 캐노피 시공' },
+  { src: '/images/gallery/g-tank-weld.jpg', label: '탱크 · 배관 용접' },
 ]
 
 const FAQ = [
@@ -270,7 +269,7 @@ export default async function LeakRecoveryPage() {
               원인부터 막고 <span className="text-electric">원상복구</span>까지.
             </h1>
             <p className="max-w-2xl text-pretty text-base leading-relaxed text-navy-foreground/80 lg:text-lg">
-              윗집 배관, 욕실 방수, 공장 지붕 판넬까지. 물이 어디서 들어오는지 먼저 찾아 막고, 젖은 천장 · 벽 ·
+              윗집 배관, 욕실 방수, 공장 배관 · 외벽까지. 물이 어디서 들어오는지 먼저 찾아 막고, 젖은 천장 · 벽 ·
               바닥을 원래대로 되돌립니다. 보험 청구에 필요한 사진과 내역도 정리해 드립니다.
             </p>
 
@@ -503,8 +502,8 @@ export default async function LeakRecoveryPage() {
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <SectionHeading
               kicker="Our Work"
-              title="배관 · 지붕 · 판넬, 직접 시공합니다."
-              description="엔엠솔루션의 본업은 공장 개보수입니다. 누수 원인이 되는 배관과 지붕, 판넬을 다른 업체에 넘기지 않고 직접 고칩니다."
+              title="배관 · 방수 · 설비, 직접 시공합니다."
+              description="엔엠솔루션의 본업은 플랜트 설비 · 시공 엔지니어링입니다. 누수 원인이 되는 배관과 설비를 다른 업체에 넘기지 않고 직접 고칩니다."
             />
             <Link
               href="/services/factory"
@@ -566,7 +565,7 @@ export default async function LeakRecoveryPage() {
               </h2>
               <p className="flex items-center gap-3 text-base text-navy-foreground/75 lg:text-lg">
                 <Camera className="size-5 shrink-0 text-electric" />
-                얼룩 부위와 윗층 · 지붕 쪽 사진이 있으면 더 정확합니다.
+                얼룩 부위와 윗층 · 배관 쪽 사진이 있으면 더 정확합니다.
               </p>
             </div>
             <div className="flex flex-col gap-3 lg:col-span-5">

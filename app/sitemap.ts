@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${url}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     // 안성 · 평택 누수 사진 견적 광고 랜딩
     { url: `${url}/leak`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
-    // 작업별 검색광고 랜딩(출장용접 · 배관/펌프 · 철골/캐노피 · 판넬)
+    // 작업별 검색광고 랜딩(출장용접 · 배관/펌프 · 철골/캐노피 · 장비 · R&D)
     ...WORK_LANDINGS.map((w) => ({
       url: `${url}/services/${w.slug}`,
       lastModified: now,

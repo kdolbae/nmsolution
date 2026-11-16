@@ -20,7 +20,7 @@ export const LEAK_SYMPTOMS = [
   '벽 · 바닥이 젖음',
   '아랫집에서 연락 옴',
   '수도요금이 많이 나옴',
-  '공장 지붕 · 판넬 누수',
+  '공장 배관 · 외벽 누수',
   '잘 모르겠음',
 ] as const
 
@@ -63,7 +63,7 @@ export function PhotoQuoteForm({
   category = '누수 · 피해복구',
   options = LEAK_SYMPTOMS,
   optionsTitle = '어떤 증상인가요?',
-  photoHint = '젖은 곳 가까이 한 장, 방(공간) 전체가 보이게 한 장, 위층 · 배관 · 지붕 쪽 한 장이면 충분합니다.',
+  photoHint = '젖은 곳 가까이 한 장, 방(공간) 전체가 보이게 한 장, 위층 · 배관 쪽 한 장이면 충분합니다.',
   photoLabel = '증상 사진',
   locationPlaceholder = '안성시 공도읍',
   messagePlaceholder = '예) 욕실 위 천장, 3일 전부터',

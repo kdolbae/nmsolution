@@ -105,34 +105,34 @@ export type SettingsContent = {
 
 export const DEFAULT_HOME: HomeContent = {
   hero: {
-    kicker: 'Factory Renovation Specialist',
+    kicker: 'Plant · Engineering · Turnkey',
     titleLine1: '공장의 모든 수리,',
     titleHighlight1: '빠르게',
     titleMiddle: '그리고',
     titleHighlight2: '정확하게.',
     description:
-      '철골 · 지붕 · 벽체부터 배관 수리, 탱크 용접, 장비 수리, 그리고 반도체 공장의 크린룸 · 방음 · 공압 · 냉각수 배관까지. 공장에서 생기는 문제는 무엇이든 맡겨 주세요. 상황마다 업체를 따로 찾을 필요 없이, 진단부터 마감까지 모두 진행해 드립니다.',
+      '플랜트 설비와 시공 엔지니어링, 공장과 관련된 모든 일을 턴키로 맡습니다. 배관 · 탱크 용접 · 장비 수리부터 반도체 공장의 크린룸 · 방음 · 공압 · 냉각수 배관까지. 상황마다 업체를 따로 찾을 필요 없이, 진단부터 마감까지 모두 진행해 드립니다.',
     primaryCta: '빠른 견적 받기',
     secondaryCta: '개보수 범위 보기',
     stats: [
       { value: '24H', label: '문의 당일 회신 · 현장 방문 일정 조율' },
       { value: 'ZERO', label: '불필요한 가동 중단 — 구간별 시공' },
-      { value: 'ONE STOP', label: '건축부터 설비 · 장비까지 전 공종 시공 가능' },
+      { value: 'ONE STOP', label: '설계부터 설비 · 시공까지 공장 일 턴키' },
     ],
-    ticker: ['반도체 설비', '크린룸 · 방음', '공압 · 냉각수', '철골 · 지붕', '벽체 · 판넬', '탱크 · 용접', '스텐 제작'],
+    ticker: ['반도체 설비', '크린룸 · 방음', '공압 · 냉각수', '플랜트 설비', '시공 엔지니어링', '탱크 · 용접', '스텐 제작', '공장 턴키'],
   },
   scope: {
     kicker: 'Scope of Work',
     title: '공장 안에서 생기는 문제는\n전부 저희 일입니다.',
     description:
-      '철골 · 지붕 · 벽체 같은 건축 공사부터 고압 배관 수리, 탱크 용접 보수, 스텐 제작, 생산 장비 수리, 방음 · 흡음, 크린룸까지. 지붕 한 구간의 누수도, 공장 전체 리뉴얼도 한 곳에서 끝냅니다.',
+      '플랜트 설비와 시공 엔지니어링부터 고압 배관 수리, 탱크 용접 보수, 스텐 제작, 생산 장비 수리, 방음 · 흡음, 크린룸까지. 작은 보수도, 공장 전체 리뉴얼도 턴키로 한 곳에서 끝냅니다.',
     items: [
       {
         n: '01',
-        title: '철골 · 지붕 · 벽체',
+        title: '플랜트 설비 · 철골 구조',
         description:
-          '철골 트러스 제작과 양중, 캐노피·증축 골조, 노후 판넬·누수 지붕 보수, 외벽 마감과 실링. 건물의 골격부터 외피까지 직접 시공합니다.',
-        image: '/images/project-roof.png',
+          '플랜트 설비 설계와 설치, 철골 트러스 제작과 양중, 캐노피·증축 골조, 설비 기초와 가대. 설비 배치부터 구조물 시공까지 직접 합니다.',
+        image: '/images/plant/overview.webp',
       },
       {
         n: '02',
@@ -152,13 +152,13 @@ export const DEFAULT_HOME: HomeContent = {
         n: '04',
         title: '크린룸 · 방음 · 흡음',
         description:
-          '크린룸 구축과 보수, 방음·흡음 판넬 시공. 청정도와 소음 기준을 먼저 확인하고 라인을 세우는 시간을 최소로 잡습니다.',
+          '크린룸 구축과 보수, 방음벽·흡음재 시공. 청정도와 소음 기준을 먼저 확인하고 라인을 세우는 시간을 최소로 잡습니다.',
         image: '/images/insulation.png',
       },
     ],
     extras: [
       '철골 트러스 제작',
-      '지붕 · 판넬',
+      '플랜트 설비 · 엔지니어링',
       '외벽 · 벽체',
       '캐노피 · 증축',
       '에폭시 · 우레탄 바닥',
@@ -200,19 +200,11 @@ export const DEFAULT_HOME: HomeContent = {
     description: '',
     groups: [
       {
-        label: '철골 · 지붕',
+        label: '철골 · 구조',
         images: [
           '/images/gallery/g-steel-frame-1.jpg',
           '/images/gallery/g-steel-truss.jpg',
           '/images/gallery/g-steel-canopy.jpg',
-        ],
-      },
-      {
-        label: '벽체 · 판넬',
-        images: [
-          '/images/gallery/g-panel-window.jpg',
-          '/images/gallery/g-panel-hall.jpg',
-          '/images/gallery/g-canopy-done.jpg',
         ],
       },
       {
@@ -278,13 +270,13 @@ export const DEFAULT_SERVICES: ServicesContent = {
       slug: 'factory',
       name: '공장 개보수',
       en: 'Factory Renovation',
-      summary: '철골·지붕·벽체부터 배관·탱크 용접, 반도체 공장 크린룸·공압·냉각수까지 모두 가능합니다.',
+      summary: '플랜트 설비 · 시공 엔지니어링부터 배관·탱크 용접, 반도체 공장 크린룸·공압·냉각수까지 공장 일을 턴키로 맡습니다.',
       description:
-        '공장에서 생기는 수리는 범위를 나누지 않습니다. 철골 트러스 제작과 캐노피 증축, 지붕·외벽 판넬 교체, 바닥 재시공 같은 건축 공사부터 공압·배관 설비, 스텐 고압배관, 탱크 용접 보수, 생산 장비 수리, 방음·흡음, 크린룸 구축까지 함께 진행합니다. 반도체와 협력사 공장의 크린룸, 공압(CDA)·공정 냉각수(PCW)·유틸리티 배관도 맡습니다. 생산 일정에 맞춰 구간을 나눠 시공하고, 현장 진단 후 항목별로 명확한 견적을 제시합니다.',
+        '공장에서 생기는 수리는 범위를 나누지 않습니다. 플랜트 설비 설계·설치, 철골 트러스 제작과 캐노피 증축, 바닥 재시공 같은 공사부터 공압·배관 설비, 스텐 고압배관, 탱크 용접 보수, 생산 장비 수리, 방음·흡음, 크린룸 구축까지 함께 진행합니다. 반도체와 협력사 공장의 크린룸, 공압(CDA)·공정 냉각수(PCW)·유틸리티 배관도 맡습니다. 생산 일정에 맞춰 구간을 나눠 시공하고, 현장 진단 후 항목별로 명확한 견적을 제시합니다.',
       image: '/images/hero-factory.png',
       points: [
         '철골 트러스 제작 · 양중 · 캐노피 증축',
-        '지붕 · 외벽 판넬 교체 및 누수 보수',
+        '플랜트 설비 설계 · 설치 · 시운전 (턴키)',
         '에폭시 · 우레탄 바닥 · 내부 단열',
         '공압설비 · 배관설비 · 배관 수리',
         '스텐 고압배관 제작 · 탱크 용접 보수',
@@ -292,7 +284,7 @@ export const DEFAULT_SERVICES: ServicesContent = {
         '반도체 공장 크린룸 · 공압(CDA) · 냉각수(PCW) 배관',
         '가동 중 · 주말 · 야간 시공 협의',
       ],
-      targets: ['반도체 · 협력사 공장', '제조 · 물류 · 식품공장', '창고 · 공장 부속 사무동', '노후 판넬 건축물'],
+      targets: ['반도체 · 협력사 공장', '제조 · 물류 · 식품공장', '창고 · 공장 부속 사무동', '플랜트 · 유틸리티 설비'],
       areasTitle: '반도체 공장 설비도,\n모두 맡겨 주세요.',
       areasDescription:
         '반도체와 협력사 공장은 청정도, 진동, 온도, 유틸리티 공급 중 하나만 흔들려도 라인이 멈춥니다. 공장 개보수부터 크린룸, 방음, 공압, 냉각수, 배관설비까지 모두 시공 가능하니 문제마다 업체를 따로 찾지 않으셔도 됩니다. 가동 중인 라인은 셧다운 일정에 맞춰 구간별로 진행하고, 현장 반입 절차와 안전 기준을 먼저 확인한 뒤 들어갑니다.',
@@ -300,17 +292,17 @@ export const DEFAULT_SERVICES: ServicesContent = {
       areas: [
         {
           title: '반도체 공장 개보수',
-          description: '생산동·유틸리티동의 철골, 지붕, 벽체, 바닥 보수와 레이아웃 변경. 라인 일정에 맞춰 구간별로 진행합니다.',
+          description: '생산동·유틸리티동의 설비, 구조, 바닥 보수와 레이아웃 변경. 라인 일정에 맞춰 구간별로 진행합니다.',
           image: '/images/semiconductor/renovation.webp',
         },
         {
           title: '크린룸',
-          description: '크린룸 판넬과 파티션, 출입부, 천장 구축과 보수. 요구 청정도와 기류를 먼저 확인하고 시공합니다.',
+          description: '크린룸 벽체와 파티션, 출입부, 천장 구축과 보수. 요구 청정도와 기류를 먼저 확인하고 시공합니다.',
           image: '/images/semiconductor/cleanroom-bay.webp',
         },
         {
           title: '방음 · 흡음',
-          description: '컴프레서·칠러·배기 설비 주변 소음을 줄이는 방음벽, 흡음 판넬, 설비 방음 커버를 시공합니다.',
+          description: '컴프레서·칠러·배기 설비 주변 소음을 줄이는 방음벽, 흡음재, 설비 방음 커버를 시공합니다.',
           image: '/images/semiconductor/acoustic.webp',
         },
         {
@@ -376,9 +368,9 @@ export const DEFAULT_SERVICES: ServicesContent = {
       en: 'Leak Damage Recovery',
       summary: '주택·공장 누수, 원인부터 막고 천장·벽·바닥 복구까지.',
       description:
-        '윗집 배관, 욕실 방수, 공장 지붕 판넬까지. 물이 들어오는 곳을 먼저 찾아 막고, 젖은 천장·벽·바닥을 원래대로 되돌립니다. 보험 청구에 필요한 사진·원인 소견·공사 내역서도 정리해 드립니다.',
+        '윗집 배관, 욕실 방수, 공장 배관 · 외벽까지. 물이 들어오는 곳을 먼저 찾아 막고, 젖은 천장·벽·바닥을 원래대로 되돌립니다. 보험 청구에 필요한 사진·원인 소견·공사 내역서도 정리해 드립니다.',
       image: '/images/recovery-before.png',
-      points: ['누수 원인 위치 확인 및 차단', '천장 · 벽체 · 바닥 복구', '공장 지붕 판넬 · 홈통 · 실링 보수', '보험 청구용 사진 · 내역서 정리'],
+      points: ['누수 원인 위치 확인 및 차단', '천장 · 벽체 · 바닥 복구', '공장 배관 · 홈통 · 실링 보수', '보험 청구용 사진 · 내역서 정리'],
       targets: ['아파트 · 빌라', '상가 · 사무실', '공장 · 창고'],
     },
     {
@@ -467,7 +459,7 @@ export type ContentMap = {
 }
 
 export const PROJECT_CATEGORIES = [
-  '철골 · 지붕',
+  '철골 · 구조',
   '외벽 · 벽체',
   '바닥',
   '단열 · 내부',

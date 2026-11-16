@@ -72,7 +72,7 @@ const PROMISES = [
     icon: Wrench,
     title: '원인부터 막고 복구까지',
     description:
-      '배관 · 방수 · 지붕 판넬을 직접 고치는 시공 회사입니다. 물길을 먼저 막고, 젖은 천장 · 벽 · 바닥을 원래대로 되돌립니다.',
+      '플랜트 설비 · 시공 엔지니어링 회사가 배관 · 방수를 직접 고칩니다. 물길을 먼저 막고, 젖은 천장 · 벽 · 바닥을 원래대로 되돌립니다.',
   },
 ]
 
@@ -89,7 +89,7 @@ const SYMPTOMS = [
   '마루 · 장판이 들뜨고 바닥이 젖어 있다',
   '아랫집에서 물이 샌다고 연락이 왔다',
   '쓴 만큼보다 수도요금이 많이 나온다',
-  '비 오는 날 공장 지붕 · 판넬 이음부로 물이 샌다',
+  '비 오는 날 공장 외벽 · 창호 주변으로 물이 샌다',
 ]
 
 const AREAS = ['안성', '평택', '천안', '아산', '용인', '오산', '화성']
@@ -105,7 +105,7 @@ const FAQ = [
   },
   {
     q: '어떤 사진을 찍어 보내면 되나요?',
-    a: '젖은 곳을 가까이 한 장, 방이나 공간 전체가 보이게 한 장, 위층 욕실 · 배관 · 지붕처럼 물이 올 만한 쪽을 한 장 찍어 주시면 충분합니다. 영상이 있으면 카카오톡으로 보내주셔도 됩니다.',
+    a: '젖은 곳을 가까이 한 장, 방이나 공간 전체가 보이게 한 장, 위층 욕실 · 배관처럼 물이 올 만한 쪽을 한 장 찍어 주시면 충분합니다. 영상이 있으면 카카오톡으로 보내주셔도 됩니다.',
   },
   {
     q: '지금 물이 새고 있어요. 먼저 뭘 해야 하나요?',
@@ -356,14 +356,14 @@ export default async function LeakPhotoQuotePage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-10 px-5 lg:px-8">
           <SectionHeading
             kicker="Our Work"
-            title="배관 · 방수 · 지붕, 직접 고칩니다."
-            description="누수 원인이 되는 배관과 지붕 판넬을 다른 업체에 넘기지 않고 직접 시공합니다."
+            title="배관 · 방수, 직접 고칩니다."
+            description="누수 원인이 되는 배관과 방수를 다른 업체에 넘기지 않고 직접 시공합니다."
           />
           <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-3">
             {[
               { src: '/images/leak/work-buried-pipe.webp', label: '매설 배관 굴착 · 교체' },
               { src: '/images/leak/work-pipe-line.webp', label: '배관 라인 정비' },
-              { src: '/images/leak/work-roof-frame.webp', label: '지붕 골조 · 판넬 시공' },
+              { src: '/images/gallery/g-tank-weld.jpg', label: '탱크 · 배관 용접' },
             ].map((p) => (
               <li key={p.src} className="flex flex-col bg-background">
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">

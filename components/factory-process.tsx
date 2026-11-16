@@ -20,7 +20,7 @@ export function FactoryProcess({ content }: { content: HomeContent['process'] })
           <div className="relative mt-2 aspect-[4/3] overflow-hidden bg-charcoal">
             <Image
               src="/images/factory-survey.png"
-              alt="공장 지붕 구조를 점검하는 현장 담당자"
+              alt="공장 설비와 구조를 점검하는 현장 담당자"
               fill
               sizes="(min-width: 1024px) 40vw, 100vw"
               className="object-cover"

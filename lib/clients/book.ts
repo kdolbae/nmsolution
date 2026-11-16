@@ -377,7 +377,7 @@ function backHtml(): string {
   return `<div class="nmb nmb-back">
   <div class="logo">${logoSvg('horizontal', { ink: '#FFFFFF', height: '100%' })}</div>
   <div><b>${esc(SUPPLIER.name)}</b></div>
-  <div>공장 개보수 · 철골 · 지붕 · 설비</div>
+  <div>플랜트 설비 · 시공 엔지니어링 · 공장 턴키</div>
   <div class="ph">${esc(SUPPLIER.phoneMain)}</div>
   <div>직통 ${esc(SUPPLIER.phoneMobile)} · ${esc(SUPPLIER.web)}</div>
   <div>${esc(SUPPLIER.address)}</div>

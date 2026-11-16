@@ -1,5 +1,5 @@
 import type { AboutContent, HomeContent, ServicesContent, SettingsContent } from '@/lib/content/defaults'
-import { PRETENDARD_CSS } from './quote'
+import { PRETENDARD_CSS, SUPPLIER } from './quote'
 import { logoSvg } from '@/lib/brand-logo'
 
 /**
@@ -234,7 +234,7 @@ ${c.home.why.items.map((w) => `      <div class="box"><div class="kicker">${esc(
   <div class="wrap">
     <div style="height:32px;margin-bottom:14px">${logoSvg('horizontal', { ink: '#FFFFFF', height: '100%' })}</div>
     <b>${esc(s.companyName)}</b><br>
-    대표 ${esc(s.ceo)} · ${esc(s.address)}<br>
+    대표 ${esc(s.ceo)} · 사업자등록번호 ${esc(SUPPLIER.bizNumber)} · ${esc(s.address)}<br>
     <span class="phone">${esc(s.phoneMobile)}</span> · 대표전화 ${esc(s.phoneMain)} · nm-solution.co.kr
   </div>
 </footer>

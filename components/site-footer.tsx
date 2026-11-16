@@ -49,7 +49,7 @@ export function SiteFooter({ settings }: { settings: SettingsContent }) {
             <p className="text-kicker mb-5 text-muted-foreground">Company</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-sm">
               <dt className="text-muted-foreground">상호</dt>
-              <dd>{settings.companyName}</dd>
+              <dd>{COMPANY.legalName}</dd>
               <dt className="text-muted-foreground">대표</dt>
               <dd>{settings.ceo}</dd>
               <dt className="text-muted-foreground">사업자등록번호</dt>

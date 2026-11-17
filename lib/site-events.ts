@@ -134,7 +134,27 @@ function send(type: Kind, extra: { label?: string; seconds?: number; scroll?: nu
   fetch('/api/track', { method: 'POST', body, keepalive: true, headers: { 'Content-Type': 'application/json' } }).catch(() => {})
 }
 
-export const pageview = () => send('pageview')
+/**
+ * 들어온 인터넷 회선(통신사·회사망) 이름은 N-CMS 가 Cloudflare 정보로 정한다(이 사이트 서버는 Vercel 이라 그 정보가 없다).
+ * 세션마다 한 번 방문자 표식만 보낸다. IP·이름·연락처는 보내지 않는다.
+ */
+const NET_URL = 'https://sbworks.bond/api/public/net'
+function sendNet() {
+  try {
+    if (sessionStorage.getItem('nm-net')) return
+    const v = visitor().visitor_id
+    if (!v) return
+    sessionStorage.setItem('nm-net', '1')
+    const body = JSON.stringify({ b: 'nmsolution', v })
+    if (navigator.sendBeacon && navigator.sendBeacon(NET_URL, new Blob([body], { type: 'text/plain' }))) return
+    fetch(NET_URL, { method: 'POST', body, keepalive: true, mode: 'no-cors', headers: { 'Content-Type': 'text/plain' } }).catch(() => {})
+  } catch {}
+}
+
+export const pageview = () => {
+  send('pageview')
+  if (typeof window !== 'undefined' && !location.pathname.startsWith('/admin') && !isInternal()) sendNet()
+}
 export const leave = (seconds: number, scroll: number) => send('leave', { seconds, scroll })
 
 // 버튼이 track('contact_click') 으로 이미 보낸 클릭을 아래 전체 감시가 한 번 더 세지 않게 한다

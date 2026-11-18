@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: '사업소개',
-  description: '공장 개보수를 중심으로 대형플랜트 설비, 누수 피해복구, 단열·곰팡이, 시공 교육까지.',
+  description: '공장 개보수를 중심으로 대형플랜트 설비, 공장 개축, 배관 공사(몰코·수배관·공압·가스), 설비 개발(PLC·제어반·자동제어)까지.',
   alternates: { canonical: '/services' },
 }
 

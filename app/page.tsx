@@ -8,7 +8,7 @@ import { Why } from '@/components/why'
 import { ContactCta } from '@/components/contact-cta'
 import { SiteFooter } from '@/components/site-footer'
 import { FloatingContact, MobileContactBar } from '@/components/contact-widgets'
-import { getContent, getPublishedProjects } from '@/lib/content/get'
+import { getContent, getPublishedProjects, publicServices } from '@/lib/content/get'
 import { jsonLdScript, localBusinessJsonLd } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,7 @@ export default async function Page() {
       {/* 검색엔진이 업체 정보·전화번호·작업 범위를 그대로 읽어갈 수 있게 한다 */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(localBusinessJsonLd({ settings, services })) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(localBusinessJsonLd({ settings, services: publicServices(services) })) }}
       />
       <SiteHeader showProjects={settings.showProjects} showGallery={settings.showGallery} />
       <main>

@@ -37,6 +37,21 @@ function withNewServices(c: ContentMap['services']): ContentMap['services'] {
 }
 
 /**
+ * 홈페이지에서 가린 사업(kevin 2026-11-18 "나노코팅, 코팅제 판매는 가리자").
+ * 내용(N-CMS·엔엠 DB·기본값)은 지우지 않고 화면·메뉴·사이트맵에서만 뺀다. 되살리려면 여기서 slug 를 빼면 된다.
+ */
+export const HIDDEN_SERVICE_SLUGS: readonly string[] = ['coating', 'products']
+export const isHiddenService = (slug: string) => HIDDEN_SERVICE_SLUGS.includes(slug)
+
+/** 가린 사업을 뺀 사업소개. 소개 글의 "코팅 솔루션과 제품·교육 사업" 같은 말도 함께 고친다(저장본이 기본값 문장을 그대로 들고 있어서). */
+export function publicServices(c: ContentMap['services']): ContentMap['services'] {
+  const description = isHiddenService('coating') && isHiddenService('products')
+    ? c.description.replace(/,?\s*코팅 솔루션과 제품·교육 사업/, ', 시공 교육 사업')
+    : c.description
+  return { ...c, description, items: c.items.filter((s) => !isHiddenService(s.slug)) }
+}
+
+/**
  * 페이지 내용. 순서: N-CMS(플랜트사업부 › 홈페이지, 5분 캐시) → 엔엠 DB site_content(어드민을 지우기 전 마지막 내용) → 코드 기본값.
  * 엔엠 어드민은 지우고 내용은 N-CMS 에서 고친다(kevin 2026-11-10, lib/ncms.ts).
  */

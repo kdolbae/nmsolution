@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { getContent } from '@/lib/content/get'
+import { getContent, publicServices } from '@/lib/content/get'
 import { siteUrl } from '@/lib/site'
 import { WORK_LANDINGS } from '@/lib/work-landings'
 
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const url = siteUrl()
-  const services = await getContent('services')
+  const services = publicServices(await getContent('services'))
   const now = new Date()
 
   return [

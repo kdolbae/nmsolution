@@ -31,8 +31,7 @@ export const OTHER_SERVICES = [
   { label: '대형플랜트 설비', href: '/services/plant' },
   { label: '누수 피해복구', href: '/services/recovery' },
   { label: '단열 · 결로 · 곰팡이', href: '/services/insulation' },
-  { label: '나노 · UV 코팅', href: '/services/coating' },
-  { label: '코팅제 판매', href: '/services/products' },
+  // 나노 · UV 코팅(/services/coating), 코팅제 판매(/services/products)는 가림(kevin 2026-11-18, lib/content/get.ts HIDDEN_SERVICE_SLUGS)
   { label: '시공 교육', href: '/services/academy' },
 ]
 

@@ -1712,3 +1712,19 @@ export function kkt3Part(q: Quote): Quote {
   const base = { ...q, sections, notes, date: '2026-11-18' }
   return { ...base, discount: discountForGrand({ ...base, discount: 0 }, KKT_3PART_GRAND) ?? q.discount }
 }
+
+// 2026-11-20 kevin: 고객에게 간 견적 금액(공정 합계 187,832,000 − 가격 조정 20,832,000 = 공급가 167,000,000, 부가세 포함 183,700,000)으로 맞춤.
+// 결제 조건은 계약서와 같게 30·30·20·20. 공종·인원·자재는 그대로
+export const KKT_GRAND_1120_KEY = 'kkt-grand-183700000-1120'
+export const KKT_GRAND_1120 = 183_700_000
+export const KKT_GRAND_1120_SUMMARY = '견적 금액 부가세 포함 183,700,000(공급가 167,000,000, 가격 조정 20,832,000)으로 맞춤, 결제 조건 30·30·20·20(계약서와 같음)'
+const KKT_PAY_1120 = '결제 조건: 계약금 30%, 중도금 30%(접합부 용접 완료 시), 전체 인양 완료 시 20%, 보온 완료 시 20%'
+
+export function kktGrand1120(q: Quote): Quote {
+  const notes = q.notes
+    .split('\n')
+    .map((l) => (l.startsWith('결제 조건:') ? KKT_PAY_1120 : l))
+    .join('\n')
+  const base = { ...q, notes, date: '2026-11-20' }
+  return { ...base, discount: discountForGrand({ ...base, discount: 0 }, KKT_GRAND_1120) ?? q.discount }
+}

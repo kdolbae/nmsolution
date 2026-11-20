@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>2층 창고 바닥 철골 구조 3D (독립 구조) | (주)성원냉동기계 | 엔엠솔루션</title>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 화면 전체 3D 캔버스 + 왼쪽 위 정보 패널 + 아래 조작 막대 */
+:root{
+  --bg:#e9edf1; --panel:#ffffff; --fg:#14202e; --muted:#5b6876; --line:#d3dae2;
+  --navy:#0f2a44; --accent:#e8742a; --chip:#eef2f6;
+  --sky-top:#dfe6ee; --ground:#c9ced4;
+  --sans:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161d; --panel:#18212b; --fg:#e6ebf1; --muted:#9aa7b5; --line:#2a3644; --navy:#9fc0e6; --chip:#202b37;
+  --sky-top:#1a232d; --ground:#2a3138; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161d; --panel:#18212b; --fg:#e6ebf1; --muted:#9aa7b5; --line:#2a3644; --navy:#9fc0e6; --chip:#202b37;
+  --sky-top:#1a232d; --ground:#2a3138; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);overflow:hidden}
+#app{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.panel{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));
+  width:min(330px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;
+  box-shadow:0 6px 24px rgba(0,0,0,.12);max-height:calc(100% - 150px);overflow:auto}
+.panel h1{margin:0 0 2px;font-size:17px;line-height:1.3;text-wrap:balance}
+.panel .sub{margin:0 0 10px;color:var(--muted);font-size:12.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--mono);font-size:12px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:10px;font-size:12px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:2px;flex:none;border:1px solid rgba(0,0,0,.15)}
+.note{margin-top:10px;font-size:11.5px;color:var(--muted);line-height:1.5}
+.toggle-panel{display:none}
+.plist{display:grid;gap:2px;margin-top:8px}
+.plist button{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;text-align:left;width:100%;padding:5px 7px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--fg);font:500 12px var(--sans);cursor:pointer}
+.plist button:hover{background:var(--chip)}
+.plist button[aria-pressed="true"]{border-color:#e0a800;background:rgba(255,200,61,.22);color:var(--fg)}
+.plist i{width:12px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.15)}
+.plist small{font-family:var(--mono);color:var(--muted);font-size:11px}
+.tip{position:absolute;pointer-events:none;background:rgba(15,42,68,.94);color:#fff;font:600 12.5px var(--sans);padding:6px 9px;border-radius:4px;white-space:nowrap;transform:translate(14px,14px);display:none;z-index:5}
+.tip small{display:block;font:500 11.5px var(--mono);color:#c9d6e6}
+.card{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(12px + env(safe-area-inset-top,0px));width:min(300px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);border-left:4px solid #ffc83d;border-radius:6px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.14);font-size:12.5px;display:none;z-index:4}
+.card h2{margin:0 0 2px;font-size:15px}
+.card .spec{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 8px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0}
+.card dt{color:var(--muted)} .card dd{margin:0}
+.card .x{position:absolute;right:6px;top:6px;padding:2px 7px;border:0;background:transparent;color:var(--muted);font-size:14px;cursor:pointer}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;pointer-events:none}
+.bar .grp{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+button{font:600 13px var(--sans);color:var(--fg);background:transparent;border:0;border-radius:4px;padding:7px 11px;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--chip)}
+button[aria-pressed="true"]{background:var(--navy);color:var(--panel)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(12px + env(safe-area-inset-top,0px));background:var(--panel);border:1px solid var(--line);
+  border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);max-width:260px;line-height:1.5}
+.hint b{color:var(--fg)}
+.bar .move{display:none}
+.bar.walk .move{display:flex}
+@media (max-width:640px){
+  .panel{padding:10px 12px;max-height:40%}
+  .panel .kv,.panel .note{display:none}
+  .legend{grid-template-columns:1fr 1fr 1fr;font-size:11px}
+  .hint{display:none}
+  button{padding:7px 8px;font-size:12px}
+}
+</style>
+
+
+</head>
+<body>
+<div id="app" aria-label="2층 창고 철골 구조 3D 모델">
+  <canvas id="c"></canvas>
+  <section class="panel" aria-label="모델 정보">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:8px"><h1>2층 창고 바닥 철골 구조</h1><button id="fold" aria-expanded="true" style="padding:3px 8px;font-size:12px;border:1px solid var(--line)">접기</button></div>
+    <p class="sub">성원냉동기계 안성 공장 · 예비 설계 (구조기술사 확인 후 확정)</p>
+    <div id="more">
+    <dl class="kv">
+      <dt>외벽선</dt><dd>19,800 × 10,000</dd>
+      <dt>구조</dt><dd>기존 건물과 떨어진 독립 구조</dd>
+      <dt>띄움</dt><dd>벽·기존 기둥에서 20mm</dd>
+      <dt>2층 바닥</dt><dd>FL +4,504 · 약 169㎡</dd>
+      <dt>1층 높이</dt><dd>약 3,900 (가장 깊은 보 하단)</dd>
+      <dt>가로보 (통)</dt><dd>H-450×200 · 개구부 옆 H-500</dd>
+      <dt>벽보</dt><dd>H-400×200</dd>
+      <dt>박공 벽보</dt><dd>H-300×150</dd>
+      <dt>새 기둥</dt><dd>H-250×250 · 14개 (기존 기둥 자리)</dd>
+      <dt>가새</dt><dd>ㄱ75×75 X자 · 8칸</dd>
+      <dt>장선·바닥</dt><dd>□100×50 @300 · 4.0t</dd>
+      <dt>허용 적재</dt><dd>약 900kg/㎡ (설계)</dd>
+    </dl>
+    <div class="legend" aria-label="색 구분">
+      <span><i style="background:#e8742a"></i>가로보 (통)</span>
+      <span><i style="background:#0f2a44"></i>벽보·개구부 보</span>
+      <span><i style="background:#2e6ba8"></i>박공 벽보</span>
+      <span><i style="background:#3d4a5c"></i>새 기둥</span>
+      <span><i style="background:#7b4bb7"></i>가새</span>
+      <span><i style="background:#8a9096"></i>기존 기둥</span>
+      <span><i style="background:#2e8b57"></i>고정 난간</span>
+      <span><i style="background:#c8372d"></i>여닫는 난간</span>
+      <span><i style="background:#e8b88a"></i>화장실 (1층)</span>
+    </div>
+    <p class="note"><b>자재에 마우스를 올리거나 누르면</b> 이름·규격·물량이 나옴. 아래 목록을 눌러도 그 자재가 어디 쓰이는지 노랗게 표시됨.</p>
+    <div class="plist" id="plist" aria-label="자재 목록"></div>
+    <p class="note">새 구조는 벽·기존 기둥에 닿지 않고 바닥 앵커로만 섬. 기둥은 기존 기둥 14곳 앞에만 있어 1층 가운데에 기둥이 없음. 빨간 기둥(오른쪽 앞 모서리)은 1층 화장실 안 모서리에 서므로 현장에서 확인함. 외벽 높이는 표현용(6m)임.</p>
+    </div>
+  </section>
+  <div class="hint" id="hint"></div>
+  <div class="tip" id="tip"></div>
+  <section class="card" id="card" aria-live="polite"><button class="x" id="cardX" aria-label="닫기">✕</button><h2 id="cName"></h2><p class="spec" id="cSpec"></p><dl id="cDl"></dl></section>
+  <div class="bar" id="bar">
+    <div class="grp" role="group" aria-label="보기 방식">
+      <button id="mOrbit" aria-pressed="true">둘러보기</button>
+      <button id="tPan" aria-pressed="false" title="켜면 한 손가락·왼쪽 버튼으로 끌어서 화면을 옮김">손 이동</button>
+      <button id="mWalk1" aria-pressed="false">1층 안 보기</button>
+      <button id="mWalk2" aria-pressed="false">2층 걷기</button>
+    </div>
+    <div class="grp" role="group" aria-label="표시">
+      <button id="tPlate" aria-pressed="true">바닥판</button>
+      <button id="tWall" aria-pressed="true">외벽</button>
+      <button id="tGate" aria-pressed="false">난간 열기</button>
+    </div>
+    <div class="grp" role="group" aria-label="빠른 시점">
+      <button id="vIso">전체</button>
+      <button id="vTop">위에서</button>
+      <button id="vStair">계단</button>
+      <button id="vOpen">개구부</button>
+      <button id="vUnder">밑에서</button>
+      <button id="vGap" title="벽·기존 기둥과 20mm 띄운 곳">띄운 곳</button>
+    </div>
+    <div class="grp move" role="group" aria-label="이동">
+      <button id="left" aria-label="왼쪽으로 돌기">◀</button>
+      <button id="fwd" aria-label="앞으로">▲ 앞</button>
+      <button id="back" aria-label="뒤로">▼ 뒤</button>
+      <button id="right" aria-label="오른쪽으로 돌기">▶</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+// ---------- 치수 (m), geom.py 와 같음. x = 길이 19.8, z = 폭 10 (A열 z=0), y = 높이 ----------
+const LX=19.8, LY=10.0, PANEL=0.155, WALL_H=6.0;
+const COL_X=[PANEL+0.0875,4.95,9.9,14.85,LX-PANEL-0.0875], YA=0.33, YD=LY-0.33;
+const XG0=PANEL+0.122, XG1=LX-XG0, SD_Y=[2.75,7.25];
+const YIN_A=0.505, YIN_D=9.495, XIN0=0.399, XIN1=19.401;
+const GAP=0.02;                                   // 기존 벽·기둥과 띄우는 틈 20mm
+const ZA=0.65, ZD=9.35, XW=0.544, XE=19.256, YC=5.0; // 새 기둥·보 줄 (기존 기둥 면에서 20mm + 기둥 반폭)
+const WA=ZA, WD=ZD, WG0=XW, WG1=XE;
+const FX0=PANEL+GAP, FX1=LX-PANEL-GAP, FZ0=PANEL+GAP, FZ1=LY-PANEL-GAP;   // 2층 바닥 바깥선 (벽에서 20mm)
+const MIDC=[6.732,13.066];
+const OPX0=9.9, OPX1=14.85, OPY1=2.75;
+const WC=[17.395,0.155,19.645,2.405];
+const ST_W=0.9, RISE=4.504/23, TREAD=0.24;
+const STX1=17.35, STX0=16.45, STY0=0.55, STY1=1.45, F1N=7, F1X0=STX0-F1N*TREAD, F2N=14, F2Y1=STY1+F2N*TREAD;
+const SOX0=16.30, SOX1=17.45, SOY1=4.9;
+const CXA=[2.747,4.95,7.425,9.9,14.85,SOX0,SOX1], CXD=[2.747,4.95,7.425,9.9,12.375,14.85,17.05];
+const NEWCOLS=[[XW,ZA,'z'],[4.95,ZA,'z'],[9.9,ZA,'z'],[14.85,ZA,'z'],[XE,ZA,'z'],
+  [XW,ZD,'z'],[4.95,ZD,'z'],[9.9,ZD,'z'],[14.85,ZD,'z'],[XE,ZD,'z'],
+  [XW,2.75,'x'],[XW,7.25,'x'],[XE,2.75,'x'],[XE,7.25,'x']];   // 기존 기둥 14곳 앞에만 (가운데 기둥 없음)
+const XL450=[2.747,4.95,7.425,SOX0,SOX1], XL500=[9.9,14.85];   // A→D 통으로 건너는 가로보
+const TBD=[XE,ZA];
+// 기존 기둥이 차지한 자리 (평면) → 20mm 넓혀 바닥·장선을 따냄
+const EXIST=[];
+for(const x of COL_X){ EXIST.push([x-0.0875,x+0.0875,PANEL,YIN_A],[x-0.0875,x+0.0875,YIN_D,LY-PANEL]); }
+for(const z of SD_Y){ EXIST.push([PANEL,XIN0,z-0.0875,z+0.0875],[XIN1,LX-PANEL,z-0.0875,z+0.0875]); }
+const NOTCH=EXIST.map(([a,b,c,d])=>[a-GAP,b+GAP,c-GAP,d+GAP]);
+const HOLES=[[OPX0,OPX1,FZ0,OPY1],[SOX0,SOX1,FZ0,SOY1]];
+// 선 (x 방향, z 고정) 위에서 따낸 자리를 빼고 남는 구간
+function runsX(z,x0,x1,half){ let segs=[[x0,x1]];
+  for(const [a,b,c,d] of NOTCH.concat(HOLES)){ if(z+half<=c||z-half>=d) continue;
+    segs=segs.flatMap(([p,q])=> b<=p||a>=q ? [[p,q]] : [[p,Math.max(p,a)],[Math.min(q,b),q]]).filter(([p,q])=>q-p>0.05); }
+  return segs; }
+const FL=4.504;
+
+const canvas=document.getElementById('c');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true}); }
+catch(e){ document.getElementById('hint').textContent='이 브라우저에서 3D를 열 수 없음 (WebGL 꺼짐)'; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(50,1,0.05,300);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function applyTheme(){ scene.background=new THREE.Color(css('--sky-top')||'#dfe6ee'); groundMat.color.set(css('--ground')||'#c9ced4'); }
+
+// 평면 좌표(x 1→5열, z A→D열)를 그대로 쓰되 도면과 같은 방향으로 보이게 z를 뒤집음
+const world=new THREE.Group(); world.scale.z=-1; scene.add(world);
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a8f96,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.75); sun.position.set(-8,20,-12); scene.add(sun);
+const sun2=new THREE.DirectionalLight(0xffffff,0.25); sun2.position.set(20,10,18); scene.add(sun2);
+
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+const mat={
+  wb:M(0x0f2a44), cg:M(0xe8742a), xb:M(0x2e6ba8), b2:M(0xc8372d), c1:M(0x3d4a5c), tbd:M(0xc8372d),
+  col:M(0x8a9096), br:M(0x7b4bb7), jo:M(0x9aa3ab), stair:M(0x4a5560), tread:M(0x6f7a85),
+  rail:M(0x2e8b57), gate:M(0xc8372d), toe:M(0x2e8b57),
+  plate:new THREE.MeshLambertMaterial({color:0x7d878f,transparent:true,opacity:0.9,side:THREE.DoubleSide}),
+  panel:new THREE.MeshLambertMaterial({color:0xc4ccd4,transparent:true,opacity:0.28,side:THREE.DoubleSide,depthWrite:false}),
+  wc:new THREE.MeshLambertMaterial({color:0xe8b88a,transparent:true,opacity:0.75}),
+  door:new THREE.MeshLambertMaterial({color:0xd8a090,transparent:true,opacity:0.35,side:THREE.DoubleSide,depthWrite:false}),
+};
+const groundMat=new THREE.MeshLambertMaterial({color:0xc9ced4});
+// 상자: x0..x1, y0..y1 (높이), z0..z1
+let PART=null; const byPart={};
+function tag(o){ if(PART){ o.userData.part=PART; (byPart[PART]=byPart[PART]||[]).push(o); } return o; }
+function box(x0,x1,y0,y1,z0,z1,m,parent){
+  const g=new THREE.BoxGeometry(Math.abs(x1-x0),Math.abs(y1-y0),Math.abs(z1-z0));
+  const o=new THREE.Mesh(g,m); o.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2); (parent||world).add(o); return tag(o);
+}
+// H형강 (보): axis 'x' 또는 'z', 하단 높이 yb, 춤 d, 폭 b
+function hbeam(axis,a0,a1,c,yb,d,b,tf,tw,m,parent){
+  const g=new THREE.Group();
+  if(axis==='x'){
+    box(a0,a1,yb,yb+tf,c-b/2,c+b/2,m,g); box(a0,a1,yb+d-tf,yb+d,c-b/2,c+b/2,m,g); box(a0,a1,yb+tf,yb+d-tf,c-tw/2,c+tw/2,m,g);
+  }else{
+    box(c-b/2,c+b/2,yb,yb+tf,a0,a1,m,g); box(c-b/2,c+b/2,yb+d-tf,yb+d,a0,a1,m,g); box(c-tw/2,c+tw/2,yb+tf,yb+d-tf,a0,a1,m,g);
+  }
+  (parent||world).add(g); return g;
+}
+// H형강 기둥: 중심 (x,z), 높이 0..h, 춤 방향 'x' 또는 'z'
+function hcol(x,z,h,d,b,tf,tw,dir,m,parent){
+  const g=new THREE.Group();
+  if(dir==='z'){ box(x-b/2,x+b/2,0,h,z-d/2,z-d/2+tf,m,g); box(x-b/2,x+b/2,0,h,z+d/2-tf,z+d/2,m,g); box(x-tw/2,x+tw/2,0,h,z-d/2+tf,z+d/2-tf,m,g); }
+  else{ box(x-d/2,x-d/2+tf,0,h,z-b/2,z+b/2,m,g); box(x+d/2-tf,x+d/2,0,h,z-b/2,z+b/2,m,g); box(x-d/2+tf,x+d/2-tf,0,h,z-tw/2,z+tw/2,m,g); }
+  (parent||world).add(g); return g;
+}
+function cyl(a,b,r,m,parent){ // a,b: [x,y,z]
+  const va=new THREE.Vector3(...a), vb=new THREE.Vector3(...b), L=va.distanceTo(vb);
+  const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,10),m);
+  o.position.copy(va).add(vb).multiplyScalar(0.5);
+  o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vb.clone().sub(va).normalize());
+  (parent||world).add(o); return tag(o);
+}
+
+// ---------- 바닥·외벽 ----------
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,50),groundMat); ground.rotation.x=-Math.PI/2; ground.position.set(LX/2,-0.001,LY/2); world.add(ground);
+const grid=new THREE.GridHelper(40,40,0x9aa3ab,0xb3bac1); grid.position.set(LX/2,0.002,LY/2); grid.material.transparent=true; grid.material.opacity=0.35; world.add(grid);
+const walls=new THREE.Group(); world.add(walls);
+box(0,LX,0,WALL_H,LY-PANEL,LY,mat.panel,walls);              // D열
+box(0,PANEL,0,WALL_H,PANEL,LY-PANEL,mat.panel,walls);          // 1열 박공
+box(LX-PANEL,LX,0,WALL_H,PANEL,LY-PANEL,mat.panel,walls);      // 5열 박공
+box(0,10.4,0,WALL_H,0,PANEL,mat.panel,walls); box(14.4,LX,0,WALL_H,0,PANEL,mat.panel,walls); box(10.4,14.4,4.0,WALL_H,0,PANEL,mat.panel,walls);
+box(10.4,14.4,0,4.0,0,0.04,mat.door,walls);                    // 행거도어 (열린 칸 표시)
+// 기존 기둥
+PART='exist';
+for(const x of COL_X){ for(const z of [YA,YD]) hcol(x,z,WALL_H,0.35,0.175,0.011,0.007,'z',mat.col); }
+for(const x of [XG0,XG1]){ for(const z of SD_Y) hcol(x,z,WALL_H,0.244,0.175,0.011,0.007,'x',mat.col); }
+// 화장실
+PART='wc';
+box(WC[0],WC[2],0,2.4,WC[1],WC[3],mat.wc);
+
+// ---------- 골조 (기존 건물과 떨어진 독립 구조) ----------
+// 벽보·개구부 테두리·개구부 뒤 가로보 H-400×200, 위 4.4
+PART='wall';
+function h400(ax,a0,a1,c){ hbeam(ax,a0,a1,c,4.0,0.4,0.2,0.013,0.008,mat.wb); }
+h400('x',XW-0.125,OPX0,ZA); h400('x',OPX1,XE+0.125,ZA); h400('x',XW-0.125,XE+0.125,ZD);
+h400('x',OPX0+0.1,OPX1-0.1,OPY1); h400('z',OPY1+0.1,ZD-0.1,12.375);
+// 가로보 (A→D 통으로 8.7m): H-450×200, 개구부 옆 2줄은 H-500×200
+PART='main';
+for(const x of XL450) hbeam('z',ZA+0.1,ZD-0.1,x,3.95,0.45,0.2,0.014,0.009,mat.cg);
+for(const x of XL500) hbeam('z',ZA+0.1,ZD-0.1,x,3.9,0.5,0.2,0.016,0.01,mat.cg);
+// 박공 벽보 H-300×150
+PART='cross';
+function h300(ax,a0,a1,c){ hbeam(ax,a0,a1,c,4.1,0.3,0.15,0.009,0.0065,mat.xb); }
+h300('z',ZA+0.125,ZD-0.125,XW); h300('z',ZA+0.125,ZD-0.125,XE);
+// 새 기둥 H-250×250 (기존 기둥 앞, 20mm 띄움)
+PART='col';
+for(const [x,z,dir] of NEWCOLS){ const t=(x===TBD[0]&&z===TBD[1]); const h=(z===ZA||z===ZD)?(XL500.includes(x)?3.9:(XL450.includes(x)?3.95:4.0)):4.1;
+  hcol(x,z,h,0.25,0.25,0.014,0.009,dir,t?mat.tbd:mat.c1);
+  box(x-0.15,x+0.15,0,0.02,z-0.15,z+0.15,mat.c1); }
+// 가새 ㄱ75×75 X자 (긴 벽 4칸, 박공 4칸)
+PART='brace';
+const BR=[['x',ZA,XW,4.95],['x',ZA,4.95,9.9],['x',ZD,4.95,9.9],['x',ZD,9.9,14.85],['z',XW,ZA,2.75],['z',XW,7.25,ZD],['z',XE,2.75,7.25],['z',XE,7.25,ZD]];
+for(const [ax,c,a0,a1] of BR){ const p=(t,y)=>ax==='x'?[t,y,c]:[c,y,t]; const s0=a0+0.15, s1=a1-0.15;
+  cyl(p(s0,0.35),p(s1,3.85),0.032,mat.br); cyl(p(s0,3.85),p(s1,0.35),0.032,mat.br);
+  const m=p((s0+s1)/2,2.1); box(m[0]-0.12,m[0]+0.12,1.98,2.22,m[2]-0.12,m[2]+0.12,mat.br); }
+// 가장자리 받침 (벽보에서 벽 쪽으로 내밂, 1.2m 이하 간격)
+PART='stub'; let nStub=0;
+for(const [z0,z1,zs] of [[FZ0+0.02,ZA,ZA],[ZD,FZ1-0.02,ZD]]){
+  for(const [p,q] of runsX(zs<5?0.35:9.65,FX0,FX1,0.2)){ const n=Math.max(2,Math.ceil((q-p)/1.2)+1);
+    for(let i=0;i<n;i++){ const x=p+0.1+(q-p-0.2)*i/(n-1); box(x-0.025,x+0.025,4.3,4.4,z0,z1,mat.jo); nStub++; } } }
+// 장선 □100×50 @300 (높이 4.4~4.5) + 벽 쪽 가장자리 띠
+const joists=new THREE.Group(); world.add(joists); PART='joist'; let jLen=0;
+const JZ=[]; for(let z=ZA; z<=ZD+1e-6; z+=0.3) JZ.push(z);
+for(const z of JZ.concat([0.25,0.45,9.55,9.75])) for(const [a,b] of runsX(z,FX0,FX1,0.025)){ box(a,b,4.4,4.5,z-0.025,z+0.025,mat.jo,joists); jLen+=b-a; }
+// 바닥판 4.0t (벽·기존 기둥에서 20mm, 구멍 제외)
+const plate=new THREE.Group(); world.add(plate); PART='plate'; let pArea=0;
+{ const xs=new Set([FX0,FX1]), zs=new Set([FZ0,FZ1]);
+  for(const [a,b,c,d] of NOTCH.concat(HOLES)){ [a,b].forEach(v=>{ if(v>FX0&&v<FX1) xs.add(v); }); [c,d].forEach(v=>{ if(v>FZ0&&v<FZ1) zs.add(v); }); }
+  const X=[...xs].sort((p,q)=>p-q), Z=[...zs].sort((p,q)=>p-q);
+  const out=(x,z)=>NOTCH.concat(HOLES).some(([a,b,c,d])=>x>a&&x<b&&z>c&&z<d);
+  for(let j=0;j<Z.length-1;j++){ let run=null; const zm=(Z[j]+Z[j+1])/2;
+    for(let i=0;i<=X.length-1;i++){ const ok=i<X.length-1&&!out((X[i]+X[i+1])/2,zm);
+      if(ok&&run===null) run=X[i];
+      if(!ok&&run!==null){ box(run,X[i],4.5,4.504,Z[j],Z[j+1],mat.plate,plate); pArea+=(X[i]-run)*(Z[j+1]-Z[j]); run=null; } } } }
+window.__counts={stub:nStub,joist:Math.round(jLen),plate:Math.round(pArea*10)/10};
+
+// ---------- 계단 ----------
+// 1구간: x F1X0→STX0 (z STY0~STY1), 8단. 참 약 +1.567. 2구간: z STY1→F2Y1 (x STX0~STX1), 15단. 단높이 약 196·디딤 240
+PART='tread';
+for(let i=0;i<F1N;i++){ const y=(i+1)*RISE; box(F1X0+i*TREAD,F1X0+(i+1)*TREAD,y-0.045,y,STY0,STY1,mat.tread); }
+const yl=(F1N+1)*RISE; box(STX0,STX1,yl-0.1,yl,STY0,STY1,mat.tread);
+PART='spost';
+for(const [x,z] of [[STX0+0.05,STY0+0.05],[STX1-0.05,STY0+0.05],[STX0+0.05,STY1-0.05],[STX1-0.05,STY1-0.05]]) box(x-0.05,x+0.05,0,yl-0.1,z-0.05,z+0.05,mat.stair);
+PART='tread';
+for(let i=0;i<F2N;i++){ const y=yl+(i+1)*RISE; box(STX0,STX1,y-0.045,y,STY1+i*TREAD,STY1+(i+1)*TREAD,mat.tread); }
+// 옆판 (기울어진 판)
+function stringer(a,b,zOff,axis){ // a,b 시작·끝 점 [x,y,z]
+  const o=cyl(a,b,0.001,mat.stair); world.remove(o); byPart[PART].pop();
+  const va=new THREE.Vector3(...a), vb=new THREE.Vector3(...b), L=va.distanceTo(vb);
+  const g=new THREE.BoxGeometry(L,0.2,0.012); const m=tag(new THREE.Mesh(g,mat.stair));
+  m.position.copy(va).add(vb).multiplyScalar(0.5);
+  const d=vb.clone().sub(va).normalize(); m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),d); world.add(m);
+}
+PART='stringer';
+for(const z of [STY0+0.006,STY1-0.006]) stringer([F1X0,0.05,z],[STX0,yl-0.05,z]);
+for(const x of [STX0+0.006,STX1-0.006]) stringer([x,yl-0.05,STY1],[x,FL-0.15,F2Y1]);
+// 핸드레일 H900 (양쪽), 손잡이 + 중간대 + 기둥
+const hr=0.9; PART='pipe';
+for(const z of [STY0+0.03,STY1-0.04]){
+  for(const h of [hr,hr/2]) cyl([F1X0,RISE+h,z],[STX0,yl+h,z],0.024,mat.rail);
+  for(let i=0;i<=F1N;i+=3){ const x=F1X0+i*TREAD, y=(i+1)*RISE; cyl([x,y,z],[x,y+hr,z],0.024,mat.rail); }
+}
+cyl([STX0,yl+hr,STY0+0.03],[STX1-0.03,yl+hr,STY0+0.03],0.024,mat.rail);
+for(const x of [STX0+0.04,STX1-0.03]){
+  for(const h of [hr,hr/2]) cyl([x,yl+RISE+h,STY1],[x,FL+h,F2Y1],0.024,mat.rail);
+  for(let i=0;i<=F2N;i+=4){ const z=STY1+i*TREAD, y=yl+(i+1)*RISE; cyl([x,y,z],[x,y+hr,z],0.024,mat.rail); }
+}
+cyl([STX1-0.03,yl,STY0+0.03],[STX1-0.03,yl+hr,STY0+0.03],0.024,mat.rail);
+
+// ---------- 2층 난간 ----------
+const RH=1.1;
+function fixedRail(a,b){ // a,b: [x,z]
+  PART='pipe'; for(const h of [RH,RH/2]) cyl([a[0],FL+h,a[1]],[b[0],FL+h,b[1]],0.024,mat.rail);
+  PART='toe'; box(Math.min(a[0],b[0])-0.003,Math.max(a[0],b[0])+0.003,FL,FL+0.1,Math.min(a[1],b[1])-0.003,Math.max(a[1],b[1])+0.003,mat.toe);
+}
+function post(x,z){ PART='rpost'; box(x-0.0375,x+0.0375,FL,FL+RH,z-0.0375,z+0.0375,mat.rail); }
+const gates=[];
+function gate(hx,hz,len,axis,dir,swingSign){ // 경첩 (hx,hz), 길이, 닫힌 방향 axis, 열림 회전 부호
+  PART='gate'; const piv=new THREE.Group(); piv.position.set(hx,FL,hz); world.add(piv);
+  const inner=new THREE.Group(); piv.add(inner);
+  const L=len-0.12, o=0.06;
+  const P=(t,h)=> axis==='x'? [dir*(o+t),h,0] : [0,h,dir*(o+t)];
+  for(const h of [0.02,0.55,1.08]) cyl(P(0,h),P(L,h),0.022,mat.gate,inner);
+  for(const t of [0,L]) cyl(P(t,0.02),P(t,1.08),0.022,mat.gate,inner);
+  const a=P(0,0.02), b=P(L,0.12);
+  box(Math.min(a[0],b[0]),Math.max(a[0],b[0])+0.004,0.02,0.12,Math.min(a[2],b[2]),Math.max(a[2],b[2])+0.004,mat.gate,inner);
+  gates.push({piv,target:0,cur:0,sign:swingSign});
+}
+const GW=(OPX1-OPX0)/3, YL0=FZ0+0.03;
+for(let i=0;i<=3;i++) post(OPX0+i*GW,OPY1);
+post(OPX0,YL0); post(OPX0,OPY1-1.5); post(OPX1,YL0);
+for(let i=0;i<3;i++) gate(OPX0+i*GW,OPY1,GW,'x',1,1);          // 정면 3짝: 2층 쪽(북)으로 열림
+gate(OPX0,OPY1,1.5,'z',-1,-1);                                  // 왼쪽 1짝: 서쪽으로 열림
+fixedRail([OPX0,YL0],[OPX0,OPY1-1.5]);
+fixedRail([OPX1,YL0],[OPX1,OPY1]);
+// 계단 구멍 둘레
+fixedRail([SOX0+0.03,YL0],[SOX0+0.03,SOY1-0.9]); fixedRail([SOX1-0.03,YL0],[SOX1-0.03,SOY1-0.2]);
+for(const z of [YL0+0.05,(YL0+SOY1-0.9)/2,SOY1-0.9]) post(SOX0+0.03,z);
+for(const z of [YL0+0.05,(YL0+SOY1-0.2)/2,SOY1-0.2]) post(SOX1-0.03,z);
+
+PART=null;
+// ---------- 카메라·조작 ----------
+const target=new THREE.Vector3(LX/2,2.4,LY/2);
+const orbit={r:27,theta:-0.75,phi:1.05};
+const walk={x:4,z:3.0,yaw:0.55,pitch:-0.05,eye:1.6,level:1};
+let mode='orbit';
+const EYE_MIN=0.3;   // 둘러보기에서 카메라가 1층 바닥 밑으로 내려가지 않게 함
+function setOrbitCam(){ const s=Math.sin(orbit.phi);
+  const off=new THREE.Vector3(orbit.r*s*Math.sin(orbit.theta), orbit.r*Math.cos(orbit.phi), -orbit.r*s*Math.cos(orbit.theta));
+  if(target.y+off.y<EYE_MIN && off.y<0) off.multiplyScalar((target.y-EYE_MIN)/-off.y);
+  camera.position.set(target.x+off.x, target.y+off.y, -(target.z+off.z)); camera.lookAt(target.x,target.y,-target.z); }
+function setWalkCam(){ const y=(walk.level===2?FL:0)+walk.eye;
+  camera.position.set(walk.x,y,-walk.z);
+  const d=new THREE.Vector3(Math.cos(walk.pitch)*Math.sin(walk.yaw),Math.sin(walk.pitch),-Math.cos(walk.pitch)*Math.cos(walk.yaw));
+  camera.lookAt(camera.position.clone().add(d)); }
+function update(){ mode==='orbit'?setOrbitCam():setWalkCam(); }
+function clampWalk(){ walk.x=Math.min(XIN1-0.3,Math.max(XIN0+0.3,walk.x)); walk.z=Math.min(YIN_D-0.3,Math.max(YIN_A+0.2,walk.z));
+  if(walk.level===2){ walk.z=Math.max(FZ0+0.3,walk.z); } }
+function moveFwd(d){ walk.x+=Math.sin(walk.yaw)*d; walk.z+=Math.cos(walk.yaw)*d; clampWalk(); }
+
+const hint=document.getElementById('hint');
+function setHint(){ hint.innerHTML= mode==='orbit'
+  ? '<b>둘러보기</b> · 끌어서 회전, 스크롤·두 손가락으로 가리킨 곳 확대. 오른쪽 버튼·두 손가락 끌기·<b>손 이동</b>으로 옮김. 두 번 누른 곳이 회전 중심(주황 점)이 됨'
+  : '<b>'+(walk.level===2?'2층':'1층')+' 안</b> · 스크롤이나 ▲▼로 앞뒤 이동, 끌거나 ◀▶로 고개 돌리기, 방향키·WASD도 됨'; }
+setHint();
+
+// ---- 둘러보기: 원하는 곳으로 옮기고, 그 점을 중심으로 확대·회전 ----
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+const pivot=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12),new THREE.MeshBasicMaterial({color:0xe8742a,depthTest:false}));
+pivot.renderOrder=10; pivot.visible=false; scene.add(pivot); let pivotT=0;
+function shown(o){ for(;o;o=o.parent) if(!o.visible) return false; return true; }
+function toPlan(v){ return new THREE.Vector3(v.x,v.y,-v.z); }
+// 화면 점 아래의 부재(반투명 외벽은 건너뜀). 없으면 회전 중심 높이의 수평면과 만나는 점. 평면 좌표로 돌려줌
+function pickPlan(cx,cy){ const b=canvas.getBoundingClientRect();
+  ndc.set((cx-b.left)/b.width*2-1,-(cy-b.top)/b.height*2+1); ray.setFromCamera(ndc,camera);
+  const hit=ray.intersectObjects(world.children,true).find(h=>h.object.isMesh&&shown(h.object)&&!(h.object.material.transparent&&h.object.material.opacity<0.5));
+  if(hit) return toPlan(hit.point);
+  const v=new THREE.Vector3(); return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-target.y),v)?toPlan(v):target.clone(); }
+function showPivot(){ pivot.position.set(target.x,target.y,-target.z); pivot.visible=true; pivotT=performance.now(); }
+function pan(dx,dy){ const d=camera.position.distanceTo(new THREE.Vector3(target.x,target.y,-target.z));
+  const s=2*d*Math.tan(camera.fov*Math.PI/360)/(canvas.clientHeight||innerHeight);
+  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
+  right.z*=-1; up.z*=-1; target.addScaledVector(right,-dx*s).addScaledVector(up,dy*s); showPivot(); }
+// 손가락·마우스가 가리키는 점은 제자리에 두고 확대·축소
+function zoomAt(cx,cy,k){ const nr=Math.min(80,Math.max(1.2,orbit.r*k)); k=nr/orbit.r; if(k===1) return;
+  const p=pickPlan(cx,cy); target.sub(p).multiplyScalar(k).add(p); orbit.r=nr; }
+// 회전 중심을 p로 옮기되 카메라는 제자리
+function recenter(p){ const c=toPlan(camera.position); target.copy(p); const o=c.sub(p);
+  orbit.r=Math.max(1.2,o.length()); orbit.phi=Math.min(2.6,Math.max(0.08,Math.acos(o.y/orbit.r))); orbit.theta=Math.atan2(o.x,-o.z); showPivot(); }
+const panB=document.getElementById('tPan');
+const panMode=()=>panB.getAttribute('aria-pressed')==='true';
+
+let drag=null; const pts=new Map();
+canvas.addEventListener('pointerdown',e=>{ canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  drag={x:e.clientX,y:e.clientY,btn:e.button,pinch:null,mid:null}; });
+canvas.addEventListener('pointermove',e=>{ if(!drag||!pts.has(e.pointerId)) return;
+  const prev=pts.get(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===2){ const [a,b]=[...pts.values()]; const dd=Math.hypot(a.x-b.x,a.y-b.y), mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    if(drag.pinch!=null){
+      if(mode==='orbit'){ pan(mx-drag.mid[0],my-drag.mid[1]); zoomAt(mx,my,drag.pinch/dd); }   // 두 손가락: 끌면 이동, 벌리면 확대
+      else moveFwd((dd-drag.pinch)*0.03); }
+    drag.pinch=dd; drag.mid=[mx,my]; update(); return; }
+  const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
+  if(mode==='orbit'){
+    if(drag.btn===2||drag.btn===1||e.shiftKey||panMode()) pan(dx,dy);
+    else { orbit.theta-=dx*0.006; orbit.phi=Math.min(2.6,Math.max(0.08,orbit.phi-dy*0.006)); showPivot(); }
+  } else { walk.yaw-=dx*0.005; walk.pitch=Math.min(1.45,Math.max(-1.2,walk.pitch+dy*0.004)); }   // 화면을 손으로 잡아 끄는 방향으로 돎
+  update(); });
+function endPtr(e){ pts.delete(e.pointerId); if(pts.size===0) drag=null; else if(drag) drag.pinch=null; }
+canvas.addEventListener('pointerup',endPtr); canvas.addEventListener('pointercancel',endPtr);
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('dblclick',e=>{ if(mode!=='orbit') return; recenter(pickPlan(e.clientX,e.clientY)); update(); });
+canvas.addEventListener('wheel',e=>{ e.preventDefault();
+  if(mode==='orbit') zoomAt(e.clientX,e.clientY,Math.exp(e.deltaY*0.0012));
+  else moveFwd(-e.deltaY*0.004);
+  update(); },{passive:false});
+const keys=new Set();
+window.addEventListener('keydown',e=>{ if(mode!=='orbit'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(e.code)){ keys.add(e.code); e.preventDefault(); } });
+window.addEventListener('keyup',e=>keys.delete(e.code));
+let hold=0, turn=0;
+const fwdB=document.getElementById('fwd'), backB=document.getElementById('back');
+for(const [b,v] of [[fwdB,1],[backB,-1]]){
+  b.addEventListener('pointerdown',()=>hold=v); b.addEventListener('pointerup',()=>hold=0); b.addEventListener('pointerleave',()=>hold=0); }
+for(const [id,v] of [['left',1],['right',-1]]){ const b=document.getElementById(id);
+  b.addEventListener('pointerdown',()=>turn=v); b.addEventListener('pointerup',()=>turn=0); b.addEventListener('pointerleave',()=>turn=0); }
+
+function press(ids,on){ ids.forEach(id=>document.getElementById(id).setAttribute('aria-pressed',String(id===on))); }
+function setMode(m,level){
+  mode=m; const bar=document.getElementById('bar');
+  bar.classList.toggle('walk',m==='walk');
+  if(m==='walk'){ walk.level=level;
+    if(level===1){ walk.x=12.4; walk.z=0.9; walk.yaw=-0.75; walk.pitch=0.3; }   // 행거도어 안쪽에서 1층 안을 봄
+    else { walk.x=3.0; walk.z=7.8; walk.yaw=1.9; walk.pitch=-0.15; }
+    press(['mOrbit','mWalk1','mWalk2'],level===1?'mWalk1':'mWalk2');
+    if(fold.getAttribute('aria-expanded')==='true') fold.click();
+  } else press(['mOrbit','mWalk1','mWalk2'],'mOrbit');
+  camera.fov=m==='walk'?68:50; camera.updateProjectionMatrix();
+  setHint(); update(); }
+const fold=document.getElementById('fold'); fold.onclick=()=>{ const open=fold.getAttribute('aria-expanded')!=='true'; fold.setAttribute('aria-expanded',String(open)); document.getElementById('more').hidden=!open; fold.textContent=open?'접기':'펼치기'; };
+if(innerWidth<640||(window.self!==window.top&&innerWidth<900)){ fold.click(); }
+document.getElementById('mOrbit').onclick=()=>setMode('orbit');
+document.getElementById('mWalk1').onclick=()=>setMode('walk',1);
+document.getElementById('mWalk2').onclick=()=>setMode('walk',2);
+function toggle(id,fn){ const b=document.getElementById(id); b.onclick=()=>{ const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',String(on)); fn(on); }; }
+toggle('tPlate',on=>{ plate.visible=on; });
+toggle('tPan',()=>{});
+toggle('tWall',on=>{ walls.visible=on; });
+toggle('tGate',on=>{ gates.forEach(g=>g.target=on?1:0); });
+function view(t,th,ph,r){ setMode('orbit'); target.set(...t); orbit.theta=th; orbit.phi=ph; orbit.r=r; update(); }
+window.__view=view;
+document.getElementById('vIso').onclick=()=>view([LX/2,2.4,LY/2],-0.75,1.05,27);
+document.getElementById('vTop').onclick=()=>view([LX/2,4.5,LY/2],0.0001,0.09,24);
+document.getElementById('vStair').onclick=()=>view([16.2,1.7,1.4],-1.75,1.4,8);
+document.getElementById('vUnder').onclick=()=>view([LX/2,4.4,LY/2],-0.6,2.3,9);   // 1층 바닥에서 2층 밑면을 올려다봄
+document.getElementById('vGap').onclick=()=>{ view([4.95,4.5,0.5],3.0,0.5,2.6); };
+document.getElementById('vOpen').onclick=()=>view([12.4,4.6,2.2],0.25,1.0,10);
+
+
+// ---------- 자재 알려 주기: 마우스를 올리면 이름, 누르면 물량·쓰이는 곳 (견적서 자재 목록과 같은 이름) ----------
+const INFO={
+  main:{n:'가로보 (통)',s:'H빔 450×200 · 개구부 옆 2줄은 H빔 500×200',buy:'450: 10m × 5본 · 500: 10m × 2본',use:'앞 벽에서 뒤 벽까지 8.7m를 한 번에 건너는 보 7줄. 가운데 기둥 없이 바닥을 받침',c:'#e8742a'},
+  wall:{n:'벽보·개구부 보',s:'H빔 400×200 (H-400×200×8×13)',buy:'10m × 5본 = 50m',use:'앞뒤 긴 벽을 따라 두르는 보, 지게차 개구부 테두리, 개구부 뒤 가로보 1줄. 새 기둥이 받침. 벽·기존 기둥과 20mm 띄움',c:'#0f2a44'},
+  cross:{n:'박공 벽보',s:'H빔 300×150 (H-300×150×6.5×9)',buy:'10m × 2본 = 20m',use:'양쪽 박공 벽을 따라가는 보',c:'#2e6ba8'},
+  col:{n:'새 기둥',s:'H빔 250×250 · 베이스플레이트 PL-20',buy:'10m × 7본 = 70m (약 4m씩 14개, 1본에서 2개)',use:'기존 기둥 14곳 앞에 하나씩만 세움. 건물과 붙지 않고 바닥에 케미컬 앵커로만 고정',c:'#3d4a5c'},
+  brace:{n:'가새',s:'ㄱ형강 75×75×6 · X자 (가운데 이음판)',buy:'6m × 16본 = 96m',use:'독립 구조가 옆으로 밀리지 않게 잡는 X자 버팀 8칸 (긴 벽 쪽 4칸, 박공 쪽 4칸)',c:'#7b4bb7'},
+  joist:{n:'장선',s:'각파이프 100×50 (□100×50×2.9)',buy:'6m × 106본 = 636m',use:'가로보 위 300mm 간격 + 벽 쪽 가장자리 띠. 바닥 철판을 받침',c:'#9aa3ab'},
+  stub:{n:'가장자리 받침',s:'각파이프 100×50 · 약 0.45m',buy:'장선 자재에 포함',use:'벽보에서 벽 쪽으로 내밀어 바닥 가장자리 띠를 받침 (1.2m 이하 간격)',c:'#9aa3ab'},
+  plate:{n:'바닥 철판',s:'철판 4.0t · 4×8',buy:'61장 (약 169㎡)',use:'장선 위에 깔고 단속용접. 벽·기존 기둥에서 20mm 띄워 끝냄',c:'#7d878f'},
+  stringer:{n:'계단 옆판',s:'ㄷ형강 200×80',buy:'10m × 2본 = 20m',use:'계단 2구간 양쪽 옆판 + 참 테두리',c:'#4a5560'},
+  tread:{n:'디딤판·참',s:'무늬강판 4.5t (디딤 받침 ㄱ형강 50×50)',buy:'5×10 2장 · ㄱ형강 6m × 3본',use:'계단 디딤 21단과 참 1곳',c:'#6f7a85'},
+  spost:{n:'참 기둥',s:'각파이프 100×100',buy:'6m × 2본 = 12m',use:'계단 참을 받치는 기둥 4개 (약 1.6m씩)',c:'#4a5560'},
+  pipe:{n:'난간 손잡이·중간대',s:'강관 48.6',buy:'6m × 18본 = 108m',use:'계단 양쪽 핸드레일(H900), 계단 구멍 둘레·개구부 고정 난간(H1,100)',c:'#2e8b57'},
+  rpost:{n:'난간 기둥',s:'각파이프 75×75',buy:'6m × 2본 = 12m',use:'2층 고정 난간·개폐 난간 기둥 (1.2m씩)',c:'#2e8b57'},
+  toe:{n:'발끝막이',s:'평철 100',buy:'6m × 3본 = 18m',use:'개구부·계단 구멍 둘레 바닥 끝',c:'#2e8b57'},
+  gate:{n:'여닫는 난간',s:'강관 48.6 · 경첩·빗장·스토퍼',buy:'4짝 (정면 3 · 왼쪽 1)',use:'지게차 개구부. 물건 올릴 때만 2층 쪽으로 엶',c:'#c8372d'},
+  exist:{n:'기존 기둥',s:'H-350×175 (공장 기존)',buy:'공사 범위 아님',use:'새 구조와 20mm 떨어져 있음 (닿지 않음)',c:'#8a9096'},
+  wc:{n:'화장실 (1층, 기존)',s:'2,250 × 2,250',buy:'공사 범위 아님',use:'계단 2구간이 옆으로 지나감. 오른쪽 앞 모서리 새 기둥이 안 모서리에 섬',c:'#e8b88a'},
+};
+const LIST=['main','wall','cross','col','brace','joist','stub','plate','stringer','tread','spost','pipe','rpost','toe','gate'];
+const hl=new THREE.MeshLambertMaterial({color:0xffc83d,emissive:0x6b4a00});
+let hover=null, pinned=null;
+function paint(){ const on=new Set([hover,pinned].filter(Boolean));
+  for(const k in byPart) for(const o of byPart[k]){ if(!o.userData.base) o.userData.base=o.material; o.material=on.has(k)?hl:o.userData.base; } }
+const tip=document.getElementById('tip'), card=document.getElementById('card');
+const plist=document.getElementById('plist');
+plist.innerHTML=LIST.map(k=>'<button data-k="'+k+'" aria-pressed="false"><i style="background:'+INFO[k].c+'"></i><span>'+INFO[k].n+'</span><small>'+INFO[k].buy.replace(/ = .*/,'')+'</small></button>').join('');
+plist.querySelectorAll('button').forEach(b=>b.onclick=()=>select(pinned===b.dataset.k?null:b.dataset.k));
+function select(k){ pinned=k; paint();
+  plist.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===k)));
+  if(!k){ card.style.display='none'; return; }
+  const i=INFO[k]; document.getElementById('cName').textContent=i.n; document.getElementById('cSpec').textContent=i.s;
+  document.getElementById('cDl').innerHTML='<dt>물량</dt><dd>'+i.buy+'</dd><dt>쓰이는 곳</dt><dd>'+i.use+'</dd>';
+  card.style.display='block';
+}
+document.getElementById('cardX').onclick=()=>select(null);
+function partAt(cx,cy){ const b=canvas.getBoundingClientRect();
+  ndc.set((cx-b.left)/b.width*2-1,-(cy-b.top)/b.height*2+1); ray.setFromCamera(ndc,camera);
+  const hit=ray.intersectObjects(world.children,true).find(h=>h.object.isMesh&&h.object.userData.part&&shown(h.object));
+  return hit&&hit.object.userData.part||null; }
+let downAt=null, mv=null;
+canvas.addEventListener('pointerdown',e=>{ downAt={x:e.clientX,y:e.clientY}; });
+canvas.addEventListener('pointerup',e=>{ if(!downAt) return; const moved=Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y); downAt=null;
+  if(moved>5||mode!=='orbit'&&e.pointerType!=='mouse') return; const k=partAt(e.clientX,e.clientY); select(k&&k===pinned?null:k); });
+canvas.addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse'||e.buttons){ return; } mv={x:e.clientX,y:e.clientY}; });
+canvas.addEventListener('pointerleave',()=>{ mv=null; hover=null; tip.style.display='none'; paint(); });
+function hoverTick(){ if(!mv) return; const p=mv; mv=null; const k=partAt(p.x,p.y);
+  if(k!==hover){ hover=k; paint(); canvas.style.cursor=k?'pointer':''; }
+  if(k){ const b=canvas.getBoundingClientRect(); tip.innerHTML=INFO[k].n+'<small>'+INFO[k].s+'</small>'; tip.style.left=(p.x-b.left)+'px'; tip.style.top=(p.y-b.top)+'px'; tip.style.display='block'; }
+  else tip.style.display='none'; }
+window.__select=select;
+
+function resize(){ const w=canvas.clientWidth||innerWidth, h=canvas.clientHeight||innerHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize);
+const mq=matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener&&mq.addEventListener('change',applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now();
+function loop(now){ const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(mode==='walk'){ let f=hold, t=turn;
+    if(keys.has('ArrowUp')||keys.has('KeyW')) f+=1; if(keys.has('ArrowDown')||keys.has('KeyS')) f-=1;
+    if(keys.has('ArrowLeft')||keys.has('KeyA')) t+=1; if(keys.has('ArrowRight')||keys.has('KeyD')) t-=1;
+    if(f) moveFwd(f*2.2*dt); if(t) walk.yaw-=t*1.4*dt; if(f||t) update(); }
+  for(const g of gates){ if(g.cur!==g.target){ const s=reduce?1:dt*1.6; g.cur=g.target>g.cur?Math.min(g.target,g.cur+s):Math.max(g.target,g.cur-s);
+    g.piv.rotation.y=g.sign*g.cur*Math.PI/2*(-1); } }
+  hoverTick();
+  if(pivot.visible&&now-pivotT>1200) pivot.visible=false;
+  renderer.render(scene,camera); requestAnimationFrame(loop); }
+applyTheme(); resize(); update(); requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>

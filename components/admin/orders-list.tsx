@@ -7,6 +7,7 @@ import { FileText, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Section } from '@/components/admin/form'
 import { PartyFields } from '@/components/admin/order-party-fields'
+import { OrderPartyCards } from '@/components/admin/order-party-cards'
 import { createOrder, deleteOrderParty, saveOrderParty } from '@/app/actions/orders'
 import { emptyParty, PO_FORMS, type PoForm, type PoParty, type PoPartyRow } from '@/lib/orders/doc'
 
@@ -137,6 +138,24 @@ function PartyCard({ kind, id, initial, onDone }: { kind: 'issuer' | 'supplier';
   return (
     <div className="border p-4">
       <PartyFields value={p} onChange={(v) => { setP(v); setMsg('') }} />
+      <OrderPartyCards
+        id={id}
+        ensureId={async () => {
+          if (!p.name.trim()) return null
+          const newId = await saveOrderParty(id, kind, p)
+          if (!id) {
+            onDone?.()
+            router.refresh()
+          }
+          return newId
+        }}
+        onParty={(np) => {
+          const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } = np
+          setP({ name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone })
+          setMsg('명함 내용 저장함')
+          router.refresh()
+        }}
+      />
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" onClick={save} disabled={pending || !p.name.trim()}>
           {pending && <Loader2 className="animate-spin" />} 저장

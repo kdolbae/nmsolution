@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin'
 import { emptyOrder, emptyPoItem, type PoForm, type PoParty, type PurchaseOrder } from '@/lib/orders/doc'
-import { deleteParty, getOrder, insertOrder, listParties, removeOrder, saveParty, updateOrder } from '@/lib/orders/table'
+import { deleteParty, deletePrice, getOrder, insertOrder, listParties, removeOrder, saveParty, savePrice, updateOrder } from '@/lib/orders/table'
+import type { PoPrice } from '@/lib/orders/prices'
 
 /** 서울 상가 처마 판넬 발주처럼 판넬 두 줄을 미리 채운 새 발주서. 길이·수량은 비워 둔다 */
 const PANEL_PRESET = [
@@ -57,6 +58,19 @@ export async function saveOrderParty(id: number | null, kind: 'issuer' | 'suppli
 export async function deleteOrderParty(id: number) {
   await requireAdmin()
   await deleteParty(id)
+  revalidatePath('/admin/orders')
+}
+
+export async function savePoPrice(id: number | null, price: PoPrice) {
+  await requireAdmin()
+  const newId = await savePrice(id, price)
+  revalidatePath('/admin/orders')
+  return newId
+}
+
+export async function deletePoPrice(id: number) {
+  await requireAdmin()
+  await deletePrice(id)
   revalidatePath('/admin/orders')
 }
 

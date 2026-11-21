@@ -1,11 +1,13 @@
 import { pool } from '@/lib/db'
 import { emptyOrder, emptyParty, emptyPoItem, normalizeOrder, normalizeParty, todayKst, type PoParty, type PoPartyRow, type PurchaseOrder } from './doc'
 import { FL_SEOUL_SET } from './flashing'
+import { normalizePrice, SAEROM_PRICES, type PoPrice, type PoPriceRow } from './prices'
 
 /**
  * 발주서 표. 운영 DB 에 SQL 을 따로 돌리지 않아도 첫 조회 때 생긴다(lib/clients/table.ts 와 같은 방식).
  * - po_parties: 발주 사업자(issuer)·발주처(supplier) 기본값. 발주서를 만들 때 골라 복사한다.
  * - purchase_orders: 발주서. 사업자 정보는 발주서 안에 복사해 두므로 나중에 기본값을 고쳐도 지난 발주서는 그대로다.
+ * - po_prices: 발주처 단가표. 발주서 품목을 단가표에서 골라 넣는다(lib/orders/prices.ts).
  * 사업자번호·주소 같은 값은 어드민에서 넣는다(공개 저장소라 코드에 두지 않음).
  */
 let ready: Promise<void> | null = null
@@ -39,6 +41,19 @@ export function ensureOrders(): Promise<void> {
         let i = 0
         for (const s of SEED_PARTIES)
           await pool.query(`INSERT INTO po_parties (kind, data, sort_order) VALUES ($1, $2, $3)`, [s.kind, JSON.stringify(s.party), i++])
+      }
+      await pool.query(`CREATE TABLE IF NOT EXISTS po_prices (
+        id         bigint generated always as identity primary key,
+        data       jsonb not null,
+        sort_order int not null default 0,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )`)
+      // 2026-11-09 kevin: 새롬판넬 단가표(정준영 현장 견적 + 서울 처마 거래명세서)를 발주서에서 골라 쓰게 함 (한 번만 넣음)
+      const saerom = await pool.query(`INSERT INTO po_seeds (key) VALUES ('saerom-prices-261109') ON CONFLICT DO NOTHING`)
+      if (saerom.rowCount) {
+        let i = 0
+        for (const p of SAEROM_PRICES) await pool.query(`INSERT INTO po_prices (data, sort_order) VALUES ($1, $2)`, [JSON.stringify(p), i++])
       }
       // 2026-11-04 kevin: 서울 상가 처마 판넬+후레싱 발주서를 목록에 저장해 두고 어드민에서 고쳐 쓰게 함 (한 번만 넣음)
       const seoul = await pool.query(`INSERT INTO po_seeds (key) VALUES ('seoul-eaves-po-v1') ON CONFLICT DO NOTHING`)
@@ -153,4 +168,31 @@ export async function updateOrder(id: number, order: PurchaseOrder): Promise<Pur
 export async function removeOrder(id: number) {
   await ensureOrders()
   await pool.query(`DELETE FROM purchase_orders WHERE id = $1`, [id])
+}
+
+type PriceDbRow = { id: string; data: unknown }
+
+export async function listPrices(): Promise<PoPriceRow[]> {
+  await ensureOrders()
+  const { rows } = await pool.query<PriceDbRow>(`SELECT id, data FROM po_prices ORDER BY sort_order, id`)
+  return rows.map((r) => ({ ...normalizePrice(r.data), id: Number(r.id) }))
+}
+
+export async function savePrice(id: number | null, price: PoPrice): Promise<number> {
+  await ensureOrders()
+  const data = JSON.stringify(normalizePrice(price))
+  if (id) {
+    await pool.query(`UPDATE po_prices SET data = $2, updated_at = now() WHERE id = $1`, [id, data])
+    return id
+  }
+  const { rows } = await pool.query<{ id: string }>(
+    `INSERT INTO po_prices (data, sort_order) VALUES ($1, (SELECT coalesce(max(sort_order), 0) + 1 FROM po_prices)) RETURNING id`,
+    [data],
+  )
+  return Number(rows[0].id)
+}
+
+export async function deletePrice(id: number) {
+  await ensureOrders()
+  await pool.query(`DELETE FROM po_prices WHERE id = $1`, [id])
 }

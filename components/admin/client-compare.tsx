@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { diffLines, quoteSegments, sameLines, splitProposal, type Line, type Segment } from '@/lib/clients/compare'
 import { won, type Quote } from '@/lib/clients/quote'
 import { fmtAt } from '@/components/admin/client-versions'
+import { shortVersionSummary } from '@/lib/clients/version-summary'
 
 type Side = { no: number; at: string; summary: string; supply: number; proposalHtml: string; quote: Quote }
 type Status = 'same' | 'changed' | 'added' | 'removed'
@@ -191,7 +192,7 @@ export function ClientCompare({
 
   const go = (na: number, nb: number) => router.push(`/admin/clients/${clientId}/compare?a=${na}&b=${nb}`)
   const label = (v: { no: number; at: string; summary: string }) =>
-    `v${v.no}${v.no === versions[0]?.no ? ' (최신)' : ''}${v.no === finalizedVersion ? ' (계약본)' : ''} · ${fmtAt(v.at)} · ${v.summary}`
+    `v${v.no}${v.no === versions[0]?.no ? ' (최신)' : ''}${v.no === finalizedVersion ? ' (계약본)' : ''} · ${fmtAt(v.at)} · ${shortVersionSummary(v.summary)}`
   const diff = b.supply - a.supply
   const shown = entries.filter((e) => sel.has(e.key))
 

@@ -298,7 +298,7 @@ const BR=[['z',XW,7.25,ZD],['z',XE,7.25,ZD]];
 for(const [ax,c,a0,a1] of BR){ const p=(t,y)=>ax==='x'?[t,y,c]:[c,y,t]; const s0=a0+0.15, s1=a1-0.15;
   cyl(p(s0,0.35),p(s1,3.85),0.032,mat.br); cyl(p(s0,3.85),p(s1,0.35),0.032,mat.br);
   const m=p((s0+s1)/2,2.1); box(m[0]-0.12,m[0]+0.12,1.98,2.22,m[2]-0.12,m[2]+0.12,mat.br); }
-// 무릎 가새 □125×125×4.5 (벽보 플랜지 폭 125와 맞춤), 기둥과 벽보가 만나는 곳에서 1.2m 45° + 삼각 보강판
+// 무릎 가새 □125×125×4.5 (벽보 플랜지 폭 125와 맞춤), 양 끝 45° 절단·둘레 용접, 기둥 옆면 덧판 기둥과 벽보가 만나는 곳에서 1.2m 45° + 삼각 보강판
 PART='knee';
 function hdiag(a,b,d,bf,tf,tw,m){ const va=new THREE.Vector3(...a), vb=new THREE.Vector3(...b), L=va.distanceTo(vb);
   const g=new THREE.Group(); g.position.copy(va).add(vb).multiplyScalar(0.5);
@@ -309,8 +309,7 @@ function hdiag(a,b,d,bf,tf,tw,m){ const va=new THREE.Vector3(...a), vb=new THREE
 const KB=4.15, KL=1.2;
 for(const [z,x0,x1] of KNEE){ for(const [xc,dirn] of [[x0,1],[x1,-1]]){ const xf=xc+dirn*0.125;
   { const a=new THREE.Vector3(xf+dirn*0.0625,KB-KL,z), b=new THREE.Vector3(xf+dirn*KL,KB-0.0625,z), L=a.distanceTo(b); const o=new THREE.Mesh(new THREE.BoxGeometry(0.125,L,0.125),mat.knee); o.position.copy(a).add(b).multiplyScalar(0.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize()); world.add(o); tag(o); }
-  box(Math.min(xf,xf+dirn*0.28),Math.max(xf,xf+dirn*0.28),KB-KL-0.02,KB-KL+0.28,z-0.005,z+0.005,mat.knee);
-  box(Math.min(xf+dirn*KL,xf+dirn*(KL-0.28)),Math.max(xf+dirn*KL,xf+dirn*(KL-0.28)),KB-0.28,KB,z-0.005,z+0.005,mat.knee); } }
+  box(Math.min(xf,xf+dirn*0.009),Math.max(xf,xf+dirn*0.009),KB-KL-0.12,KB-KL+0.12,z-0.125,z+0.125,mat.c1); } }   // 기둥 옆면 덧판 PL-9 (플랜지 끝을 이음)
 // 가장자리 받침 (벽보에서 벽 쪽으로 내밂, 1.2m 이하 간격)
 PART='stub'; let nStub=0;
 for(const [z0,z1,zs] of [[FZ0+0.02,ZA,ZA],[ZD,FZ1-0.02,ZD]]){
@@ -521,7 +520,7 @@ const INFO={
   cross:{n:'가로보',s:'H빔 300×150 (H-300×150×6.5×9)',buy:'10m × 9본 = 90m',use:'연속보와 벽보 사이 가로보 15개, 개구부 테두리, 계단 옆 벽보 한 칸',c:'#2e6ba8'},
   col:{n:'새 기둥',s:'H빔 250×250 · 베이스플레이트 PL-20 (가운데 2개 PL-25)',buy:'10m × 8본 = 80m (약 4m씩 16개, 1본에서 2개)',use:'기존 기둥 앞에 하나씩 14개 + 연속보 가운데 2개. 건물과 붙지 않고 바닥에 케미컬 앵커로만 고정',c:'#3d4a5c'},
   post:{n:'박공 기둥',s:'각파이프 150×150 (□150×150×6) · 베이스 PL-16',buy:'6m × 2본 (약 4.0m씩 2개)',use:'양쪽 박공 가운데. 연속보 끝(약 17t)을 받침',c:'#5f7d95'},
-  knee:{n:'무릎 가새',s:'각파이프 125×125 (□125×125×4.5) · 45° · 끝 삼각 보강판',buy:'6m × 4본 (1.7m씩 12개, 1본에서 3개)',use:'긴 벽 새 기둥과 벽보가 만나는 곳에서 양쪽 1.2m. 벽보가 건너는 길이를 줄이고 긴 벽 방향 흔들림을 잡음. 1층 바닥에는 기둥이 없음. 폭 125로 벽보 아래 날개(플랜지) 폭과 맞춤',c:'#2a9d8f'},
+  knee:{n:'무릎 가새',s:'각파이프 125×125 (□125×125×4.5) · 양 끝 45° 절단, 둘레 전체 용접',buy:'6m × 4본 (1.7m씩 12개, 1본에서 3개)',use:'긴 벽 새 기둥과 벽보가 만나는 곳에서 양쪽 1.2m. 벽보가 건너는 길이를 줄이고 긴 벽 방향 흔들림을 잡음. 1층 바닥에는 기둥이 없음. 폭 125로 벽보 아래 날개(플랜지) 폭과 맞춤. 기둥 쪽은 플랜지 끝을 잇는 덧판(PL-9)에 붙임',c:'#2a9d8f'},
   brace:{n:'X 가새',s:'ㄱ형강 75×75×6 · X자 (가운데 이음판)',buy:'6m × 4본 = 24m',use:'짧은 방향(박공 쪽)으로 밀리지 않게 잡는 X자 버팀 2칸 (양쪽 박공 벽 1칸씩). 긴 벽 방향은 무릎 가새가 잡음',c:'#7b4bb7'},
   joist:{n:'장선',s:'각파이프 100×50 (□100×50×2.9)',buy:'6m × 106본 = 636m',use:'가로보 위 300mm 간격 + 벽 쪽 가장자리 띠. 바닥 철판을 받침',c:'#9aa3ab'},
   stub:{n:'가장자리 받침',s:'각파이프 100×50 · 약 0.45m',buy:'장선 자재에 포함',use:'벽보에서 벽 쪽으로 내밀어 바닥 가장자리 띠를 받침 (1.2m 이하 간격)',c:'#9aa3ab'},

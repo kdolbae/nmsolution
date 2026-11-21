@@ -3,19 +3,20 @@ import Image from 'next/image'
 import { ArrowUpRight } from 'lucide-react'
 import { PageHero, PageShell } from '@/components/page-shell'
 import { MultilineText } from '@/components/multiline-text'
-import { getContent } from '@/lib/content/get'
+import { getContent, publicServices } from '@/lib/content/get'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: '사업소개',
-  description: '공장 개보수를 중심으로 누수 피해복구, 단열·곰팡이, 나노·UV 코팅, 코팅제 판매, 시공 교육까지.',
+  description: '공장 개보수를 중심으로 대형플랜트 설비, 공장 개축, 배관 공사(몰코·수배관·공압·가스), 설비 개발(PLC·제어반·자동제어)까지.',
   alternates: { canonical: '/services' },
 }
 
 export default async function ServicesPage() {
-  const [services, settings] = await Promise.all([getContent('services'), getContent('settings')])
+  const [all, settings] = await Promise.all([getContent('services'), getContent('settings')])
+  const services = publicServices(all)
   const [primary, ...others] = services.items
 
   return (
@@ -59,7 +60,13 @@ export default async function ServicesPage() {
 
           {/* Others */}
           <p className="text-kicker mb-6 mt-16 text-muted-foreground">Other Solutions</p>
-          <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+          {/* 칸 수가 3으로 안 나눠지고 2로 나눠지면(가린 사업 뒤 4개 등) 2열로 — 빈 회색 칸이 남지 않게 */}
+          <ul
+            className={cn(
+              'grid grid-cols-1 gap-px bg-border sm:grid-cols-2',
+              others.length % 3 !== 0 && others.length % 2 === 0 ? 'lg:grid-cols-2' : 'lg:grid-cols-3',
+            )}
+          >
             {others.map((s, i) => (
               <li key={s.slug} className="bg-background">
                 <Link href={`/services/${s.slug}`} className="group flex h-full flex-col">

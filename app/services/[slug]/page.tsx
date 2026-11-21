@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Check, Phone, Smartphone } from 'lucide-react'
 import { PageShell } from '@/components/page-shell'
 import { MultilineText } from '@/components/multiline-text'
-import { getContent } from '@/lib/content/get'
+import { getContent, isHiddenService, publicServices } from '@/lib/content/get'
 import { getWorkLanding } from '@/lib/work-landings'
 import { WorkLandingView, workLandingMetadata } from '@/components/work-landing'
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // 작업별 광고 랜딩(/services/welding 등)
   const work = getWorkLanding(slug)
   if (work) return workLandingMetadata(work)
-  const services = await getContent('services')
+  const services = publicServices(await getContent('services'))
   const item = services.items.find((s) => s.slug === slug)
   if (!item) return { title: '사업소개' }
   // 제목 뒤 회사명은 layout의 title.template이 붙인다
@@ -26,7 +26,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const { slug } = await params
   const work = getWorkLanding(slug)
   if (work) return <WorkLandingView w={work} settings={await getContent('settings')} />
-  const [services, settings] = await Promise.all([getContent('services'), getContent('settings')])
+  // 가린 사업(나노·UV 코팅, 코팅제 판매)은 없는 페이지로 — 검색엔진에서도 빠진다
+  if (isHiddenService(slug)) notFound()
+  const [all, settings] = await Promise.all([getContent('services'), getContent('settings')])
+  const services = publicServices(all)
   const idx = services.items.findIndex((s) => s.slug === slug)
   if (idx === -1) notFound()
   const item = services.items[idx]

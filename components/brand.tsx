@@ -29,11 +29,10 @@ export const NAV_ITEMS: { label: string; href: string; hideWhen?: 'projectsHidde
 /** 헤더 배너에 노출되는 기타 사업분야 (사업소개 상세 페이지로 이동) */
 export const OTHER_SERVICES = [
   { label: '대형플랜트 설비', href: '/services/plant' },
-  { label: '누수 피해복구', href: '/services/recovery' },
-  { label: '단열 · 결로 · 곰팡이', href: '/services/insulation' },
-  { label: '나노 · UV 코팅', href: '/services/coating' },
-  { label: '코팅제 판매', href: '/services/products' },
-  { label: '시공 교육', href: '/services/academy' },
+  { label: '공장 개축', href: '/services/rebuild' },
+  { label: '배관 공사', href: '/services/pipework' },
+  { label: '설비 개발 · 자동제어', href: '/services/automation' },
+  // 누수 피해복구·단열·결로·곰팡이·나노 · UV 코팅·코팅제 판매·시공 교육은 가림(kevin 2026-11-18, lib/content/get.ts HIDDEN_SERVICE_SLUGS)
 ]
 
 /** 공식 로고(lib/brand-logo.ts). inverted 는 어두운 배경용(회색 부분을 흰색으로) */

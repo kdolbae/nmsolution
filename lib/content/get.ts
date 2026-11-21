@@ -23,17 +23,35 @@ function merge<T extends Record<string, unknown>>(base: T, saved: unknown): T {
  * 관리자에서 사업소개를 저장해 둔 경우, 그 뒤에 기본값에 추가한 사업(대형플랜트 설비)은 저장본에 없어 안 보인다.
  * 저장본에 없으면 기본값 항목을 공장 개보수 바로 뒤에 끼워 넣는다. 관리자에서 저장하면 그대로 저장본에 들어간다.
  */
-const ADDED_SERVICE_SLUGS = ['plant']
+const ADDED_SERVICE_SLUGS = ['plant', 'rebuild', 'pipework', 'automation']
 function withNewServices(c: ContentMap['services']): ContentMap['services'] {
   const items = [...c.items]
+  // 공장 개보수 뒤에 적힌 순서대로(대형플랜트 → 공장 개축 → 배관 → 설비 개발)
+  let after = 'factory'
   for (const slug of ADDED_SERVICE_SLUGS) {
-    if (items.some((s) => s.slug === slug)) continue
-    const def = CONTENT_DEFAULTS.services.items.find((s) => s.slug === slug)
-    if (!def) continue
-    const at = items.findIndex((s) => s.slug === 'factory')
-    items.splice(at === -1 ? 0 : at + 1, 0, def)
+    if (!items.some((s) => s.slug === slug)) {
+      const def = CONTENT_DEFAULTS.services.items.find((s) => s.slug === slug)
+      if (!def) continue
+      const at = items.findIndex((s) => s.slug === after)
+      items.splice(at === -1 ? 0 : at + 1, 0, def)
+    }
+    after = slug
   }
   return { ...c, items }
+}
+
+/**
+ * 홈페이지에서 가린 사업. 내용(N-CMS·엔엠 DB·기본값)은 지우지 않고 화면·메뉴·사이트맵에서만 뺀다. 되살리려면 여기서 slug 를 빼면 된다.
+ * kevin 2026-11-18 "나노코팅, 코팅제 판매는 가리자" → coating·products,
+ * 같은 날 "시공교육도 단열 곰팡이 누수도 빼고" → academy·insulation·recovery.
+ */
+export const HIDDEN_SERVICE_SLUGS: readonly string[] = ['coating', 'products', 'academy', 'insulation', 'recovery']
+export const isHiddenService = (slug: string) => HIDDEN_SERVICE_SLUGS.includes(slug)
+
+/** 가린 사업을 뺀 사업소개. 저장본 소개 글이 가린 사업(누수·단열·코팅·교육)을 말하는 옛 문장이면 새 기본 문장으로 바꾼다. */
+export function publicServices(c: ContentMap['services']): ContentMap['services'] {
+  const description = /코팅 솔루션과 제품|누수 복구, 단열/.test(c.description) ? CONTENT_DEFAULTS.services.description : c.description
+  return { ...c, description, items: c.items.filter((s) => !isHiddenService(s.slug)) }
 }
 
 /**

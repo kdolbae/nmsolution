@@ -24,6 +24,9 @@ export async function POST(req: Request) {
   if (BOT.test(ua)) return new Response(null, { status: 204 })
   const b = (await req.json().catch(() => null)) as Record<string, unknown> | null
   if (!b || !TYPES.has(String(b.type)) || String(b.path || '').startsWith('/admin')) return new Response(null, { status: 204 })
+  // SBworks 광고도구 "랜딩페이지 미리보기"(?sbpreview=)로 연 화면은 저장하지 않는다(lib/preview.ts 가 먼저 막지만 옛 캐시·직접 호출까지)
+  const pv = /[?&]sbpreview=/i
+  if (b.pv || pv.test(String(b.referrer || '')) || pv.test(String(b.path || '')) || pv.test(req.headers.get('referer') || '')) return new Response(null, { status: 204 })
   try {
     await ensureSiteEvents()
     const g = geoOf(req.headers)

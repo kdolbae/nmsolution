@@ -18,6 +18,8 @@ export type PoParty = {
   email: string
   manager: string
   managerPhone: string
+  /** 내부 발주 메모(출고 공장·운임·결제·지난 단가 등). 발주서에는 안 찍힌다 */
+  memo: string
   /** (쓰지 않음) 예전 발주처 양식 값. 양식은 발주 제품으로 정함 */
   form?: PoForm
 }
@@ -72,7 +74,7 @@ export type PurchaseOrder = {
 export const PO_STATUSES: PoStatus[] = ['작성 중', '발주 완료', '취소']
 
 export function emptyParty(name = ''): PoParty {
-  return { name, ceo: '', bizNumber: '', address: '', phone: '', fax: '', email: '', manager: '', managerPhone: '' }
+  return { name, ceo: '', bizNumber: '', address: '', phone: '', fax: '', email: '', manager: '', managerPhone: '', memo: '' }
 }
 
 export function poItemId() {
@@ -123,7 +125,7 @@ const num = (v: unknown) => {
 export function normalizeParty(raw: unknown): PoParty {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const p = emptyParty()
-  for (const k of Object.keys(p) as (keyof PoParty)[]) if (k !== 'form') (p as Record<string, string>)[k] = str(r[k], 300)
+  for (const k of Object.keys(p) as (keyof PoParty)[]) if (k !== 'form') (p as Record<string, string>)[k] = str(r[k], k === 'memo' ? 2000 : 300)
   if (r.form === 'panel' || r.form === 'general') p.form = r.form
   return p
 }

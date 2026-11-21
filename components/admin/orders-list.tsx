@@ -115,8 +115,8 @@ function PartyList({ kind, rows }: { kind: 'issuer' | 'supplier'; rows: PoPartyR
 function PartyCard({ kind, id, initial, onDone }: { kind: 'issuer' | 'supplier'; id: number | null; initial: PoParty; onDone?: () => void }) {
   const router = useRouter()
   const [p, setP] = useState<PoParty>(() => {
-    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone } = initial
-    return { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone }
+    const { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, memo } = initial
+    return { name, ceo, bizNumber, address, phone, fax, email, manager, managerPhone, memo }
   })
   const [msg, setMsg] = useState('')
   const [pending, start] = useTransition()
